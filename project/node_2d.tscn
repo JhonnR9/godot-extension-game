@@ -1,6 +1,17 @@
 [gd_scene format=3 uid="uid://mo5b3mikuc38"]
 
 [ext_resource type="Script" uid="uid://bkwk40ybs8kgm" path="res://example.gd" id="1_wtcfe"]
+[ext_resource type="Script" uid="uid://bfy1unrxchksl" path="res://top_down_character_2d.gd" id="2_0e48y"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wtcfe"]
+size = Vector2(40, 40)
 
 [node name="Node2D" type="Node2D" unique_id=1172127665]
 script = ExtResource("1_wtcfe")
+
+[node name="TopDownCharacter2D" type="TopDownCharacter2D" parent="." unique_id=1929719884]
+script = ExtResource("2_0e48y")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TopDownCharacter2D" unique_id=1586071754]
+position = Vector2(107, 116)
+shape = SubResource("RectangleShape2D_wtcfe")

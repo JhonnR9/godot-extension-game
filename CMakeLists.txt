@@ -43,7 +43,11 @@ project(godot-cpp-template
     LANGUAGES CXX
 )
 
-add_library(${LIBNAME} SHARED)
+add_library(${LIBNAME} SHARED
+        src/cube_base.cpp
+        src/cube_base.h
+        src/top_down_character_2_d.cpp
+        src/top_down_character_2_d.h)
 
 target_sources(${LIBNAME}
     PRIVATE
