@@ -18,12 +18,15 @@ public:
 	TopDownCharacter2D();
 	void add_input(Vector2 p_input);
 	void add_force(Vector2 p_force);
+	void add_impulse(Vector2 p_impulse);
 	void _ready() override;
 	void _physics_process(float delta);
 
 private:
 	Vector2 input_dir;
-	Vector2 external_force;
+	Vector2 external_forces;
+	Vector2 pending_impulses;
+
 	float max_velocity;
 	float acceleration;
 	float friction;
