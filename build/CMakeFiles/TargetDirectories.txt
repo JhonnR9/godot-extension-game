@@ -1,8 +1,0 @@
-C:/Users/jhone/CLionProjects/godot-extension-game/build/CMakeFiles/gdextension-game.dir
-C:/Users/jhone/CLionProjects/godot-extension-game/build/CMakeFiles/generate_doc_source.dir
-C:/Users/jhone/CLionProjects/godot-extension-game/build/CMakeFiles/edit_cache.dir
-C:/Users/jhone/CLionProjects/godot-extension-game/build/CMakeFiles/rebuild_cache.dir
-C:/Users/jhone/CLionProjects/godot-extension-game/build/godot-cpp/CMakeFiles/generate_bindings.dir
-C:/Users/jhone/CLionProjects/godot-extension-game/build/godot-cpp/CMakeFiles/godot-cpp.dir
-C:/Users/jhone/CLionProjects/godot-extension-game/build/godot-cpp/CMakeFiles/edit_cache.dir
-C:/Users/jhone/CLionProjects/godot-extension-game/build/godot-cpp/CMakeFiles/rebuild_cache.dir

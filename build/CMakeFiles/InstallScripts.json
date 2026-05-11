@@ -1,8 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"C:/Users/jhone/CLionProjects/godot-extension-game/build/cmake_install.cmake",
-		"C:/Users/jhone/CLionProjects/godot-extension-game/build/godot-cpp/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
