@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="godot cpp template"
-run/main_scene="uid://mo5b3mikuc38"
+run/main_scene="uid://bx7k6wka5el6q"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 

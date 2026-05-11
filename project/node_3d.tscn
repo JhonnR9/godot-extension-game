@@ -1,19 +1,20 @@
-[gd_scene format=4 uid="uid://bx7k6wka5el6q"]
+[gd_scene format=3 uid="uid://bx7k6wka5el6q"]
 
-[sub_resource type="ArrayMesh" id="ArrayMesh_4xowi"]
-_surfaces = [{
-"aabb": AABB(-0.5, -0.5, -0.5, 1, 1, 1),
-"attribute_data": PackedByteArray("AAAAAAAAAAAAAIA/AAAAAAAAgD8AAIA/AAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAACAPwAAgD8AAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAIA/AACAPwAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAgD8AAIA/AAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAACAPwAAgD8AAAAAAACAPwAAAAAAAAAAAACAPwAAAAAAAIA/AACAPwAAAAAAAIA/"),
-"format": 34359742487,
-"index_count": 36,
-"index_data": PackedByteArray("AAACAAEAAAADAAIABAAGAAUABAAHAAYACAAKAAkACAALAAoADAAOAA0ADAAPAA4AEAASABEAEAATABIAFAAWABUAFAAXABYA"),
-"primitive": 3,
-"uv_scale": Vector4(0, 0, 0, 0),
-"vertex_count": 24,
-"vertex_data": PackedByteArray("AAAAvwAAAL8AAAA/AAAAPwAAAL8AAAA/AAAAPwAAAD8AAAA/AAAAvwAAAD8AAAA/AAAAPwAAAL8AAAC/AAAAvwAAAL8AAAC/AAAAvwAAAD8AAAC/AAAAPwAAAD8AAAC/AAAAvwAAAL8AAAC/AAAAvwAAAL8AAAA/AAAAvwAAAD8AAAA/AAAAvwAAAD8AAAC/AAAAPwAAAL8AAAA/AAAAPwAAAL8AAAC/AAAAPwAAAD8AAAC/AAAAPwAAAD8AAAA/AAAAvwAAAD8AAAA/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAC/AAAAvwAAAD8AAAC/AAAAvwAAAL8AAAC/AAAAPwAAAL8AAAC/AAAAPwAAAL8AAAA/AAAAvwAAAL8AAAA//3//f/9/AID/f/9//38AgP9//3//fwCA/3//f/9/AID//////38AgP//////fwCA//////9/AID//////38AgAAA/3//f/+/AAD/f/9//78AAP9//3//vwAA/3//f/+/////f/9//7////9//3//v////3//f/+/////f/9//7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9/AAAAAP+//38AAAAA/7//fwAAAAD/v/9/AAAAAP+/")
-}]
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_4xowi"]
+noise_type = 3
+seed = 556
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_a202f"]
+noise_type = 3
+seed = 679
+frequency = 0.0235
+fractal_octaves = 8
+fractal_gain = 0.6
+metadata/_preview_in_3d_space_ = true
 
 [node name="Node3D" type="Node3D" unique_id=1977859618]
 
-[node name="CubeBase" type="CubeBase" parent="." unique_id=1000402874]
-mesh = SubResource("ArrayMesh_4xowi")
+[node name="World" type="World" parent="." unique_id=538717011]
+seed = 556
+terrain_noise = SubResource("FastNoiseLite_4xowi")
+cave_noise = SubResource("FastNoiseLite_a202f")

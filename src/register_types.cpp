@@ -1,14 +1,12 @@
 #include "register_types.h"
 
-#include "cube_base.h"
+#include "chunk.h"
+#include "world.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
-
-#include "example_class.h"
-#include "top_down_character_2_d.h"
 
 using namespace godot;
 
@@ -17,9 +15,8 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
-	GDREGISTER_CLASS(ExampleClass);
-	GDREGISTER_CLASS(CubeBase);
-	GDREGISTER_CLASS(TopDownCharacter2D);
+	GDREGISTER_CLASS(Chunk);
+	GDREGISTER_CLASS(World);
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {

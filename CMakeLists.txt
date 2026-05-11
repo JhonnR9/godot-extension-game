@@ -1,5 +1,7 @@
 # Using the same minimum as the godot-cpp project
 cmake_minimum_required(VERSION 3.17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 
 # Silence unused variable warning when specified from toolchain
 if(CMAKE_C_COMPILER)
@@ -44,17 +46,15 @@ project(godot-cpp-template
 )
 
 add_library(${LIBNAME} SHARED
-        src/cube_base.cpp
-        src/cube_base.h
-        src/top_down_character_2_d.cpp
-        src/top_down_character_2_d.h)
+        src/voxel_mesher.cpp
+        src/chunk.cpp
+        src/world.cpp
+        src/world.h)
 
 target_sources(${LIBNAME}
     PRIVATE
     src/register_types.cpp
     src/register_types.h
-    src/example_class.cpp
-    src/example_class.h
 )
 
 # Fetch a list of the xml files to use for documentation and add to our target
