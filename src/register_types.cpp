@@ -1,6 +1,7 @@
 #include "register_types.h"
 
 #include "chunk.h"
+#include "player.h"
 #include "world.h"
 
 #include <gdextension_interface.h>
@@ -17,6 +18,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	}
 	GDREGISTER_CLASS(Chunk);
 	GDREGISTER_CLASS(World);
+	GDREGISTER_RUNTIME_CLASS(Player);
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {

@@ -49,7 +49,9 @@ add_library(${LIBNAME} SHARED
         src/voxel_mesher.cpp
         src/chunk.cpp
         src/world.cpp
-        src/world.h)
+        src/world.h
+        src/player.cpp
+        src/player.h)
 
 target_sources(${LIBNAME}
     PRIVATE

@@ -2,19 +2,42 @@
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_4xowi"]
 noise_type = 3
-seed = 556
+seed = 7777
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_a202f"]
-noise_type = 3
-seed = 679
-frequency = 0.0235
-fractal_octaves = 8
-fractal_gain = 0.6
+seed = 9114
+frequency = 0.015
+fractal_octaves = 4
+domain_warp_enabled = true
+domain_warp_amplitude = 35.0
+domain_warp_frequency = 0.01
 metadata/_preview_in_3d_space_ = true
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_4xowi"]
+
+[sub_resource type="Environment" id="Environment_4xowi"]
+ssao_enabled = true
+fog_height = -316.7
 
 [node name="Node3D" type="Node3D" unique_id=1977859618]
 
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=224629533]
+transform = Transform3D(0.1466999, 0.9424369, -0.3004865, -0.09548254, 0.31584582, 0.943994, 0.98456204, -0.1097926, 0.13632086, 0, 58.92252, 0)
+light_color = Color(0.74, 0.805, 1, 1)
+sky_mode = 1
+
 [node name="World" type="World" parent="." unique_id=538717011]
-seed = 556
+seed = 7777
+world_radius = 2
+dirt_layer_depth = 8
 terrain_noise = SubResource("FastNoiseLite_4xowi")
 cave_noise = SubResource("FastNoiseLite_a202f")
+
+[node name="Player" type="Player" parent="." unique_id=2104374341]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 17.75225, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=62282504]
+shape = SubResource("CapsuleShape3D_4xowi")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1386083802]
+environment = SubResource("Environment_4xowi")

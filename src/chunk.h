@@ -49,7 +49,7 @@ private:
 	Ref<ArrayMesh> _mesh;
 	Ref<StandardMaterial3D> _material;
 	bool _is_air(int x, int y, int z) const;
-	void _generate_resources(Block &block, int wx, int wy, int wz, uint64_t seed);
+	static void _generate_resources(Block &block, int wx, int wy, int wz, uint64_t seed);
 };
 
 }
