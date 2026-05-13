@@ -1,14 +1,14 @@
 [gd_scene format=3 uid="uid://bx7k6wka5el6q"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_4xowi"]
-noise_type = 3
+noise_type = 2
 seed = 7777
+fractal_octaves = 9
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_a202f"]
-seed = 9114
-frequency = 0.015
-fractal_octaves = 4
-domain_warp_enabled = true
+noise_type = 0
+seed = 7900
+frequency = 0.022
 domain_warp_amplitude = 35.0
 domain_warp_frequency = 0.01
 metadata/_preview_in_3d_space_ = true
@@ -28,13 +28,14 @@ sky_mode = 1
 
 [node name="World" type="World" parent="." unique_id=538717011]
 seed = 7777
-world_radius = 2
-dirt_layer_depth = 8
+terrain_base_height = 70
+terrain_amplitude = 30.0
+dirt_layer_depth = 24
 terrain_noise = SubResource("FastNoiseLite_4xowi")
 cave_noise = SubResource("FastNoiseLite_a202f")
 
 [node name="Player" type="Player" parent="." unique_id=2104374341]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 17.75225, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.071924, 58.24952, 20.266096)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=62282504]
 shape = SubResource("CapsuleShape3D_4xowi")

@@ -1,11 +1,16 @@
 #include "world.h"
-
+#include <godot_cpp/variant/typed_array.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/dictionary.hpp>
+#include <godot_cpp/variant/array.hpp>
+#include <godot_cpp/variant/variant.hpp>
+#include <godot_cpp/classes/object.hpp>
 
 namespace godot {
 
 void World::_ready() {
-	generate_world(_world_radius, _world_height);
+	_last_player_chunk_pos = Vector3i(INT_MAX, INT_MAX, INT_MAX);
+	set_process(true);
 }
 
 void World::generate_world(int radius, int height) {
@@ -25,41 +30,25 @@ void World::generate_world(int radius, int height) {
 }
 
 void World::_regenerate_world() {
-	if (_terrain_noise.is_null() || _cave_noise.is_null()) {
-		return;
-	}
+	if (_terrain_noise.is_null() || _cave_noise.is_null() || _is_generating) return;
 
-	if (_is_generating) return;
 	_is_generating = true;
-
 	for (const KeyValue<Vector3i, Chunk *> &kv : _chunks) {
 		if (kv.value) {
-			remove_child(kv.value);
-			kv.value->queue_free();
+			kv.value->set_visible(false);
+			_chunk_pool.push_back(kv.value);
 		}
 	}
 	_chunks.clear();
 
-	generate_world(_world_radius, _world_height);
+	_last_player_chunk_pos = Vector3i(INT_MAX, INT_MAX, INT_MAX);
 
 	_is_generating = false;
 }
 
 void World::set_terrain_noise(const Ref<FastNoiseLite> &p_noise) {
 	if (_terrain_noise == p_noise) return;
-
-	if (_terrain_noise.is_valid()) {
-		_terrain_noise->disconnect("changed", callable_mp(this, &World::_regenerate_world));
-	}
-
 	_terrain_noise = p_noise;
-
-	if (_terrain_noise.is_valid()) {
-		_terrain_noise->set_seed(static_cast<int>(_seed));
-		_terrain_noise->connect("changed", callable_mp(this, &World::_regenerate_world));
-	}
-
-	_regenerate_world();
 }
 
 Ref<FastNoiseLite> World::get_terrain_noise() const {
@@ -68,19 +57,8 @@ Ref<FastNoiseLite> World::get_terrain_noise() const {
 
 void World::set_cave_noise(const Ref<FastNoiseLite> &p_noise) {
 	if (_cave_noise == p_noise) return;
-
-	if (_cave_noise.is_valid()) {
-		_cave_noise->disconnect("changed", callable_mp(this, &World::_regenerate_world));
-	}
-
 	_cave_noise = p_noise;
 
-	if (_cave_noise.is_valid()) {
-		_cave_noise->set_seed(static_cast<int>(_seed) + 123);
-		_cave_noise->connect("changed", callable_mp(this, &World::_regenerate_world));
-	}
-
-	_regenerate_world();
 }
 
 Ref<FastNoiseLite> World::get_cave_noise() const {
@@ -96,10 +74,6 @@ void World::set_seed(uint64_t p_seed) {
 	if (_cave_noise.is_valid()) {
 		_cave_noise->set_seed(static_cast<int>(_seed) + 123);
 	}
-
-	if (is_inside_tree()) {
-		_regenerate_world();
-	}
 }
 
 uint64_t World::get_seed() const {
@@ -113,9 +87,6 @@ void World::set_world_radius(int p_radius) {
 
 	_world_radius = p_radius;
 
-	if (is_inside_tree()) {
-		_regenerate_world();
-	}
 }
 
 int World::get_world_radius() const {
@@ -129,9 +100,6 @@ void World::set_terrain_base_height(int p_height) {
 
 	_terrain_base_height = p_height;
 
-	if (is_inside_tree()) {
-		_regenerate_world();
-	}
 }
 
 int World::get_terrain_base_height() const {
@@ -142,12 +110,8 @@ void World::set_terrain_amplitude(float p_amplitude) {
 	if (_terrain_amplitude == p_amplitude) {
 		return;
 	}
-
 	_terrain_amplitude = p_amplitude;
 
-	if (is_inside_tree()) {
-		_regenerate_world();
-	}
 }
 
 float World::get_terrain_amplitude() const {
@@ -160,20 +124,12 @@ void World::set_dirt_layer_depth(int p_depth) {
 	}
 
 	_dirt_layer_depth = p_depth;
-
-	if (is_inside_tree()) {
-		_regenerate_world();
-	}
 }
 void World::set_world_height(int p_height) {
 	if (p_height == _world_height) {
 		return;
 	}
 	this->_world_height = p_height;
-
-	if (is_inside_tree()) {
-		_regenerate_world();
-	}
 }
 
 void World::_create_chunk(Vector3i chunk_pos) {
@@ -213,6 +169,89 @@ bool World::is_air_global(int wx, int wy, int wz) const {
 	Chunk *chunk = _chunks[key];
 
 	return chunk->get_block(lx, ly, lz).is_air();
+}
+
+void World::_process(double delta) {
+	if (!_player_node) {
+		_player_node = get_node<Node3D>("../Player");
+		if (!_player_node) return;
+
+		_last_player_chunk_pos = _world_to_chunk_pos(_player_node->get_global_position());
+		_update_chunks();
+		return;
+	}
+
+	Vector3i current_chunk_p = _world_to_chunk_pos(_player_node->get_global_position());
+
+	if (current_chunk_p != _last_player_chunk_pos) {
+		_last_player_chunk_pos = current_chunk_p;
+		_update_chunks();
+	}
+}
+
+Vector3i World::_world_to_chunk_pos(Vector3 p_pos) {
+    return Vector3i(
+        Math::floor(p_pos.x / Chunk::SIZE),
+        Math::floor(p_pos.y / Chunk::SIZE),
+        Math::floor(p_pos.z / Chunk::SIZE)
+    );
+}
+
+void World::_update_chunks() {
+    Dictionary chunks_to_keep;
+    for (int x = -_world_radius; x <= _world_radius; x++) {
+        for (int y = -_world_height; y <= _world_height; y++) {
+            for (int z = -_world_radius; z <= _world_radius; z++) {
+                Vector3i pos = _last_player_chunk_pos + Vector3i(x, y, z);
+                chunks_to_keep[pos] = true;
+            }
+        }
+    }
+	Array to_remove;
+	for (const KeyValue<Vector3i, Chunk*> &E : _chunks) {
+		if (!chunks_to_keep.has(E.key)) {
+			to_remove.push_back(E.key);
+		}
+	}
+
+	for (int i = 0; i < to_remove.size(); i++) {
+		Vector3i pos = to_remove[i];
+
+		if (Chunk *value = _chunks[pos]) {
+			value->set_visible(false);
+			value->set_process(false);
+			_chunk_pool.push_back(value);
+		}
+		_chunks.erase(pos);
+	}
+    Array needed_keys = chunks_to_keep.keys();
+    for (int i = 0; i < needed_keys.size(); i++) {
+        Vector3i pos = needed_keys[i];
+
+        if (_chunks.has(pos)) continue;
+
+        Chunk* chunk = nullptr;
+
+        if (!_chunk_pool.is_empty()) {
+            int last_idx = _chunk_pool.size() - 1;
+            chunk = Object::cast_to<Chunk>(_chunk_pool[last_idx]);
+            _chunk_pool.remove_at(last_idx);
+        } else {
+            chunk = memnew(Chunk);
+            add_child(chunk);
+            chunk->set_world(this);
+        }
+
+        if (chunk) {
+            _chunks[pos] = chunk;
+            chunk->set_visible(true);
+            chunk->set_process(true);
+            chunk->set_global_position(Vector3(pos.x * Chunk::SIZE, pos.y * Chunk::SIZE, pos.z * Chunk::SIZE));
+
+            chunk->generate(_seed, pos, _terrain_noise, _cave_noise, _terrain_base_height, _terrain_amplitude);
+            chunk->rebuild_mesh();
+        }
+    }
 }
 
 void World::_bind_methods() {

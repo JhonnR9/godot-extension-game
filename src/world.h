@@ -14,12 +14,13 @@ class World : public Node3D {
 
 public:
     World() = default;
-    ~World() = default;
+    ~World() override = default;
 
     void _ready() override;
 
     bool is_air_global(int wx, int wy, int wz) const;
-    void generate_world(int radius, int height);
+	void generate_world(int radius, int height);
+	void _process(double delta) override;
 
     void set_seed(uint64_t p_seed);
     uint64_t get_seed() const;
@@ -67,6 +68,13 @@ private:
 
     HashMap<Vector3i, Chunk *> _chunks;
     void _create_chunk(Vector3i chunk_pos);
+
+	Vector3i _last_player_chunk_pos;
+	Node3D* _player_node = nullptr;
+	TypedArray<Chunk> _chunk_pool;
+
+	void _update_chunks();
+	static Vector3i _world_to_chunk_pos(Vector3 p_pos);
 };
 
 } // namespace godot

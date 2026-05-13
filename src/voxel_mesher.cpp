@@ -10,6 +10,7 @@ void VoxelMesher::clear() {
 	_uvs.clear();
 	_colors.clear();
 	_indices.clear();
+	_collision_faces.clear();
 }
 
 void VoxelMesher::add_face(CubeFace face, Vector3 pos, Color color, float size) {
@@ -120,10 +121,17 @@ void VoxelMesher::_add_quad(
 	_indices.append(start);
 	_indices.append(start + 3);
 	_indices.append(start + 2);
+
+	_collision_faces.append(v0);
+	_collision_faces.append(v2);
+	_collision_faces.append(v1);
+
+	_collision_faces.append(v0);
+	_collision_faces.append(v3);
+	_collision_faces.append(v2);
 }
 
 Array VoxelMesher::build_arrays() const {
-
 	Array arrays;
 	arrays.resize(Mesh::ARRAY_MAX);
 
@@ -135,5 +143,8 @@ Array VoxelMesher::build_arrays() const {
 
 	return arrays;
 }
-
+PackedVector3Array VoxelMesher::get_collision_faces() const {
+	return _collision_faces;
 }
+
+} //namespace godot

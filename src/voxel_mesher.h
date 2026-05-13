@@ -23,6 +23,7 @@ public:
 
 	[[nodiscard]]
 	Array build_arrays() const;
+	PackedVector3Array get_collision_faces() const ;
 
 private:
 	PackedVector3Array _vertices;
@@ -30,6 +31,7 @@ private:
 	PackedVector2Array _uvs;
 	PackedColorArray _colors;
 	PackedInt32Array _indices;
+	PackedVector3Array _collision_faces;
 
 	void _add_quad(
 		Vector3 v0,

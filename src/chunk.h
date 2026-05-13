@@ -4,6 +4,9 @@
 #include <godot_cpp/classes/mesh_instance3d.hpp>
 #include <godot_cpp/classes/standard_material3d.hpp>
 #include <godot_cpp/classes/fast_noise_lite.hpp>
+#include <godot_cpp/classes/static_body3d.hpp>
+#include <godot_cpp/classes/collision_shape3d.hpp>
+#include <godot_cpp/classes/concave_polygon_shape3d.hpp>
 #include "block.h"
 #include "voxel_mesher.h"
 
@@ -15,10 +18,8 @@ class Chunk : public MeshInstance3D {
 	World *_world = nullptr;
 
 public:
-	static constexpr int SIZE = 16;
-
 	Chunk() = default;
-
+	static constexpr int SIZE = 16;
 	void _ready() override;
 
 	void rebuild_mesh();
@@ -37,19 +38,27 @@ public:
 	const Block &get_block(int x, int y, int z) const {
 		return _blocks[x][y][z];
 	}
+	void  _enter_tree() override;
 
 protected:
 	static void _bind_methods();
 
 private:
+	bool _is_air(int x, int y, int z) const;
+
 	Block _blocks[SIZE][SIZE][SIZE];
 
-	VoxelMesher _mesher;
-
+	VoxelMesher _voxel_mesher;
+	StaticBody3D *_static_body = nullptr;
+	CollisionShape3D *_collision_shape = nullptr;
 	Ref<ArrayMesh> _mesh;
+	Ref<ConcavePolygonShape3D> _shape;
 	Ref<StandardMaterial3D> _material;
-	bool _is_air(int x, int y, int z) const;
-	static void _generate_resources(Block &block, int wx, int wy, int wz, uint64_t seed);
+
+	bool _active = false;
+
+	void _generate_faces();
+	void _setup_material();
 };
 
 }
