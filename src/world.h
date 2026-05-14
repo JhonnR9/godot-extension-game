@@ -33,15 +33,15 @@ protected:
 	static void _bind_methods();
 
 private:
-	uint64_t _seed = 12345;
+	uint64_t _seed = 54444;
 
-	int _world_radius = 8;
-	int _world_height = 8;
+	int _world_radius = 12;
+	int _world_height = 4;
 
 	int _terrain_base_height = 32;
 	float _terrain_amplitude = 16.0f;
 	int _dirt_layer_depth = 12;
-	float cave_threshold = 0.7f;
+	float _cave_threshold = 0.7f;
 
 	Ref<FastNoiseLite> _terrain_noise;
 	Ref<FastNoiseLite> _cave_noise;
@@ -58,7 +58,6 @@ private:
 	void _finalize_chunk(const ChunkGenerationResult& res);
 	void _try_build_mesh_with_neighbors(Vector3i p_pos);
 
-private:
 	std::mutex _chunks_mutex;
 	std::vector<ChunkGenerationResult> _pending_results;
 	HashSet<Vector3i> _loading_chunks;

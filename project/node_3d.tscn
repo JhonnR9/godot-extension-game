@@ -1,23 +1,12 @@
 [gd_scene format=3 uid="uid://bx7k6wka5el6q"]
 
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_4xowi"]
-noise_type = 2
-seed = 7777
-fractal_octaves = 9
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_a202f"]
-noise_type = 0
-seed = 7900
-frequency = 0.022
-domain_warp_amplitude = 35.0
-domain_warp_frequency = 0.01
-metadata/_preview_in_3d_space_ = true
-
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_4xowi"]
 
 [sub_resource type="Environment" id="Environment_4xowi"]
+ssr_enabled = true
 ssao_enabled = true
 fog_height = -316.7
+adjustment_enabled = true
 
 [node name="Node3D" type="Node3D" unique_id=1977859618]
 
@@ -27,12 +16,6 @@ light_color = Color(0.74, 0.805, 1, 1)
 sky_mode = 1
 
 [node name="World" type="World" parent="." unique_id=538717011]
-seed = 7777
-terrain_base_height = 70
-terrain_amplitude = 30.0
-dirt_layer_depth = 24
-terrain_noise = SubResource("FastNoiseLite_4xowi")
-cave_noise = SubResource("FastNoiseLite_a202f")
 
 [node name="Player" type="Player" parent="." unique_id=2104374341]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.071924, 58.24952, 20.266096)

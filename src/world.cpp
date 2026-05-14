@@ -136,7 +136,7 @@ void World::_async_generate_chunk(Vector3i p_pos) {
 	settings.noise_set.cave_noise = _cave_noise;
 	settings.terrain_base_height = _terrain_base_height;
 	settings.terrain_amplitude = _terrain_amplitude;
-	settings.cave_threshold = cave_threshold;
+	settings.cave_threshold = _cave_threshold;
 
 
 	Callable action = Callable(this, "_thread_work").bind(p_pos);

@@ -45,8 +45,8 @@ Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors& neighbors) {
                 if (block.is_air())
                     continue;
 
-                Vector3 pos(x, y, z);
-                Color color = get_block_color(block.type);
+                Vector3i pos(x, y, z);
+				const Color color = get_block_color(block.type);
 
                 if (x < ChunkModel::SIZE - 1) {
                     if (center->_blocks[x + 1][y][z].is_air()) mesher.add_face(CubeFace::R, pos, color);
