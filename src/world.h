@@ -67,6 +67,7 @@ private:
 	ChunkNeighbors _get_neighbors_for(Vector3i p_pos);
 	std::mutex _data_mutex;
 	HashMap<Vector3i, ChunkModel> _chunk_data;
+	HashSet<Vector3i> _active_chunks_set;
 
 
 

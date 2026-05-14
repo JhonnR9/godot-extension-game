@@ -94,19 +94,19 @@ Vector3i World::_world_to_chunk_pos(Vector3 p_pos) {
 }
 
 void World::_update_chunks() {
-	HashSet<Vector3i> chunks_to_keep;
+	_active_chunks_set.clear();
+
 	for (int x = -_world_radius; x <= _world_radius; x++) {
 		for (int y = -_world_height; y <= _world_height; y++) {
 			for (int z = -_world_radius; z <= _world_radius; z++) {
-				Vector3i pos = _last_player_chunk_pos + Vector3i(x, y, z);
-				chunks_to_keep.insert(pos);
+				_active_chunks_set.insert(_last_player_chunk_pos + Vector3i(x, y, z));
 			}
 		}
 	}
 
 	Array to_remove;
 	for (const KeyValue<Vector3i, ChunkNode*> &E : _chunks) {
-		if (!chunks_to_keep.has(E.key)) {
+		if (!_active_chunks_set.has(E.key)) {
 			to_remove.push_back(E.key);
 		}
 	}
@@ -114,18 +114,16 @@ void World::_update_chunks() {
 	for (int i = 0; i < to_remove.size(); i++) {
 		Vector3i pos = to_remove[i];
 		ChunkNode *node = _chunks[pos];
-
 		node->set_visible(false);
 		_chunk_pool.push_back(node);
-
 		_chunks.erase(pos);
+
+		std::lock_guard<std::mutex> lock(_data_mutex);
+		_chunk_data.erase(pos);
 	}
 
-	for (const Vector3i &pos : chunks_to_keep) {
-		if (_chunks.has(pos) || _loading_chunks.has(pos)) {
-			continue;
-		}
-
+	for (const Vector3i &pos : _active_chunks_set) {
+		if (_chunks.has(pos) || _loading_chunks.has(pos)) continue;
 		_async_generate_chunk(pos);
 	}
 }
