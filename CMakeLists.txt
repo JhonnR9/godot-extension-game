@@ -47,11 +47,17 @@ project(godot-cpp-template
 
 add_library(${LIBNAME} SHARED
         src/voxel_mesher.cpp
-        src/chunk.cpp
+        src/ChunkNode.cpp
         src/world.cpp
         src/world.h
         src/player.cpp
-        src/player.h)
+        src/player.h
+        src/chunk_model.cpp
+        src/chunk_model.h
+        src/chunk_generator.cpp
+        src/chunk_generator.h
+        src/chunk_mesh_builder.cpp
+        src/chunk_mesh_builder.h)
 
 target_sources(${LIBNAME}
     PRIVATE
