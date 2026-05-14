@@ -43,6 +43,9 @@ void ChunkNode::_setup_material() {
 void ChunkNode::set_collision_faces(const PackedVector3Array &collision_faces) {
 	_setup();
 	_shape->set_faces(collision_faces);
+	if (_collision_shape->get_shape() != _shape) {
+		_collision_shape->set_shape(_shape);
+	}
 }
 
 void ChunkNode::_enter_tree() {

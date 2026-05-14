@@ -5,7 +5,10 @@
 #ifndef VOXEL_TYPES_H
 #define VOXEL_TYPES_H
 
+#include "godot_cpp/classes/ref.hpp"
+
 #include <cstdint>
+#include <godot_cpp/classes/array_mesh.hpp>
 #include <godot_cpp/variant/color.hpp>
 
 namespace godot {

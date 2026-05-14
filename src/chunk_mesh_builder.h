@@ -10,12 +10,27 @@
 #include <godot_cpp/classes/array_mesh.hpp>
 
 namespace godot {
+struct ChunkNeighbors {
+	const ChunkModel* center;
+	const ChunkModel* left;   // x - 1
+	const ChunkModel* right;  // x + 1
+	const ChunkModel* top;    // y + 1
+	const ChunkModel* bottom; // y - 1
+	const ChunkModel* front;  // z + 1
+	const ChunkModel* back;   // z - 1
+};
 
 class ChunkMeshBuilder {
 	VoxelMesher mesher;
-	static bool _is_air_local(const ChunkModel &model, int x, int y, int z);
+	static bool _is_air(const ChunkNeighbors& n, int x, int y, int z) ;
+	ChunkNeighbors neighbors = {};
+
 public:
-	Ref<ArrayMesh> build( const ChunkModel& model);
+	Ref<ArrayMesh> build(const ChunkNeighbors& neighbors );
+
+	PackedVector3Array get_last_collision_faces() const {
+		return mesher.get_collision_faces();
+	}
 };
 
 } // godot

@@ -34,6 +34,9 @@ private:
 
 public:
 	void set_collision_faces(const PackedVector3Array&collision_faces);
+	Ref<StandardMaterial3D> get_material() {
+		return _material;
+	}
 };
 
 }
