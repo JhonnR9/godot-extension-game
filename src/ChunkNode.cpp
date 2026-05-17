@@ -1,5 +1,7 @@
 #include "ChunkNode.h"
 #include "world.h"
+#include <godot_cpp/classes/resource_loader.hpp>
+#include <godot_cpp/classes/texture2d.hpp>
 
 namespace godot {
 
@@ -27,9 +29,20 @@ void ChunkNode::_setup() {
 
 	if (!_material.is_valid()) {
 		_material.instantiate();
+
 		_material->set_texture_filter(BaseMaterial3D::TEXTURE_FILTER_NEAREST);
-		_material->set_flag(BaseMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
-		_material->set_shading_mode(BaseMaterial3D::SHADING_MODE_PER_VERTEX);
+
+
+		_material->set_flag(BaseMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, false);
+
+		Ref<Resource> tex_res = ResourceLoader::get_singleton()->load("res://sprites/atlas.png");
+		if (tex_res.is_valid()) {
+			_material->set_texture(BaseMaterial3D::TEXTURE_ALBEDO, tex_res);
+		} else {
+			ERR_PRINT("Erro: Não foi possível carregar a textura res://sprites/atlas.png");
+		}
+
+		_material->set_shading_mode(BaseMaterial3D::SHADING_MODE_PER_PIXEL);
 	}
 }
 void ChunkNode::_setup_material() {

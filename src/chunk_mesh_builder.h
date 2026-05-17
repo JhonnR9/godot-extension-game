@@ -4,34 +4,44 @@
 
 #ifndef CHUNK_MESH_BUILDER_H
 #define CHUNK_MESH_BUILDER_H
+
 #include "chunk_model.h"
 #include "voxel_mesher.h"
 
 #include <godot_cpp/classes/array_mesh.hpp>
+#include <memory>
+#include <string>
+#include <unordered_map>
 
 namespace godot {
+inline std::unordered_map<std::string, AtlasUV> atlas;
+
 struct ChunkNeighbors {
-	const ChunkModel* center;
-	const ChunkModel* left;   // x - 1
-	const ChunkModel* right;  // x + 1
-	const ChunkModel* top;    // y + 1
-	const ChunkModel* bottom; // y - 1
-	const ChunkModel* front;  // z + 1
-	const ChunkModel* back;   // z - 1
+	std::shared_ptr<ChunkModel> center;
+
+	std::shared_ptr<ChunkModel> right;
+	std::shared_ptr<ChunkModel> left;
+
+	std::shared_ptr<ChunkModel> top;
+	std::shared_ptr<ChunkModel> bottom;
+
+	std::shared_ptr<ChunkModel> front;
+	std::shared_ptr<ChunkModel> back;
 };
 
 class ChunkMeshBuilder {
 	VoxelMesher mesher;
-	ChunkNeighbors neighbors = {};
 
 public:
-	Ref<ArrayMesh> build(const ChunkNeighbors& neighbors );
-	static bool _is_air(const ChunkNeighbors& n, int x, int y, int z) ;
+	Ref<ArrayMesh> build(const ChunkNeighbors& neighbors);
+
+	static bool _is_air(const ChunkNeighbors& n, int x, int y, int z);
+
 	PackedVector3Array get_last_collision_faces() const {
 		return mesher.get_collision_faces();
 	}
 };
 
-} // godot
+} // namespace godot
 
-#endif //CHUNK_MESH_BUILDER_H
+#endif

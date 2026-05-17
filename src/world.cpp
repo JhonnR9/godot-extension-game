@@ -1,4 +1,7 @@
 #include "world.h"
+
+#include "atlas_loader.h"
+
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
@@ -6,6 +9,7 @@ namespace godot {
 
 void World::_ready() {
 	_last_player_chunk_pos = Vector3i(INT_MAX, INT_MAX, INT_MAX);
+	load_atlas("res://sprites/atlas.json");
 	set_process(true);
 	_setup_noises();
 	_init_chunks();
@@ -24,7 +28,7 @@ void World::_setup_noises() {
 
 void World::_init_chunks() {
 	for (int i = 0; i < _prewarm_chunk_pool; i++) {
-		ChunkNode* chunk = memnew(ChunkNode);
+		ChunkNode *chunk = memnew(ChunkNode);
 
 		chunk->set_visible(false);
 		chunk->set_process(false);
@@ -54,8 +58,7 @@ void World::_remove_chunk(ChunkNode *p_chunk_node) {
 	ERR_FAIL_NULL(p_chunk_node);
 
 	const Vector3i pos = _world_to_chunk_pos(
-	   p_chunk_node->get_global_position()
-	);
+			p_chunk_node->get_global_position());
 
 	_last_active_node_chunks.erase(pos);
 
@@ -65,7 +68,6 @@ void World::_remove_chunk(ChunkNode *p_chunk_node) {
 		std::lock_guard<std::mutex> lock(_chunk_pool_mutex);
 		_chunk_pool.push_back(p_chunk_node);
 	}
-
 }
 
 void World::_shift_chunks(const Axis axis, const int dir) {
@@ -85,20 +87,20 @@ void World::_shift_chunks(const Axis axis, const int dir) {
 					_last_player_chunk_pos.x + x,
 					_last_player_chunk_pos.y + y,
 					_last_player_chunk_pos.z + z
-				 };
+				};
 				new_active_chunks.insert(pos);
 			}
 		}
 	}
 
 	std::vector<Vector3i> chunks_to_remove;
-	for (const Vector3i& pos : _active_chunks) {
+	for (const Vector3i &pos : _active_chunks) {
 		if (!new_active_chunks.has(pos)) {
 			chunks_to_remove.push_back(pos);
 		}
 	}
 
-	for (const Vector3i& pos : chunks_to_remove) {
+	for (const Vector3i &pos : chunks_to_remove) {
 		_active_chunks.erase(pos);
 		if (_last_active_node_chunks.has(pos)) {
 			_remove_chunk(_last_active_node_chunks[pos]);
@@ -109,14 +111,39 @@ void World::_shift_chunks(const Axis axis, const int dir) {
 
 	HashSet<Vector3i> loading_chunks_copy;
 	{
-		std::lock_guard<std::mutex> lock(_loading_chunks_mutex);
+		std::lock_guard<std::mutex> lock2(_loading_chunks_mutex);
 		loading_chunks_copy = _loading_chunks;
 	}
 
-	for (const Vector3i& pos : _active_chunks) {
+	for (const Vector3i &pos : _active_chunks) {
 		if (!_last_active_node_chunks.has(pos) && !loading_chunks_copy.has(pos)) {
 			_queue_async_generate_chunk(pos);
 		}
+	}
+}
+void World::_cleanup_far_chunks() {
+	std::lock_guard<std::mutex> lock(_chunk_data_mutex);
+
+	std::vector<Vector3i> to_remove;
+
+	for (const KeyValue<Vector3i, std::shared_ptr<ChunkModel>>& E : _chunk_data){
+		const Vector3i pos = E.key;
+
+		const int dx = ABS(pos.x - _last_player_chunk_pos.x);
+		const int dy = ABS(pos.y - _last_player_chunk_pos.y);
+		const int dz = ABS(pos.z - _last_player_chunk_pos.z);
+
+		if (
+			dx > _cache_radius ||
+			dy > _world_height + 2 ||
+			dz > _cache_radius
+		) {
+			to_remove.push_back(pos);
+		}
+	}
+
+	for (const Vector3i& pos : to_remove) {
+		_chunk_data.erase(pos);
 	}
 }
 
@@ -124,12 +151,12 @@ ChunkNode *World::_acquire_chunk() {
 	std::lock_guard<std::mutex> lock(_chunk_pool_mutex);
 
 	if (_chunk_pool.empty()) {
-		ChunkNode* chunk = memnew(ChunkNode);
+		ChunkNode *chunk = memnew(ChunkNode);
 		add_child(chunk);
 		return chunk;
 	}
 
-	ChunkNode* chunk = _chunk_pool.back();
+	ChunkNode *chunk = _chunk_pool.back();
 	_chunk_pool.pop_back();
 
 	return chunk;
@@ -196,11 +223,11 @@ void World::_process(double delta) {
 	}
 
 	const Vector3i current_chunk_position =
-		_world_to_chunk_pos(_player_node->get_global_position());
+			_world_to_chunk_pos(_player_node->get_global_position());
 
 	if (_did_player_change_chunk()) {
 		const Vector3i chunk_delta =
-			current_chunk_position - _previous_player_chunk_pos;
+				current_chunk_position - _previous_player_chunk_pos;
 
 		_update_chunks_incremental(chunk_delta);
 
@@ -209,7 +236,7 @@ void World::_process(double delta) {
 	}
 
 	const Vector3i player_chunk =
-		_world_to_chunk_pos(_player_node->get_global_position());
+			_world_to_chunk_pos(_player_node->get_global_position());
 
 	std::vector<ChunkGenerationResult> pending_results_to_process;
 
@@ -219,22 +246,19 @@ void World::_process(double delta) {
 		const int max_chunks_per_frame = _max_chunk_finalize_per_frame;
 
 		const int amount = MIN(
-		   max_chunks_per_frame,
-		   static_cast<int>(_pending_results.size())
-		);
+				max_chunks_per_frame,
+				static_cast<int>(_pending_results.size()));
 
 		pending_results_to_process.reserve(amount);
 
 		for (int i = 0; i < amount; i++) {
 			pending_results_to_process.push_back(
-			   std::move(_pending_results[i])
-			);
+					std::move(_pending_results[i]));
 		}
 
 		_pending_results.erase(
-		   _pending_results.begin(),
-		   _pending_results.begin() + amount
-		);
+				_pending_results.begin(),
+				_pending_results.begin() + amount);
 	}
 
 	for (const ChunkGenerationResult &result : pending_results_to_process) {
@@ -243,10 +267,9 @@ void World::_process(double delta) {
 		const int dist_z = ABS(result.pos.z - player_chunk.z);
 
 		if (
-			dist_x > _world_radius + 1 ||
-			dist_y > _world_height + 1 ||
-			dist_z > _world_radius + 1
-		) {
+				dist_x > _world_radius + 1 ||
+				dist_y > _world_height + 1 ||
+				dist_z > _world_radius + 1) {
 			std::lock_guard<std::mutex> lock(_loading_chunks_mutex);
 			_loading_chunks.erase(result.pos);
 			continue;
@@ -264,6 +287,15 @@ void World::_process(double delta) {
 			std::lock_guard<std::mutex> lock(_loading_chunks_mutex);
 			_loading_chunks.erase(result.pos);
 		}
+	}
+
+	// Cleanup
+	static double cleanup_timer = 0.0;
+	cleanup_timer += delta;
+
+	if (cleanup_timer > 2.0) {
+		_cleanup_far_chunks();
+		cleanup_timer = 0.0;
 	}
 }
 
@@ -287,19 +319,16 @@ void World::_finalize_chunk(const ChunkGenerationResult &res) {
 	chunk->set_mesh(res.mesh);
 
 	chunk->set_surface_override_material(
-		0,
-		chunk->get_material()
-	);
+			0,
+			chunk->get_material());
 
 	chunk->set_collision_faces(res.collision_faces);
 
 	chunk->set_global_position(
-		Vector3(
-			res.pos.x * ChunkModel::SIZE,
-			res.pos.y * ChunkModel::SIZE,
-			res.pos.z * ChunkModel::SIZE
-		)
-	);
+			Vector3(
+					res.pos.x * ChunkModel::SIZE,
+					res.pos.y * ChunkModel::SIZE,
+					res.pos.z * ChunkModel::SIZE));
 
 	chunk->set_visible(true);
 }
@@ -377,18 +406,24 @@ ChunkNeighbors World::_get_neighbors_for(Vector3i p_pos) {
 
 	std::lock_guard lock(_chunk_data_mutex);
 
-	auto get_model_ptr = [&](const Vector3i pos) -> const ChunkModel * {
-		if (_chunk_data.has(pos)) {
-			return &_chunk_data[pos];
-		}
-		return nullptr;
-	};
+	auto get_model_ptr =
+		[&](const Vector3i pos) -> std::shared_ptr<ChunkModel>
+		{
+			if (_chunk_data.has(pos)) {
+				return _chunk_data[pos];
+			}
+
+			return nullptr;
+		};
 
 	n.center = get_model_ptr(p_pos);
+
 	n.right = get_model_ptr(p_pos + Vector3i(1, 0, 0));
 	n.left = get_model_ptr(p_pos + Vector3i(-1, 0, 0));
+
 	n.top = get_model_ptr(p_pos + Vector3i(0, 1, 0));
 	n.bottom = get_model_ptr(p_pos + Vector3i(0, -1, 0));
+
 	n.front = get_model_ptr(p_pos + Vector3i(0, 0, 1));
 	n.back = get_model_ptr(p_pos + Vector3i(0, 0, -1));
 
@@ -404,9 +439,8 @@ void World::_thread_work(Vector3i p_pos) {
 	settings.noise_set.terrain_noise = _terrain_noise;
 	settings.noise_set.cave_noise = _cave_noise;
 
-	const ChunkModel model = ChunkGenerator::generate(p_pos, settings);
-
 	{
+		const auto model = std::make_shared<ChunkModel>(ChunkGenerator::generate(p_pos, settings));
 		std::lock_guard<std::mutex> lock(_chunk_data_mutex);
 		_chunk_data[p_pos] = model;
 	}
