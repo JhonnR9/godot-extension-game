@@ -1,6 +1,3 @@
-//
-// Created by jhone on 13/05/2026.
-//
 
 #include "chunk_mesh_builder.h"
 
@@ -87,7 +84,7 @@ Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors& neighbors) {
         }
     }
 
-    Array arrays = mesher.build_arrays();
+	Array arrays = mesher.build_arrays();
 
     if (arrays.is_empty()) {
         return Ref<ArrayMesh>();

@@ -1,5 +1,10 @@
 #include "voxel_mesher.h"
 
+#include "chunk_mesh_builder.h"
+#include "chunk_model.h"
+
+#include <bits/fs_fwd.h>
+
 #include <godot_cpp/classes/mesh.hpp>
 
 namespace godot {
@@ -14,89 +19,80 @@ void VoxelMesher::clear() {
 }
 
 void VoxelMesher::add_face(CubeFace face, Vector3 pos, Color color, float size) {
-
 	float s = size * 0.5f;
 
 	Vector3 p = pos;
 
 	switch (face) {
-
 		case CubeFace::F:
 			_add_quad(
-				p + Vector3(-s,-s, s),
-				p + Vector3( s,-s, s),
-				p + Vector3( s, s, s),
-				p + Vector3(-s, s, s),
-				Vector3(0,0,1),
-				color
-			);
+					p + Vector3(-s, -s, s),
+					p + Vector3(s, -s, s),
+					p + Vector3(s, s, s),
+					p + Vector3(-s, s, s),
+					Vector3(0, 0, 1),
+					color);
 			break;
 
 		case CubeFace::B:
 			_add_quad(
-				p + Vector3( s,-s,-s),
-				p + Vector3(-s,-s,-s),
-				p + Vector3(-s, s,-s),
-				p + Vector3( s, s,-s),
-				Vector3(0,0,-1),
-				color
-			);
+					p + Vector3(s, -s, -s),
+					p + Vector3(-s, -s, -s),
+					p + Vector3(-s, s, -s),
+					p + Vector3(s, s, -s),
+					Vector3(0, 0, -1),
+					color);
 			break;
 
 		case CubeFace::L:
 			_add_quad(
-				p + Vector3(-s,-s,-s),
-				p + Vector3(-s,-s, s),
-				p + Vector3(-s, s, s),
-				p + Vector3(-s, s,-s),
-				Vector3(-1,0,0),
-				color
-			);
+					p + Vector3(-s, -s, -s),
+					p + Vector3(-s, -s, s),
+					p + Vector3(-s, s, s),
+					p + Vector3(-s, s, -s),
+					Vector3(-1, 0, 0),
+					color);
 			break;
 
 		case CubeFace::R:
 			_add_quad(
-				p + Vector3( s,-s, s),
-				p + Vector3( s,-s,-s),
-				p + Vector3( s, s,-s),
-				p + Vector3( s, s, s),
-				Vector3(1,0,0),
-				color
-			);
+					p + Vector3(s, -s, s),
+					p + Vector3(s, -s, -s),
+					p + Vector3(s, s, -s),
+					p + Vector3(s, s, s),
+					Vector3(1, 0, 0),
+					color);
 			break;
 
 		case CubeFace::U:
 			_add_quad(
-				p + Vector3(-s, s, s),
-				p + Vector3( s, s, s),
-				p + Vector3( s, s,-s),
-				p + Vector3(-s, s,-s),
-				Vector3(0,1,0),
-				color
-			);
+					p + Vector3(-s, s, s),
+					p + Vector3(s, s, s),
+					p + Vector3(s, s, -s),
+					p + Vector3(-s, s, -s),
+					Vector3(0, 1, 0),
+					color);
 			break;
 
 		case CubeFace::D:
 			_add_quad(
-				p + Vector3(-s,-s,-s),
-				p + Vector3( s,-s,-s),
-				p + Vector3( s,-s, s),
-				p + Vector3(-s,-s, s),
-				Vector3(0,-1,0),
-				color
-			);
+					p + Vector3(-s, -s, -s),
+					p + Vector3(s, -s, -s),
+					p + Vector3(s, -s, s),
+					p + Vector3(-s, -s, s),
+					Vector3(0, -1, 0),
+					color);
 			break;
 	}
 }
 
 void VoxelMesher::_add_quad(
-	Vector3 v0,
-	Vector3 v1,
-	Vector3 v2,
-	Vector3 v3,
-	Vector3 normal,
-	Color color
-) {
+		Vector3 v0,
+		Vector3 v1,
+		Vector3 v2,
+		Vector3 v3,
+		Vector3 normal,
+		Color color) {
 	int start = _vertices.size();
 
 	_vertices.append(v0);
@@ -109,10 +105,10 @@ void VoxelMesher::_add_quad(
 		_colors.append(color);
 	}
 
-	_uvs.append(Vector2(0,0));
-	_uvs.append(Vector2(1,0));
-	_uvs.append(Vector2(1,1));
-	_uvs.append(Vector2(0,1));
+	_uvs.append(Vector2(0, 0));
+	_uvs.append(Vector2(1, 0));
+	_uvs.append(Vector2(1, 1));
+	_uvs.append(Vector2(0, 1));
 
 	_indices.append(start);
 	_indices.append(start + 2);

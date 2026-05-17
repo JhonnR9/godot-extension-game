@@ -1,30 +1,29 @@
 #ifndef VOXEL_MESHER_H
 #define VOXEL_MESHER_H
 
-#include <godot_cpp/variant/packed_vector3_array.hpp>
-#include <godot_cpp/variant/packed_vector2_array.hpp>
-#include <godot_cpp/variant/packed_int32_array.hpp>
-#include <godot_cpp/variant/packed_color_array.hpp>
 
 #include "voxel_types.h"
+#include <godot_cpp/variant/packed_color_array.hpp>
+#include <godot_cpp/variant/packed_int32_array.hpp>
+#include <godot_cpp/variant/packed_vector2_array.hpp>
+#include <godot_cpp/variant/packed_vector3_array.hpp>
 
 namespace godot {
+struct ChunkNeighbors;
 
 class VoxelMesher {
 public:
 	void clear();
 
 	void add_face(
-		CubeFace face,
-		Vector3 position,
-		Color color = Color(1.0f, 1.0f, 1.0f, 1.0f),
-		float size = 1.0f
-	);
+			CubeFace face,
+			Vector3 position,
+			Color color = Color(1.0f, 1.0f, 1.0f, 1.0f),
+			float size = 1.0f);
 
 	[[nodiscard]]
 	Array build_arrays() const;
-	PackedVector3Array get_collision_faces() const ;
-
+	PackedVector3Array get_collision_faces() const;
 private:
 	PackedVector3Array _vertices;
 	PackedVector3Array _normals;
@@ -34,15 +33,15 @@ private:
 	PackedVector3Array _collision_faces;
 
 	void _add_quad(
-		Vector3 v0,
-		Vector3 v1,
-		Vector3 v2,
-		Vector3 v3,
-		Vector3 normal,
-		Color color
-	);
+			Vector3 v0,
+			Vector3 v1,
+			Vector3 v2,
+			Vector3 v3,
+			Vector3 normal,
+			Color color);
+
 };
 
-}
+} //namespace godot
 
 #endif

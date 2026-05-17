@@ -22,12 +22,11 @@ struct ChunkNeighbors {
 
 class ChunkMeshBuilder {
 	VoxelMesher mesher;
-	static bool _is_air(const ChunkNeighbors& n, int x, int y, int z) ;
 	ChunkNeighbors neighbors = {};
 
 public:
 	Ref<ArrayMesh> build(const ChunkNeighbors& neighbors );
-
+	static bool _is_air(const ChunkNeighbors& n, int x, int y, int z) ;
 	PackedVector3Array get_last_collision_faces() const {
 		return mesher.get_collision_faces();
 	}

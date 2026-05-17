@@ -1,6 +1,3 @@
-//
-// Created by jhone on 13/05/2026.
-//
 
 #ifndef CHUNK_MODEL_H
 #define CHUNK_MODEL_H

@@ -23,6 +23,7 @@ protected:
 	static void _bind_methods();
 
 private:
+	Vector3i pos;
 	StaticBody3D *_static_body = nullptr;
 	CollisionShape3D *_collision_shape = nullptr;
 
@@ -37,6 +38,7 @@ public:
 	Ref<StandardMaterial3D> get_material() {
 		return _material;
 	}
+	void clear_node_data();
 };
 
 }

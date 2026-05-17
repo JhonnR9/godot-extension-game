@@ -47,6 +47,15 @@ void ChunkNode::set_collision_faces(const PackedVector3Array &collision_faces) {
 		_collision_shape->set_shape(_shape);
 	}
 }
+void ChunkNode::clear_node_data() {
+	set_mesh(Ref<Mesh>());
+	if (_shape.is_valid()) {
+		_shape->set_faces(PackedVector3Array());
+	}
+	set_visible(false);
+	set_process(false);
+	set_global_position(Vector3());
+}
 
 void ChunkNode::_enter_tree() {
 	MeshInstance3D::_enter_tree();
