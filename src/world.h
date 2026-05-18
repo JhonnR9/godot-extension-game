@@ -81,7 +81,6 @@ private:
 	void _thread_work(Vector3i p_pos);
 
 	// Async state
-
 	HashMap<Vector3i, ChunkNode *> _last_active_node_chunks;
 
 	std::mutex _pending_results_mutex;

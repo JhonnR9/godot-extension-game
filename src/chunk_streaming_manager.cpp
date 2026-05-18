@@ -38,6 +38,14 @@ void ChunkStreamingManager::shift_chunks(const Vector3i &p_pos_center) {
 		_active_chunks.erase(pos);
 	}
 
+	{
+		std::lock_guard free_lock(_queue_free_chunks_mutex);
+
+		for (const Vector3i &pos : chunks_to_remove) {
+			_queue_free_chunks.insert(pos);
+		}
+	}
+
 	_active_chunks = std::move(new_active_chunks);
 }
 

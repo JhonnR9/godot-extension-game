@@ -66,7 +66,9 @@ add_library(${LIBNAME} SHARED
         src/chunk_repository.cpp
         src/chunk_repository.h
         src/chunk_streaming_manager.cpp
-        src/chunk_streaming_manager.h)
+        src/chunk_streaming_manager.h
+        src/chunk_model_generator.cpp
+        src/chunk_model_generator.h)
 
 target_sources(${LIBNAME}
     PRIVATE
