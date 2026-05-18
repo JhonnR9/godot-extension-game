@@ -5,11 +5,6 @@
 
 namespace godot {
 
-ChunkNode::~ChunkNode() {
-	MeshInstance3D::~MeshInstance3D();
-	_static_body = nullptr;
-	_collision_shape = nullptr;
-}
 
 void ChunkNode::_setup() {
 	if ((_shape.is_null())) {
@@ -31,8 +26,6 @@ void ChunkNode::_setup() {
 		_material.instantiate();
 
 		_material->set_texture_filter(BaseMaterial3D::TEXTURE_FILTER_NEAREST);
-
-
 		_material->set_flag(BaseMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, false);
 
 		Ref<Resource> tex_res = ResourceLoader::get_singleton()->load("res://sprites/atlas.png");
@@ -45,14 +38,7 @@ void ChunkNode::_setup() {
 		_material->set_shading_mode(BaseMaterial3D::SHADING_MODE_PER_PIXEL);
 	}
 }
-void ChunkNode::_setup_material() {
-	if (!_material.is_valid()) {
-		_material.instantiate();
-		_material->set_texture_filter(BaseMaterial3D::TEXTURE_FILTER_NEAREST);
-		_material->set_flag(BaseMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
-		_material->set_shading_mode(BaseMaterial3D::SHADING_MODE_PER_VERTEX);
-	}
-}
+
 void ChunkNode::set_collision_faces(const PackedVector3Array &collision_faces) {
 	_setup();
 	_shape->set_faces(collision_faces);
@@ -60,7 +46,7 @@ void ChunkNode::set_collision_faces(const PackedVector3Array &collision_faces) {
 		_collision_shape->set_shape(_shape);
 	}
 }
-void ChunkNode::clear_node_data() {
+void ChunkNode::disable() {
 	set_mesh(Ref<Mesh>());
 	if (_shape.is_valid()) {
 		_shape->set_faces(PackedVector3Array());
@@ -68,6 +54,10 @@ void ChunkNode::clear_node_data() {
 	set_visible(false);
 	set_process(false);
 	set_global_position(Vector3());
+}
+void ChunkNode::enable() {
+	set_visible(true);
+	set_process(true);
 }
 
 void ChunkNode::_enter_tree() {

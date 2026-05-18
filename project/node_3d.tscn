@@ -2,11 +2,22 @@
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_4xowi"]
 
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_4xowi"]
+sky_top_color = Color(0.5448363, 0.61647886, 0.7121759, 1)
+sky_horizon_color = Color(0.7756898, 0.6235828, 0.45837754, 1)
+
+[sub_resource type="Sky" id="Sky_4xowi"]
+sky_material = SubResource("ProceduralSkyMaterial_4xowi")
+
 [sub_resource type="Environment" id="Environment_4xowi"]
-ssr_enabled = true
+sky = SubResource("Sky_4xowi")
+ambient_light_source = 3
+ambient_light_color = Color(1, 1, 1, 1)
 ssao_enabled = true
 fog_height = -316.7
-adjustment_enabled = true
+volumetric_fog_length = 0.66
+volumetric_fog_detail_spread = 0.5
+adjustment_contrast = 1.05
 
 [node name="Node3D" type="Node3D" unique_id=1977859618]
 

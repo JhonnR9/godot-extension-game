@@ -23,6 +23,7 @@ struct TerrainSettings {
 };
 
 class ChunkGenerator {
+	static void generate_tree(ChunkModel &chunk, int start_x, int start_y, int start_z);
 public:
 	static ChunkModel generate(Vector3i chunk_pos, const TerrainSettings & terrain_settings);
 };

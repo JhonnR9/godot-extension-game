@@ -16,7 +16,6 @@ class ChunkNode : public MeshInstance3D {
 	GDCLASS(ChunkNode, MeshInstance3D)
 
 public:
-	~ChunkNode() override;
 	void  _enter_tree() override;
 
 protected:
@@ -31,14 +30,14 @@ private:
 	Ref<StandardMaterial3D> _material;
 
 	void _setup();
-	void _setup_material();
 
 public:
 	void set_collision_faces(const PackedVector3Array&collision_faces);
 	Ref<StandardMaterial3D> get_material() {
 		return _material;
 	}
-	void clear_node_data();
+	void disable();
+	void enable();
 };
 
 }

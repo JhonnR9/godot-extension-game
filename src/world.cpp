@@ -1,6 +1,7 @@
 #include "world.h"
 
 #include "atlas_loader.h"
+#include "chunk_pool.h"
 
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -10,6 +11,9 @@ namespace godot {
 void World::_ready() {
 	_last_player_chunk_pos = Vector3i(INT_MAX, INT_MAX, INT_MAX);
 	load_atlas("res://sprites/atlas.json");
+	_chunk_pool.instantiate();
+	_chunk_pool->set_owner(this);
+
 	set_process(true);
 	_setup_noises();
 	_init_chunks();
@@ -18,8 +22,8 @@ void World::_ready() {
 void World::_setup_noises() {
 	_terrain_noise.instantiate();
 	_terrain_noise->set_noise_type(FastNoiseLite::TYPE_PERLIN);
-	_terrain_noise->set_frequency(0.024);
-	_terrain_noise->set_fractal_octaves(3);
+	_terrain_noise->set_frequency(0.035);
+	_terrain_noise->set_fractal_octaves(5);
 
 	_cave_noise.instantiate();
 	_cave_noise->set_noise_type(FastNoiseLite::TYPE_PERLIN);
@@ -27,16 +31,9 @@ void World::_setup_noises() {
 }
 
 void World::_init_chunks() {
-	for (int i = 0; i < _prewarm_chunk_pool; i++) {
-		ChunkNode *chunk = memnew(ChunkNode);
+	ERR_FAIL_COND(_chunk_pool.is_null());
 
-		chunk->set_visible(false);
-		chunk->set_process(false);
-
-		add_child(chunk);
-
-		_chunk_pool.push_back(chunk);
-	}
+	_chunk_pool->set_prewarm(_prewarm_chunk_pool);
 
 	_player_node = get_node<Node3D>("../Player");
 
@@ -62,15 +59,15 @@ void World::_remove_chunk(ChunkNode *p_chunk_node) {
 
 	_last_active_node_chunks.erase(pos);
 
-	p_chunk_node->clear_node_data();
+	p_chunk_node->disable();
 
-	{
-		std::lock_guard<std::mutex> lock(_chunk_pool_mutex);
-		_chunk_pool.push_back(p_chunk_node);
-	}
+
+	_chunk_pool->release(p_chunk_node);
+
+
 }
 
-void World::_shift_chunks(const Axis axis, const int dir) {
+void World::_shift_chunks() {
 	std::lock_guard<std::mutex> lock(_active_chunks_mutex);
 
 	const int radius_xz = _world_radius;
@@ -147,21 +144,6 @@ void World::_cleanup_far_chunks() {
 	}
 }
 
-ChunkNode *World::_acquire_chunk() {
-	std::lock_guard<std::mutex> lock(_chunk_pool_mutex);
-
-	if (_chunk_pool.empty()) {
-		ChunkNode *chunk = memnew(ChunkNode);
-		add_child(chunk);
-		return chunk;
-	}
-
-	ChunkNode *chunk = _chunk_pool.back();
-	_chunk_pool.pop_back();
-
-	return chunk;
-}
-
 void World::_rebuild_all_chunks() {
 	const int size = (2 * _world_radius + 1) * (2 * _world_height + 1) * (2 * _world_radius + 1);
 	_active_chunks.reserve(size);
@@ -182,36 +164,7 @@ void World::_rebuild_all_chunks() {
 		}
 	}
 }
-void World::_update_chunks_incremental(Vector3i delta) {
-	while (delta.x != 0) {
-		const int step = delta.x > 0 ? 1 : -1;
-		_last_player_chunk_pos.x = _previous_player_chunk_pos.x + step;
-		_shift_chunks(Axis::X, step);
 
-		_previous_player_chunk_pos.x = _last_player_chunk_pos.x;
-		delta.x -= step;
-	}
-
-	while (delta.y != 0) {
-		const int step = delta.y > 0 ? 1 : -1;
-		_last_player_chunk_pos.y = _previous_player_chunk_pos.y + step;
-
-		_shift_chunks(Axis::Y, step);
-
-		_previous_player_chunk_pos.y = _last_player_chunk_pos.y;
-		delta.y -= step;
-	}
-
-	while (delta.z != 0) {
-		const int step = delta.z > 0 ? 1 : -1;
-		_last_player_chunk_pos.z = _previous_player_chunk_pos.z + step;
-
-		_shift_chunks(Axis::Z, step);
-
-		_previous_player_chunk_pos.z = _last_player_chunk_pos.z;
-		delta.z -= step;
-	}
-}
 bool World::_is_chunk_active(const Vector3i &pos) {
 	std::lock_guard<std::mutex> lock(_active_chunks_mutex);
 	return _active_chunks.has(pos);
@@ -222,17 +175,16 @@ void World::_process(double delta) {
 		return;
 	}
 
-	const Vector3i current_chunk_position =
-			_world_to_chunk_pos(_player_node->get_global_position());
+
+
 
 	if (_did_player_change_chunk()) {
-		const Vector3i chunk_delta =
-				current_chunk_position - _previous_player_chunk_pos;
+		Vector3i current = _world_to_chunk_pos(_player_node->get_global_position());
 
-		_update_chunks_incremental(chunk_delta);
+		_last_player_chunk_pos = current;
+		_previous_player_chunk_pos = current;
 
-		_last_player_chunk_pos = current_chunk_position;
-		_previous_player_chunk_pos = current_chunk_position;
+		_shift_chunks();
 	}
 
 	const Vector3i player_chunk =
@@ -312,7 +264,7 @@ void World::_finalize_chunk(const ChunkGenerationResult &res) {
 		_remove_chunk(_last_active_node_chunks[res.pos]);
 	}
 
-	ChunkNode *chunk = _acquire_chunk();
+	ChunkNode *chunk = _chunk_pool->acquire();
 
 	_last_active_node_chunks[res.pos] = chunk;
 
@@ -338,57 +290,6 @@ Vector3i World::_world_to_chunk_pos(Vector3 p_pos) {
 			Math::floor(p_pos.x / ChunkModel::SIZE),
 			Math::floor(p_pos.y / ChunkModel::SIZE),
 			Math::floor(p_pos.z / ChunkModel::SIZE));
-}
-
-void World::_update_chunks() {
-	HashSet<Vector3i> new_active_chunks;
-	const int size = (2 * _world_radius + 1) * (2 * _world_height + 1) * (2 * _world_radius + 1);
-	new_active_chunks.reserve(size);
-
-	Vector3i chunk_pos{};
-	for (int x = -_world_radius; x <= _world_radius; x++) {
-		for (int y = -_world_height; y <= _world_height; y++) {
-			for (int z = -_world_radius; z <= _world_radius; z++) {
-				chunk_pos.x = _last_player_chunk_pos.x + x;
-				chunk_pos.y = _last_player_chunk_pos.y + y;
-				chunk_pos.z = _last_player_chunk_pos.z + z;
-
-				new_active_chunks.insert(chunk_pos);
-			}
-		}
-	}
-
-	HashSet<Vector3i> active_chunks_copy;
-	{
-		std::lock_guard<std::mutex> lock(_active_chunks_mutex);
-		_active_chunks = std::move(new_active_chunks);
-		active_chunks_copy = _active_chunks;
-	}
-
-	HashSet<Vector3i> invalid_chunks;
-	for (const KeyValue<Vector3i, ChunkNode *> &E : _last_active_node_chunks) {
-		if (!active_chunks_copy.has(E.key)) {
-			invalid_chunks.insert(E.key);
-		}
-	}
-
-	for (const Vector3i &chunk_key : invalid_chunks) {
-		ChunkNode *node = _last_active_node_chunks[chunk_key];
-		_remove_chunk(node);
-	}
-
-	HashSet<Vector3i> loading_chunks_copy;
-	{
-		std::lock_guard<std::mutex> lock(_loading_chunks_mutex);
-		loading_chunks_copy = _loading_chunks;
-	}
-
-	for (const Vector3i &pos : active_chunks_copy) {
-		if (_last_active_node_chunks.has(pos) || loading_chunks_copy.has(pos)) {
-			continue;
-		}
-		_queue_async_generate_chunk(pos);
-	}
 }
 
 void World::_queue_async_generate_chunk(const Vector3i p_pos) {

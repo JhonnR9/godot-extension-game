@@ -19,6 +19,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	GDREGISTER_CLASS(ChunkNode);
 	GDREGISTER_CLASS(World);
 	GDREGISTER_RUNTIME_CLASS(Player);
+	GDREGISTER_CLASS(ChunkPool);
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {

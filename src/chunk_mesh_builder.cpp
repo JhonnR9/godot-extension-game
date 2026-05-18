@@ -30,19 +30,49 @@ bool ChunkMeshBuilder::_is_air(const ChunkNeighbors& n, int x, int y, int z) {
 
 static AtlasUV get_uv(BlockType type, CubeFace face) {
 	switch (type) {
-		case BlockType::GRASS:
+		case BlockType::GRASS: {
 			if (face == CubeFace::U)
 				return atlas["grass_top"];
-			else if (face == CubeFace::D)
+			if (face == CubeFace::D)
 				return atlas["grass_bottom"];
-			else
-				return atlas["grass_side"];
 
-		case BlockType::STONE:
+			return atlas["grass_side"];
+		}
+
+		case BlockType::STONE: {
+			if (face == CubeFace::U)
+				return atlas["stone_top"];
+			if (face == CubeFace::D)
+				return atlas["stone_bottom"];
+
 			return atlas["stone_side"];
+		}
+
+		case BlockType::LEAVES: {
+			if (face == CubeFace::U)
+				return atlas["leaves_top"];
+			if (face == CubeFace::D)
+				return atlas["leaves_bottom"];
+			return atlas["leaves_side"];
+		}
+
+		case BlockType::DIRT: {
+			return atlas["grass_bottom"];
+		}
+
+		case BlockType::LOG: {
+			if (face == CubeFace::U || face == CubeFace::D)
+				return atlas["stone_top"];
+
+			return atlas["stone_side"];
+		}
+
+		case BlockType::DEEPSLATE: {
+			return atlas["stone_bottom"];
+		}
 
 		default:
-			return atlas["stone_side"];
+			return atlas["grass_side"];
 	}
 }
 

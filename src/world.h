@@ -3,7 +3,7 @@
 
 #include "ChunkNode.h"
 #include "chunk_generator.h"
-
+#include "chunk_pool.h"
 #include <godot_cpp/classes/fast_noise_lite.hpp>
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/classes/worker_thread_pool.hpp>
@@ -24,11 +24,6 @@ struct ChunkGenerationResult {
 	PackedVector3Array collision_faces;
 };
 
-enum class Axis {
-	X,
-	Y,
-	Z
-};
 
 class World : public Node3D {
 	GDCLASS(World, Node3D)
@@ -42,6 +37,8 @@ protected:
 	static void _bind_methods();
 
 private:
+	Ref<ChunkPool> _chunk_pool;
+
 	// Optimization
 	int _world_radius = 16;
 	int _cache_radius = _world_radius + (_world_radius * .5f);
@@ -49,11 +46,11 @@ private:
 	int _prewarm_chunk_pool = 8192 * 2;
 	int _max_chunk_finalize_per_frame = 12;
 	// Terrain settings
-	uint64_t _seed = 54444;
+	uint64_t _seed = 546546;
 	int _terrain_base_height = 24;
-	float _terrain_amplitude = 16.0f;
+	float _terrain_amplitude = 32.0f;
 	int _dirt_layer_depth = 12;
-	float _cave_threshold = 0.2f;
+	float _cave_threshold = 0.02f;
 
 	Ref<FastNoiseLite> _terrain_noise;
 	Ref<FastNoiseLite> _cave_noise;
@@ -69,12 +66,10 @@ private:
 	bool _did_player_change_chunk() const;
 	void _remove_chunk(ChunkNode *p_chunk_node);
 	void _rebuild_all_chunks();
-	void _update_chunks_incremental(Vector3i delta);
 	bool _is_chunk_active(const Vector3i &pos);
-	void _shift_chunks(Axis axis, int dir);
+	void _shift_chunks();
 	void _cleanup_far_chunks();
-	ChunkNode *_acquire_chunk();
-	void _update_chunks();
+
 	static Vector3i _world_to_chunk_pos(Vector3 p_pos);
 	void _finalize_chunk(const ChunkGenerationResult &res);
 	void _try_build_mesh_with_neighbors(Vector3i p_pos);
@@ -83,9 +78,6 @@ private:
 	void _thread_work(Vector3i p_pos);
 
 	// Async state
-	std::vector<ChunkNode *> _chunk_pool;
-	std::mutex _chunk_pool_mutex;
-
 	std::mutex _chunk_data_mutex;
 	HashMap<Vector3i, std::shared_ptr<ChunkModel>> _chunk_data;
 
