@@ -4,6 +4,8 @@
 #include "ChunkNode.h"
 #include "chunk_generator.h"
 #include "chunk_pool.h"
+#include "chunk_repository.h"
+
 #include <godot_cpp/classes/fast_noise_lite.hpp>
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/classes/worker_thread_pool.hpp>
@@ -38,6 +40,7 @@ protected:
 
 private:
 	Ref<ChunkPool> _chunk_pool;
+	Ref<ChunkRepository> _chunk_repository;
 
 	// Optimization
 	int _world_radius = 16;
@@ -78,9 +81,6 @@ private:
 	void _thread_work(Vector3i p_pos);
 
 	// Async state
-	std::mutex _chunk_data_mutex;
-	HashMap<Vector3i, std::shared_ptr<ChunkModel>> _chunk_data;
-
 	std::mutex _active_chunks_mutex;
 	HashSet<Vector3i> _active_chunks;
 

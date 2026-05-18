@@ -3,7 +3,6 @@
 #include "ChunkNode.h"
 #include "player.h"
 #include "world.h"
-
 #include <gdextension_interface.h>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/defs.hpp>
@@ -20,6 +19,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	GDREGISTER_CLASS(World);
 	GDREGISTER_RUNTIME_CLASS(Player);
 	GDREGISTER_CLASS(ChunkPool);
+	GDREGISTER_CLASS(ChunkRepository);
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {

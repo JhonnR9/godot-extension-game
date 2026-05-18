@@ -62,7 +62,11 @@ add_library(${LIBNAME} SHARED
         src/atlas_loader.cpp
         src/atlas_loader.h
         src/chunk_pool.cpp
-        src/chunk_pool.h)
+        src/chunk_pool.h
+        src/chunk_repository.cpp
+        src/chunk_repository.h
+        src/chunk_streaming_manager.cpp
+        src/chunk_streaming_manager.h)
 
 target_sources(${LIBNAME}
     PRIVATE

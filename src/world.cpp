@@ -12,6 +12,8 @@ void World::_ready() {
 	_last_player_chunk_pos = Vector3i(INT_MAX, INT_MAX, INT_MAX);
 	load_atlas("res://sprites/atlas.json");
 	_chunk_pool.instantiate();
+	_chunk_repository.instantiate();
+
 	_chunk_pool->set_owner(this);
 
 	set_process(true);
@@ -118,29 +120,23 @@ void World::_shift_chunks() {
 		}
 	}
 }
-void World::_cleanup_far_chunks() {
-	std::lock_guard<std::mutex> lock(_chunk_data_mutex);
 
+void World::_cleanup_far_chunks() {
 	std::vector<Vector3i> to_remove;
 
-	for (const KeyValue<Vector3i, std::shared_ptr<ChunkModel>>& E : _chunk_data){
-		const Vector3i pos = E.key;
+	for (const auto pos : _chunk_repository->get_keys_snapshot()){
 
 		const int dx = ABS(pos.x - _last_player_chunk_pos.x);
 		const int dy = ABS(pos.y - _last_player_chunk_pos.y);
 		const int dz = ABS(pos.z - _last_player_chunk_pos.z);
 
-		if (
-			dx > _cache_radius ||
-			dy > _world_height + 2 ||
-			dz > _cache_radius
-		) {
+		if (dx > _cache_radius ||dy > _world_height + 2 ||dz > _cache_radius) {
 			to_remove.push_back(pos);
 		}
 	}
 
 	for (const Vector3i& pos : to_remove) {
-		_chunk_data.erase(pos);
+		_chunk_repository->remove_chunk(pos);
 	}
 }
 
@@ -305,28 +301,16 @@ void World::_queue_async_generate_chunk(const Vector3i p_pos) {
 ChunkNeighbors World::_get_neighbors_for(Vector3i p_pos) {
 	ChunkNeighbors n;
 
-	std::lock_guard lock(_chunk_data_mutex);
+	n.center = _chunk_repository->get_chunk(p_pos);
 
-	auto get_model_ptr =
-		[&](const Vector3i pos) -> std::shared_ptr<ChunkModel>
-		{
-			if (_chunk_data.has(pos)) {
-				return _chunk_data[pos];
-			}
+	n.right = _chunk_repository->get_chunk(p_pos + Vector3i(1, 0, 0));
+	n.left = _chunk_repository->get_chunk(p_pos + Vector3i(-1, 0, 0));
 
-			return nullptr;
-		};
+	n.top = _chunk_repository->get_chunk(p_pos + Vector3i(0, 1, 0));
+	n.bottom = _chunk_repository->get_chunk(p_pos + Vector3i(0, -1, 0));
 
-	n.center = get_model_ptr(p_pos);
-
-	n.right = get_model_ptr(p_pos + Vector3i(1, 0, 0));
-	n.left = get_model_ptr(p_pos + Vector3i(-1, 0, 0));
-
-	n.top = get_model_ptr(p_pos + Vector3i(0, 1, 0));
-	n.bottom = get_model_ptr(p_pos + Vector3i(0, -1, 0));
-
-	n.front = get_model_ptr(p_pos + Vector3i(0, 0, 1));
-	n.back = get_model_ptr(p_pos + Vector3i(0, 0, -1));
+	n.front = _chunk_repository->get_chunk(p_pos + Vector3i(0, 0, 1));
+	n.back = _chunk_repository->get_chunk(p_pos + Vector3i(0, 0, -1));
 
 	return n;
 }
@@ -342,8 +326,7 @@ void World::_thread_work(Vector3i p_pos) {
 
 	{
 		const auto model = std::make_shared<ChunkModel>(ChunkGenerator::generate(p_pos, settings));
-		std::lock_guard<std::mutex> lock(_chunk_data_mutex);
-		_chunk_data[p_pos] = model;
+		_chunk_repository->add_chunk(p_pos, model);
 	}
 
 	_try_build_mesh_with_neighbors(p_pos);
