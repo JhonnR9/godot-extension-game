@@ -13,7 +13,14 @@ void World::_ready() {
 	load_atlas("res://sprites/atlas.json");
 	_chunk_pool.instantiate();
 	_chunk_repository.instantiate();
+	_chunk_stream_manager.instantiate();
 
+	StreamSettings stream_settings{};
+	stream_settings.cache_radius = _cache_radius;
+	stream_settings.world_height = _world_height;
+	stream_settings.world_radius = _world_radius;
+
+	_chunk_stream_manager->set_stream_settings(stream_settings);
 	_chunk_pool->set_owner(this);
 
 	set_process(true);
@@ -42,7 +49,7 @@ void World::_init_chunks() {
 	ERR_FAIL_NULL(_player_node);
 	_last_player_chunk_pos = _world_to_chunk_pos(_player_node->get_global_position());
 	_previous_player_chunk_pos = _last_player_chunk_pos;
-	_rebuild_all_chunks();
+	_chunk_stream_manager->rebuild_all_chunks(_last_player_chunk_pos);
 }
 
 bool World::_did_player_change_chunk() const {
@@ -70,43 +77,15 @@ void World::_remove_chunk(ChunkNode *p_chunk_node) {
 }
 
 void World::_shift_chunks() {
-	std::lock_guard<std::mutex> lock(_active_chunks_mutex);
 
-	const int radius_xz = _world_radius;
-	const int radius_y = _world_height;
 
-	HashSet<Vector3i> new_active_chunks;
-	const int estimated_size = (2 * radius_xz + 1) * (2 * radius_y + 1) * (2 * radius_xz + 1);
-	new_active_chunks.reserve(estimated_size);
 
-	for (int x = -radius_xz; x <= radius_xz; x++) {
-		for (int y = -radius_y; y <= radius_y; y++) {
-			for (int z = -radius_xz; z <= radius_xz; z++) {
-				Vector3i pos{
-					_last_player_chunk_pos.x + x,
-					_last_player_chunk_pos.y + y,
-					_last_player_chunk_pos.z + z
-				};
-				new_active_chunks.insert(pos);
-			}
-		}
-	}
-
-	std::vector<Vector3i> chunks_to_remove;
-	for (const Vector3i &pos : _active_chunks) {
-		if (!new_active_chunks.has(pos)) {
-			chunks_to_remove.push_back(pos);
-		}
-	}
-
-	for (const Vector3i &pos : chunks_to_remove) {
-		_active_chunks.erase(pos);
+	for (const Vector3i &pos : _chunk_stream_manager->pop_queue_free_chunks()) {
 		if (_last_active_node_chunks.has(pos)) {
 			_remove_chunk(_last_active_node_chunks[pos]);
 		}
 	}
 
-	_active_chunks = std::move(new_active_chunks);
 
 	HashSet<Vector3i> loading_chunks_copy;
 	{
@@ -114,7 +93,7 @@ void World::_shift_chunks() {
 		loading_chunks_copy = _loading_chunks;
 	}
 
-	for (const Vector3i &pos : _active_chunks) {
+	for (const Vector3i &pos : _chunk_stream_manager->get_active_chunks_snapshot()) {
 		if (!_last_active_node_chunks.has(pos) && !loading_chunks_copy.has(pos)) {
 			_queue_async_generate_chunk(pos);
 		}
@@ -140,38 +119,12 @@ void World::_cleanup_far_chunks() {
 	}
 }
 
-void World::_rebuild_all_chunks() {
-	const int size = (2 * _world_radius + 1) * (2 * _world_height + 1) * (2 * _world_radius + 1);
-	_active_chunks.reserve(size);
 
-	for (int x = -_world_radius; x <= _world_radius; x++) {
-		for (int y = -_world_height; y <= _world_height; y++) {
-			for (int z = -_world_radius; z <= _world_radius; z++) {
-				Vector3i pos{
-					_last_player_chunk_pos.x + x,
-					_last_player_chunk_pos.y + y,
-					_last_player_chunk_pos.z + z
-				};
-
-				_active_chunks.insert(pos);
-
-				_queue_async_generate_chunk(pos);
-			}
-		}
-	}
-}
-
-bool World::_is_chunk_active(const Vector3i &pos) {
-	std::lock_guard<std::mutex> lock(_active_chunks_mutex);
-	return _active_chunks.has(pos);
-}
 
 void World::_process(double delta) {
 	if (!_player_node) {
 		return;
 	}
-
-
 
 
 	if (_did_player_change_chunk()) {
@@ -223,7 +176,7 @@ void World::_process(double delta) {
 			continue;
 		}
 
-		if (!_is_chunk_active(result.pos)) {
+		if (!_chunk_stream_manager->is_chunk_active(result.pos)) {
 			std::lock_guard<std::mutex> lock(_loading_chunks_mutex);
 			_loading_chunks.erase(result.pos);
 			continue;
@@ -252,7 +205,7 @@ void World::_finalize_chunk(const ChunkGenerationResult &res) {
 		return;
 	}
 
-	if (!_is_chunk_active(res.pos)) {
+	if (!_chunk_stream_manager->is_chunk_active(res.pos)) {
 		return;
 	}
 

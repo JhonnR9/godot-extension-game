@@ -5,6 +5,7 @@
 #include "chunk_generator.h"
 #include "chunk_pool.h"
 #include "chunk_repository.h"
+#include "chunk_streaming_manager.h"
 
 #include <godot_cpp/classes/fast_noise_lite.hpp>
 #include <godot_cpp/classes/node3d.hpp>
@@ -41,6 +42,7 @@ protected:
 private:
 	Ref<ChunkPool> _chunk_pool;
 	Ref<ChunkRepository> _chunk_repository;
+	Ref<ChunkStreamingManager> _chunk_stream_manager;
 
 	// Optimization
 	int _world_radius = 16;
@@ -68,8 +70,6 @@ private:
 	void _init_chunks();
 	bool _did_player_change_chunk() const;
 	void _remove_chunk(ChunkNode *p_chunk_node);
-	void _rebuild_all_chunks();
-	bool _is_chunk_active(const Vector3i &pos);
 	void _shift_chunks();
 	void _cleanup_far_chunks();
 
@@ -81,8 +81,6 @@ private:
 	void _thread_work(Vector3i p_pos);
 
 	// Async state
-	std::mutex _active_chunks_mutex;
-	HashSet<Vector3i> _active_chunks;
 
 	HashMap<Vector3i, ChunkNode *> _last_active_node_chunks;
 

@@ -20,6 +20,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	GDREGISTER_RUNTIME_CLASS(Player);
 	GDREGISTER_CLASS(ChunkPool);
 	GDREGISTER_CLASS(ChunkRepository);
+	GDREGISTER_CLASS(ChunkStreamingManager);
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {
