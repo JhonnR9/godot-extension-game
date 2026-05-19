@@ -37,16 +37,16 @@ private:
     Ref<ChunkMeshAsyncGenerator> _mesh_generator;
 
     // Optimization
-    int _world_radius = 2;
+    int _world_radius = 12;
     int _cache_radius = _world_radius + (_world_radius * .5f);
-    int _world_height = 8;
+    int _world_height = 6;
     int _prewarm_chunk_pool = 8192 * 2;
     int _max_chunk_finalize_per_frame = 12;
 
     // Terrain settings
     uint64_t _seed = 546546;
     int _terrain_base_height = 24;
-    float _terrain_amplitude = 32.0f;
+    float _terrain_amplitude = 18.0f;
     int _dirt_layer_depth = 12;
     float _cave_threshold = 0.02f;
 

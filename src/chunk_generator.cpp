@@ -79,7 +79,7 @@ ChunkModel ChunkGenerator::generate(const Vector3i chunk_pos, const TerrainSetti
              if (depth_from_surface == 0) {
                 block.type = BlockType::GRASS;
                 if (local_tree_spawn) {
-                   // tree_positions.push_back(Vector3i(x, y, z));
+                    tree_positions.push_back(Vector3i(x, y, z));
                 }
              } else if (depth_from_surface <= 4) {
                 block.type = BlockType::DIRT;
@@ -90,9 +90,9 @@ ChunkModel ChunkGenerator::generate(const Vector3i chunk_pos, const TerrainSetti
        }
     }
 
-   /* for (const Vector3i &tree_pos : tree_positions) {
+    for (const Vector3i &tree_pos : tree_positions) {
         generate_tree(chunk, tree_pos.x, tree_pos.y + 1, tree_pos.z);
-    }*/
+    }
 
     return chunk;
 }
