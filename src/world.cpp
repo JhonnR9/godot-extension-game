@@ -250,6 +250,13 @@ ChunkNeighbors World::_get_neighbors_for(Vector3i p_pos) {
 }
 
 void World::_thread_work(Vector3i p_pos) {
+	TerrainSettings settings;
+	settings.terrain_base_height = _terrain_base_height;
+	settings.terrain_amplitude = _terrain_amplitude;
+	settings.cave_threshold = 0.1f;
+
+	settings.noise_set.terrain_noise = _terrain_noise;
+	settings.noise_set.cave_noise = _cave_noise;
 	{
 		const auto model = std::make_shared<ChunkModel>(ChunkGenerator::generate(p_pos, settings));
 		_chunk_repository->add_chunk(p_pos, model);

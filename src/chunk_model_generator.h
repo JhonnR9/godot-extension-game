@@ -36,6 +36,7 @@ private:
 	std::mutex _loading_chunks_mutex;
 	HashSet<Vector3i> _loading_chunks;
 
+
 public:
 	HashMap<Vector3i, std::shared_ptr<ChunkModel>> consume_generated_results(int amount = -1);
 };
