@@ -40,37 +40,49 @@ bool ChunkModelGenerator::is_loading_chunk(const Vector3i &p_pos) {
 	std::lock_guard lock(_loading_chunks_mutex);
 	return _loading_chunks.has(p_pos);
 }
+
 HashMap<Vector3i, std::shared_ptr<ChunkModel>> ChunkModelGenerator::consume_generated_results(int amount) {
+	HashMap<Vector3i, std::shared_ptr<ChunkModel>> consumed;
+	HashSet<Vector3i> to_remove;
+
+
 	{
-		HashMap<Vector3i, std::shared_ptr<ChunkModel>> consumed;
-		HashSet<Vector3i> to_remove;
 		std::lock_guard lock(_generated_results_mutex);
 
 		if (amount < 0) {
 			amount = _generated_results.size();
-		} else {
-			const int consume_count = std::min(amount, static_cast<int>(_generated_results.size()));
-			consumed.reserve(consume_count);
-			to_remove.reserve(consume_count);
 		}
 
 		int count = 0;
-		for (auto it = _generated_results.begin(); it != _generated_results.end(); ++it) {
+
+		std::vector<Vector3i> keys_to_erase;
+
+
+		for (const auto &E : _generated_results) {
 			if (count >= amount) break;
-			consumed.insert(it->key, it->value);
-			to_remove.insert(it->key);
+
+
+			consumed.insert(E.key, E.value);
+
+			to_remove.insert(E.key);
+			keys_to_erase.push_back(E.key);
+
 			count++;
 		}
 
-		if (!to_remove.is_empty()) {
-			std::lock_guard loading_lock(_loading_chunks_mutex);
-			for (const Vector3i &pos : to_remove) {
-				_generated_results.erase(pos);
-				_loading_chunks.erase(pos);
-			}
+		for (const Vector3i &k : keys_to_erase) {
+			_generated_results.erase(k);
 		}
-
-		return consumed;
 	}
+
+
+	if (!to_remove.is_empty()) {
+		std::lock_guard loading_lock(_loading_chunks_mutex);
+		for (const Vector3i &pos : to_remove) {
+			_loading_chunks.erase(pos);
+		}
+	}
+
+	return consumed;
 }
 } //namespace godot

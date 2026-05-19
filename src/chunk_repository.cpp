@@ -24,7 +24,7 @@ bool ChunkRepository::contains_chunk(const Vector3i &p_pos) {
 
 void ChunkRepository::remove_chunk(const Vector3i &p_pos) {
 	std::lock_guard lock(_mutex);
-	if (contains_chunk(p_pos))
+	if (_chunks.has(p_pos))
 		_chunks.erase(p_pos);
 }
 
@@ -36,7 +36,6 @@ Vector<Vector3i> ChunkRepository::get_keys_snapshot() {
 	for (const auto &E : _chunks) {
 		keys.push_back(E.key);
 	}
-
 	return keys;
 }
 
