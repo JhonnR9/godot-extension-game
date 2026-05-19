@@ -3,72 +3,72 @@
 #include "atlas_loader.h"
 #include "chunk_pool.h"
 
-#include <godot_cpp/classes/object.hpp>
-#include <godot_cpp/core/class_db.hpp>
 
 namespace godot {
 
 void World::_ready() {
-	_last_player_chunk_pos = Vector3i(INT_MAX, INT_MAX, INT_MAX);
-	load_atlas("res://sprites/atlas.json");
-	_chunk_pool.instantiate();
-	_chunk_repository.instantiate();
-	_chunk_stream_manager.instantiate();
+    _last_player_chunk_pos = Vector3i(INT_MAX, INT_MAX, INT_MAX);
+    load_atlas("res://sprites/atlas.json");
 
-	StreamSettings stream_settings{};
-	stream_settings.cache_radius = _cache_radius;
-	stream_settings.world_height = _world_height;
-	stream_settings.world_radius = _world_radius;
+    _chunk_pool.instantiate();
+    _chunk_repository.instantiate();
+    _chunk_stream_manager.instantiate();
+    _model_generator.instantiate();
+    _mesh_generator.instantiate();
 
-	_chunk_stream_manager->set_stream_settings(stream_settings);
-	_chunk_pool->set_owner(this);
+    StreamSettings stream_settings{};
+    stream_settings.cache_radius = _cache_radius;
+    stream_settings.world_height = _world_height;
+    stream_settings.world_radius = _world_radius;
 
-	set_process(true);
-	_setup_noises();
-	_init_chunks();
+    _chunk_stream_manager->set_stream_settings(stream_settings);
+    _chunk_pool->set_owner(this);
+
+    set_process(true);
+    _setup_noises();
+
+    _init_chunks();
+
 }
 
 void World::_setup_noises() {
-	_terrain_noise.instantiate();
-	_terrain_noise->set_noise_type(FastNoiseLite::TYPE_PERLIN);
-	_terrain_noise->set_frequency(0.035);
-	_terrain_noise->set_fractal_octaves(5);
+    _terrain_noise.instantiate();
+    _terrain_noise->set_noise_type(FastNoiseLite::TYPE_PERLIN);
+    _terrain_noise->set_frequency(0.035);
+    _terrain_noise->set_fractal_octaves(5);
 
-	_cave_noise.instantiate();
-	_cave_noise->set_noise_type(FastNoiseLite::TYPE_PERLIN);
-	_cave_noise->set_frequency(0.02);
+    _cave_noise.instantiate();
+    _cave_noise->set_noise_type(FastNoiseLite::TYPE_PERLIN);
+    _cave_noise->set_frequency(0.02);
 }
 
 void World::_init_chunks() {
-	ERR_FAIL_COND(_chunk_pool.is_null());
+    ERR_FAIL_COND(_chunk_pool.is_null());
 
-	_chunk_pool->set_prewarm(_prewarm_chunk_pool);
+    _chunk_pool->set_prewarm(_prewarm_chunk_pool);
 
-	_player_node = get_node<Node3D>("../Player");
+    _player_node = get_node<Node3D>("../Player");
 
-	ERR_FAIL_NULL(_player_node);
-	_last_player_chunk_pos = _world_to_chunk_pos(_player_node->get_global_position());
-	_previous_player_chunk_pos = _last_player_chunk_pos;
-	_chunk_stream_manager->rebuild_all_chunks(_last_player_chunk_pos);
+    ERR_FAIL_NULL(_player_node);
+    _last_player_chunk_pos = _world_to_chunk_pos(_player_node->get_global_position());
+    _previous_player_chunk_pos = _last_player_chunk_pos;
+    _chunk_stream_manager->rebuild_all_chunks(_last_player_chunk_pos);
 }
 
 bool World::_did_player_change_chunk() const {
-	if (!_player_node) {
-		return false;
-	}
-	const Vector3i current_chunk_position = _world_to_chunk_pos(_player_node->get_global_position());
-	return current_chunk_position != _last_player_chunk_pos;
+    if (!_player_node) {
+       return false;
+    }
+    const Vector3i current_chunk_position = _world_to_chunk_pos(_player_node->get_global_position());
+    return current_chunk_position != _last_player_chunk_pos;
 }
 
 void World::_remove_chunk(ChunkNode *p_chunk_node) {
-	ERR_FAIL_NULL(p_chunk_node);
+    ERR_FAIL_NULL(p_chunk_node);
 
-	const Vector3i pos = _world_to_chunk_pos(
-			p_chunk_node->get_global_position());
-
-	_last_active_node_chunks.erase(pos);
-
-	_chunk_pool->release(p_chunk_node);
+    const Vector3i pos = _world_to_chunk_pos(p_chunk_node->get_global_position());
+    _last_active_node_chunks.erase(pos);
+    _chunk_pool->release(p_chunk_node);
 }
 
 void World::_shift_chunks() {
@@ -78,16 +78,16 @@ void World::_shift_chunks() {
 		}
 	}
 
-	HashSet<Vector3i> loading_chunks_copy;
-	{
-		std::lock_guard lock2(_loading_chunks_mutex);
-		loading_chunks_copy = _loading_chunks;
-	}
-
 	for (const Vector3i &pos : _chunk_stream_manager->get_active_chunks_snapshot()) {
-		if (!loading_chunks_copy.has(pos)) {
-			_queue_async_generate_chunk(pos);
+
+		if (_chunk_repository->contains_chunk(pos) || _model_generator->is_loading_chunk(pos)) {
+			if (_chunk_repository->contains_chunk(pos) && !_last_active_node_chunks.has(pos)) {
+				_try_build_mesh_with_neighbors(pos);
+			}
+			continue;
 		}
+
+		_queue_async_generate_chunk(pos);
 	}
 }
 
@@ -100,7 +100,10 @@ void World::_cleanup_far_chunks() {
 		const int dz = ABS(pos.z - _last_player_chunk_pos.z);
 
 		if (dx > _cache_radius || dy > _world_height + 2 || dz > _cache_radius) {
-			to_remove.push_back(pos);
+
+			if (!_mesh_generator->is_queued_mesh(pos) && !_model_generator->is_loading_chunk(pos)) {
+				to_remove.push_back(pos);
+			}
 		}
 	}
 
@@ -110,197 +113,202 @@ void World::_cleanup_far_chunks() {
 }
 
 void World::_process(double delta) {
-	if (!_player_node) {
+    if (!_player_node) {
+       return;
+    }
+
+    if (_did_player_change_chunk()) {
+    	const Vector3i current = _world_to_chunk_pos(_player_node->get_global_position());
+
+    	_last_player_chunk_pos = current;
+    	_previous_player_chunk_pos = current;
+
+    	_chunk_stream_manager->shift_chunks(current);
+
+    	_shift_chunks();
+    }
+
+    const Vector3i player_chunk = _world_to_chunk_pos(_player_node->get_global_position());
+
+    _process_generated_models();
+
+
+    _process_generated_meshes(player_chunk);
+
+    static double cleanup_timer = 0.0;
+    cleanup_timer += delta;
+
+    if (cleanup_timer > 2.0) {
+       _cleanup_far_chunks();
+       cleanup_timer = 0.0;
+    }
+}
+
+void World::_process_generated_models() {
+	HashMap<Vector3i, std::shared_ptr<ChunkModel>> ready_models = _model_generator->consume_generated_results();
+
+	if (ready_models.is_empty()) {
 		return;
 	}
 
-	if (_did_player_change_chunk()) {
-		const Vector3i current = _world_to_chunk_pos(_player_node->get_global_position());
 
-		_last_player_chunk_pos = current;
-		_previous_player_chunk_pos = current;
-		_shift_chunks();
+	for (auto it = ready_models.begin(); it != ready_models.end(); ++it) {
+		_chunk_repository->add_chunk(it->key, it->value);
 	}
 
-	const Vector3i player_chunk = _world_to_chunk_pos(_player_node->get_global_position());
+	for (auto it = ready_models.begin(); it != ready_models.end(); ++it) {
+		Vector3i pos = it->key;
+		_try_build_mesh_with_neighbors(pos);
 
-	std::vector<ChunkGenerationResult> pending_results_to_process;
-
-	{
-		std::lock_guard lock(_pending_results_mutex);
-
-		const int amount = MIN(_max_chunk_finalize_per_frame, static_cast<int>(_pending_results.size()));
-
-		pending_results_to_process.reserve(amount);
-
-		for (int i = 0; i < amount; i++) {
-			pending_results_to_process.push_back(std::move(_pending_results[i]));
+		Vector3i dirs[] = {
+			{ 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 }
+		};
+		for (const Vector3i &dir : dirs) {
+			_try_build_mesh_with_neighbors(pos + dir);
 		}
-
-		_pending_results.erase(_pending_results.begin(), _pending_results.begin() + amount);
 	}
+}
 
-	for (const ChunkGenerationResult &result : pending_results_to_process) {
+void World::_process_generated_meshes(const Vector3i &player_chunk) {
+	MeshResultHashSet ready_meshes = _mesh_generator->consume_generated_meshes(_max_chunk_finalize_per_frame);
+
+	for (const MeshResult &result : ready_meshes) {
 		const int dist_x = ABS(result.pos.x - player_chunk.x);
 		const int dist_y = ABS(result.pos.y - player_chunk.y);
 		const int dist_z = ABS(result.pos.z - player_chunk.z);
 
-		if (
-				dist_x > _world_radius + 1 ||
-				dist_y > _world_height + 1 ||
-				dist_z > _world_radius + 1) {
-			std::lock_guard<std::mutex> lock(_loading_chunks_mutex);
-			_loading_chunks.erase(result.pos);
+		if (dist_x > _world_radius + 1 || dist_y > _world_height + 1 || dist_z > _world_radius + 1) {
 			continue;
 		}
 
 		if (!_chunk_stream_manager->is_chunk_active(result.pos)) {
-			std::lock_guard<std::mutex> lock(_loading_chunks_mutex);
-			_loading_chunks.erase(result.pos);
 			continue;
 		}
 
 		_finalize_chunk(result);
-
-		{
-			std::lock_guard<std::mutex> lock(_loading_chunks_mutex);
-			_loading_chunks.erase(result.pos);
-		}
 	}
+}
+void World::_TEST_synchronous_model_generation(Vector3i p_pos) {
+	UtilityFunctions::print("TEST: Iniciando geração de modelo síncrono em: ", p_pos);
 
-	// Cleanup
-	static double cleanup_timer = 0.0;
-	cleanup_timer += delta;
+	TerrainSettings settings;
+	settings.terrain_base_height = _terrain_base_height;
+	settings.terrain_amplitude = _terrain_amplitude;
+	settings.cave_threshold = 0.1f;
+	settings.noise_set.terrain_noise = _terrain_noise;
+	settings.noise_set.cave_noise = _cave_noise;
 
-	if (cleanup_timer > 2.0) {
-		_cleanup_far_chunks();
-		cleanup_timer = 0.0;
+	// 1. Chamar o gerador diretamente sem passar pelo WorkerThreadPool
+	ChunkModel raw_model = ChunkGenerator::generate(p_pos, settings);
+	auto model_ptr = std::make_shared<ChunkModel>(raw_model);
+
+	// 2. Inserir direto no repositório
+	_chunk_repository->add_chunk(p_pos, model_ptr);
+
+	UtilityFunctions::print("TEST: Modelo gerado com sucesso para: ", p_pos);
+}
+void World::_TEST_synchronous_mesh_generation(Vector3i p_pos) {
+	ChunkNeighbors neighbors = _get_neighbors_for(p_pos);
+
+	if (!neighbors.center) return;
+
+	// Verifica se todos os vizinhos existem no repositório para o culling funcionar
+	bool ready = neighbors.left && neighbors.right && neighbors.top && neighbors.bottom && neighbors.front && neighbors.back;
+	if (!ready) return;
+
+	UtilityFunctions::print("TEST: Construindo Mesh síncrona para: ", p_pos);
+
+	// Executa o builder diretamente na Main Thread
+	ChunkMeshBuilder builder;
+	Ref<ArrayMesh> mesh = builder.build(neighbors);
+
+	if (mesh.is_valid()) {
+		UtilityFunctions::print("TEST: Mesh criada com sucesso! Vértices gerados.");
+
+		// Simula o finalizador estruturando o nó visual
+		MeshResult mock_res{
+			mesh,
+			builder.get_last_collision_faces(),
+			p_pos
+		};
+		_finalize_chunk(mock_res);
 	}
 }
 
-void World::_finalize_chunk(const ChunkGenerationResult &res) {
-	if (res.mesh.is_null()) {
-		return;
-	}
+void World::_finalize_chunk(const MeshResult &res) {
+    if (res.mesh.is_null()) {
+       return;
+    }
 
-	if (!_chunk_stream_manager->is_chunk_active(res.pos)) {
-		return;
-	}
+    if (!_chunk_stream_manager->is_chunk_active(res.pos)) {
+       return;
+    }
 
-	if (_last_active_node_chunks.has(res.pos)) {
-		_remove_chunk(_last_active_node_chunks[res.pos]);
-	}
+    if (_last_active_node_chunks.has(res.pos)) {
+       _remove_chunk(_last_active_node_chunks[res.pos]);
+    }
 
-	ChunkNode *chunk = _chunk_pool->acquire();
+    ChunkNode *chunk = _chunk_pool->acquire();
+    _last_active_node_chunks[res.pos] = chunk;
 
-	_last_active_node_chunks[res.pos] = chunk;
-
-	chunk->set_mesh(res.mesh);
-	chunk->set_surface_override_material(0, chunk->get_material());
-	chunk->set_collision_faces(res.collision_faces);
-	chunk->set_global_position(Vector3(res.pos.x * ChunkModel::SIZE, res.pos.y * ChunkModel::SIZE, res.pos.z * ChunkModel::SIZE));
-
-	chunk->set_visible(true);
+    chunk->set_mesh(res.mesh);
+    chunk->set_surface_override_material(0, chunk->get_material());
+    chunk->set_collision_faces(res.collision_faces);
+    chunk->set_global_position(Vector3(res.pos.x * ChunkModel::SIZE, res.pos.y * ChunkModel::SIZE, res.pos.z * ChunkModel::SIZE));
+    chunk->set_visible(true);
 }
 
 Vector3i World::_world_to_chunk_pos(Vector3 p_pos) {
-	return Vector3i(
-			Math::floor(p_pos.x / ChunkModel::SIZE),
-			Math::floor(p_pos.y / ChunkModel::SIZE),
-			Math::floor(p_pos.z / ChunkModel::SIZE));
+    return Vector3i(
+          Math::floor(p_pos.x / ChunkModel::SIZE),
+          Math::floor(p_pos.y / ChunkModel::SIZE),
+          Math::floor(p_pos.z / ChunkModel::SIZE));
 }
 
 void World::_queue_async_generate_chunk(const Vector3i p_pos) {
-	{
-		std::lock_guard<std::mutex> lock(_loading_chunks_mutex);
-		_loading_chunks.insert(p_pos);
-	}
+    TerrainSettings settings;
+    settings.terrain_base_height = _terrain_base_height;
+    settings.terrain_amplitude = _terrain_amplitude;
+    settings.cave_threshold = 0.1f;
+    settings.noise_set.terrain_noise = _terrain_noise;
+    settings.noise_set.cave_noise = _cave_noise;
 
-	TerrainSettings settings;
-	settings.terrain_base_height = _terrain_base_height;
-	settings.terrain_amplitude = _terrain_amplitude;
-	settings.cave_threshold = 0.1f;
-
-	settings.noise_set.terrain_noise = _terrain_noise;
-	settings.noise_set.cave_noise = _cave_noise;
-
-
-
-	//const Callable action = Callable(this, "_thread_work").bind(p_pos);
-	//WorkerThreadPool::get_singleton()->add_task(action);
-
-
+	_model_generator->_queue_async_generate_chunk_model(p_pos, settings);
 }
 
 ChunkNeighbors World::_get_neighbors_for(Vector3i p_pos) {
-	ChunkNeighbors n;
-
-	n.center = _chunk_repository->get_chunk(p_pos);
-
-	n.right = _chunk_repository->get_chunk(p_pos + Vector3i(1, 0, 0));
-	n.left = _chunk_repository->get_chunk(p_pos + Vector3i(-1, 0, 0));
-
-	n.top = _chunk_repository->get_chunk(p_pos + Vector3i(0, 1, 0));
-	n.bottom = _chunk_repository->get_chunk(p_pos + Vector3i(0, -1, 0));
-
-	n.front = _chunk_repository->get_chunk(p_pos + Vector3i(0, 0, 1));
-	n.back = _chunk_repository->get_chunk(p_pos + Vector3i(0, 0, -1));
-
-	return n;
-}
-
-void World::_thread_work(Vector3i p_pos) {
-	TerrainSettings settings;
-	settings.terrain_base_height = _terrain_base_height;
-	settings.terrain_amplitude = _terrain_amplitude;
-	settings.cave_threshold = 0.1f;
-
-	settings.noise_set.terrain_noise = _terrain_noise;
-	settings.noise_set.cave_noise = _cave_noise;
-	{
-		const auto model = std::make_shared<ChunkModel>(ChunkGenerator::generate(p_pos, settings));
-		_chunk_repository->add_chunk(p_pos, model);
-	}
-
-	_try_build_mesh_with_neighbors(p_pos);
-
-	Vector3i dirs[] = {
-		{ 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 }
-	};
-
-	for (const Vector3i &dir : dirs) {
-		_try_build_mesh_with_neighbors(p_pos + dir);
-	}
+    ChunkNeighbors n;
+    n.center = _chunk_repository->get_chunk(p_pos);
+    n.right  = _chunk_repository->get_chunk(p_pos + Vector3i(1, 0, 0));
+    n.left   = _chunk_repository->get_chunk(p_pos + Vector3i(-1, 0, 0));
+    n.top    = _chunk_repository->get_chunk(p_pos + Vector3i(0, 1, 0));
+    n.bottom = _chunk_repository->get_chunk(p_pos + Vector3i(0, -1, 0));
+    n.front  = _chunk_repository->get_chunk(p_pos + Vector3i(0, 0, 1));
+    n.back   = _chunk_repository->get_chunk(p_pos + Vector3i(0, 0, -1));
+    return n;
 }
 
 void World::_try_build_mesh_with_neighbors(Vector3i p_pos) {
-	const ChunkNeighbors neighbors = _get_neighbors_for(p_pos);
-
-	if (!neighbors.center)
+	if (_mesh_generator->is_queued_mesh(p_pos)) {
 		return;
-
-	if (const bool ready = neighbors.left && neighbors.right && neighbors.top && neighbors.bottom && neighbors.front && neighbors.back; !ready)
-		return;
-
-	ChunkMeshBuilder mesh_builder;
-	const Ref<ArrayMesh> mesh = mesh_builder.build(neighbors);
-
-	if (mesh.is_null())
-		return;
-
-	ChunkGenerationResult result;
-	result.pos = p_pos;
-	result.mesh = mesh;
-	result.collision_faces = mesh_builder.get_last_collision_faces();
-
-	{
-		std::lock_guard<std::mutex> lock(_pending_results_mutex);
-		_pending_results.push_back(result);
 	}
+
+	ChunkNeighbors neighbors = _get_neighbors_for(p_pos);
+
+	if (!neighbors.center) {
+		return;
+	}
+
+	bool ready = neighbors.left && neighbors.right && neighbors.top && neighbors.bottom && neighbors.front && neighbors.back;
+	if (!ready) {
+		return;
+	}
+
+	_mesh_generator->queue_async_generate_mesh(p_pos, neighbors);
 }
 
 void World::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("_thread_work", "pos"), &World::_thread_work);
+
 }
 
 } // namespace godot

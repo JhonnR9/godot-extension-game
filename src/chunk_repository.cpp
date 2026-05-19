@@ -32,7 +32,6 @@ Vector<Vector3i> ChunkRepository::get_keys_snapshot() {
 	std::lock_guard lock(_mutex);
 
 	Vector<Vector3i> keys;
-	keys.resize(_chunks.size());
 
 	for (const auto &E : _chunks) {
 		keys.push_back(E.key);

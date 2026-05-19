@@ -1,6 +1,10 @@
 #include "register_types.h"
 
 #include "ChunkNode.h"
+#include "chunk_mesh_async_generator.h"
+#include "chunk_repository.h"
+#include "chunk_streaming_manager.h"
+#include "chunk_model_generator.h"
 #include "player.h"
 #include "world.h"
 #include <gdextension_interface.h>
@@ -21,6 +25,8 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	GDREGISTER_CLASS(ChunkPool);
 	GDREGISTER_CLASS(ChunkRepository);
 	GDREGISTER_CLASS(ChunkStreamingManager);
+	GDREGISTER_CLASS(ChunkMeshAsyncGenerator);
+	GDREGISTER_CLASS(ChunkModelGenerator);
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {

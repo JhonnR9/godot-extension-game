@@ -28,8 +28,6 @@ protected:
 	static void _bind_methods();
 
 private:
-	void _queue_async_generate_chunk_model(Vector3i p_pos, const TerrainSettings &p_settings);
-
 	std::mutex _generated_results_mutex;
 	HashMap<Vector3i, std::shared_ptr<ChunkModel>> _generated_results;
 
@@ -39,6 +37,8 @@ private:
 
 public:
 	HashMap<Vector3i, std::shared_ptr<ChunkModel>> consume_generated_results(int amount = -1);
+	void _queue_async_generate_chunk_model(Vector3i p_pos, const TerrainSettings &p_settings);
+	bool is_loading_chunk(const Vector3i &p_pos);
 };
 
 } //namespace godot

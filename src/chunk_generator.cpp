@@ -81,11 +81,11 @@ ChunkModel ChunkGenerator::generate(const Vector3i chunk_pos, const TerrainSetti
                 if (local_tree_spawn) {
                    // tree_positions.push_back(Vector3i(x, y, z));
                 }
-             }/* else if (depth_from_surface <= 4) {
+             } else if (depth_from_surface <= 4) {
                 block.type = BlockType::DIRT;
              } else {
                 block.type = world_y < -32 ? BlockType::DEEPSLATE : BlockType::STONE;
-             }*/
+             }
           }
        }
     }

@@ -36,46 +36,41 @@ void ChunkModelGenerator::_queue_async_generate_chunk_model(Vector3i p_pos, cons
 			false,
 			"chunk_gen");
 }
+bool ChunkModelGenerator::is_loading_chunk(const Vector3i &p_pos) {
+	std::lock_guard lock(_loading_chunks_mutex);
+	return _loading_chunks.has(p_pos);
+}
 HashMap<Vector3i, std::shared_ptr<ChunkModel>> ChunkModelGenerator::consume_generated_results(int amount) {
-	HashMap<Vector3i, std::shared_ptr<ChunkModel>> consumed;
-	HashSet<Vector3i> to_remove;
+	{
+		HashMap<Vector3i, std::shared_ptr<ChunkModel>> consumed;
+		HashSet<Vector3i> to_remove;
+		std::lock_guard lock(_generated_results_mutex);
 
-	std::lock_guard lock(_generated_results_mutex);
-
-	if (amount < 0) {
-		amount = _generated_results.size();
-	}else {
-		const int consume_count = std::min(amount, static_cast<int>(_generated_results.size()));
-
-		consumed.reserve(consume_count);
-		to_remove.reserve(consume_count);
-	}
-
-	int count = 0;
-
-	for (auto it = _generated_results.begin(); it != _generated_results.end(); ++it) {
-		if (count >= amount) {
-			break;
+		if (amount < 0) {
+			amount = _generated_results.size();
+		} else {
+			const int consume_count = std::min(amount, static_cast<int>(_generated_results.size()));
+			consumed.reserve(consume_count);
+			to_remove.reserve(consume_count);
 		}
 
-		const Vector3i &pos = it->key;
-		const auto &model = it->value;
+		int count = 0;
+		for (auto it = _generated_results.begin(); it != _generated_results.end(); ++it) {
+			if (count >= amount) break;
+			consumed.insert(it->key, it->value);
+			to_remove.insert(it->key);
+			count++;
+		}
 
-		consumed.insert(pos, model);
-		to_remove.insert(pos);
-
-		count++;
-	}
-
-	for (const Vector3i &pos : to_remove) {
-		_generated_results.erase(pos);
-
-		{
+		if (!to_remove.is_empty()) {
 			std::lock_guard loading_lock(_loading_chunks_mutex);
-			_loading_chunks.erase(pos);
+			for (const Vector3i &pos : to_remove) {
+				_generated_results.erase(pos);
+				_loading_chunks.erase(pos);
+			}
 		}
-	}
 
-	return consumed;
+		return consumed;
+	}
 }
 } //namespace godot
