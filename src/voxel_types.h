@@ -13,7 +13,7 @@
 
 namespace godot {
 
-enum class BlockType : uint8_t {
+enum class BlockType : uint16_t {
 	AIR = 0,
 	GRASS,
 	DIRT,

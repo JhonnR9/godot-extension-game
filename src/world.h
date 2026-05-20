@@ -1,7 +1,7 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include "ChunkNode.h"
+#include "chunk_node.h"
 #include "chunk_generator.h"
 #include "chunk_pool.h"
 #include "chunk_repository.h"
@@ -37,7 +37,7 @@ private:
     Ref<ChunkMeshAsyncGenerator> _mesh_generator;
 
     // Optimization
-    int _world_radius = 16;
+    int _world_radius = 6;
     int _cache_radius = _world_radius + (_world_radius * .5f);
     int _world_height = 8;
     int _prewarm_chunk_pool = 8192 * 2;
@@ -47,8 +47,8 @@ private:
     uint64_t _seed = 546546;
     int _terrain_base_height = 24;
     float _terrain_amplitude = 18.0f;
-    int _dirt_layer_depth = 12;
-    float _cave_threshold = 0.02f;
+    int _dirt_layer_depth = 20;
+    float _cave_threshold = 0.2f;
 
     Ref<FastNoiseLite> _terrain_noise;
     Ref<FastNoiseLite> _cave_noise;

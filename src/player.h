@@ -19,7 +19,7 @@ private:
 	float _pitch = 0.0f;
 	float _yaw = 0.0f;
 
-	float _jump_force = 4.5f;
+	float _jump_force = 9.0f;
 	enum MoveMode { WALK, FLY, NOCLIP };
 	MoveMode _current_mode = WALK;
 	float _double_tap_timer = 0.0f;
@@ -32,7 +32,6 @@ protected:
 
 public:
 	Player() = default;
-	~Player() = default;
 
 	void _ready() override;
 	void _physics_process(double delta) override;

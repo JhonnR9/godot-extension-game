@@ -1,4 +1,4 @@
-#include "ChunkNode.h"
+#include "chunk_node.h"
 #include "world.h"
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/texture2d.hpp>

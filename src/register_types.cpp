@@ -1,6 +1,6 @@
 #include "register_types.h"
 
-#include "ChunkNode.h"
+#include "chunk_node.h"
 #include "chunk_mesh_async_generator.h"
 #include "chunk_repository.h"
 #include "chunk_streaming_manager.h"

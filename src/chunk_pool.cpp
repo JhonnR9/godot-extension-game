@@ -1,6 +1,6 @@
 
 #include "chunk_pool.h"
-#include "ChunkNode.h"
+#include "chunk_node.h"
 #include "godot_cpp/classes/node.hpp"
 
 namespace godot {

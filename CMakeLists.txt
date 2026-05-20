@@ -47,7 +47,7 @@ project(godot-cpp-template
 
 add_library(${LIBNAME} SHARED
         src/voxel_mesher.cpp
-        src/ChunkNode.cpp
+        src/chunk_node.cpp
         src/world.cpp
         src/world.h
         src/player.cpp
