@@ -37,11 +37,11 @@ private:
     Ref<ChunkMeshAsyncGenerator> _mesh_generator;
 
     // Optimization
-    int _world_radius = 12;
+    int _world_radius = 16;
     int _cache_radius = _world_radius + (_world_radius * .5f);
-    int _world_height = 6;
+    int _world_height = 8;
     int _prewarm_chunk_pool = 8192 * 2;
-    int _max_chunk_finalize_per_frame = 12;
+    int _max_chunk_finalize_per_frame = 20;
 
     // Terrain settings
     uint64_t _seed = 546546;
@@ -64,21 +64,18 @@ private:
     void _init_chunks();
     bool _did_player_change_chunk() const;
     void _remove_chunk(ChunkNode *p_chunk_node);
-    void _shift_chunks();
+    void _update_visible_chunks();
     void _cleanup_far_chunks();
 
     static Vector3i _world_to_chunk_pos(Vector3 p_pos);
     void _finalize_chunk(const MeshResult &res);
     void _try_build_mesh_with_neighbors(Vector3i p_pos);
 
-    void _process_generated_models();
-    void _process_generated_meshes(const Vector3i &player_chunk);
-
-	void _TEST_synchronous_model_generation(Vector3i p_pos);
-	void _TEST_synchronous_mesh_generation(Vector3i p_pos);
+    void _process_models();
+    void _process_meshes(const Vector3i &p_pos);
 
     // World state
-    HashMap<Vector3i, ChunkNode *> _last_active_node_chunks;
+    HashMap<Vector3i, ChunkNode *> _rendered_chunks;
     Vector3i _previous_player_chunk_pos;
 };
 

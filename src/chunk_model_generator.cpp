@@ -45,7 +45,6 @@ HashMap<Vector3i, std::shared_ptr<ChunkModel>> ChunkModelGenerator::consume_gene
 	HashMap<Vector3i, std::shared_ptr<ChunkModel>> consumed;
 	HashSet<Vector3i> to_remove;
 
-
 	{
 		std::lock_guard lock(_generated_results_mutex);
 
