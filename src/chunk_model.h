@@ -6,10 +6,12 @@
 namespace godot {
 
 struct ChunkModel {
-	static constexpr int SIZE = 16;
-	static constexpr int VOLUME = SIZE * SIZE * SIZE;
+	static constexpr int SIZE_X = 8;
+	static constexpr int SIZE_Y = 8;
+	static constexpr int SIZE_Z = 8;
 
-	[[nodiscard]]
+	static constexpr int VOLUME = SIZE_X * SIZE_Y * SIZE_Z;
+
 	constexpr block::Block get_block(int x, int y, int z) const {
 		return _blocks[index(x, y, z)];
 	}
@@ -21,9 +23,8 @@ struct ChunkModel {
 private:
 	block::Block _blocks[VOLUME] {};
 
-	[[nodiscard]]
 	static constexpr int index(int x, int y, int z) {
-		return x + SIZE * (y + SIZE * z);
+		return x + y * SIZE_X + z * SIZE_X * SIZE_Y;
 	}
 };
 

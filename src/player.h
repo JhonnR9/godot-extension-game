@@ -20,7 +20,9 @@ private:
 	float _yaw = 0.0f;
 
 	float _jump_force = 9.0f;
-	enum MoveMode { WALK, FLY, NOCLIP };
+	enum MoveMode { WALK,
+		FLY,
+		NOCLIP };
 	MoveMode _current_mode = WALK;
 	float _double_tap_timer = 0.0f;
 	const float DOUBLE_TAP_TIME = 0.3f;
@@ -36,6 +38,7 @@ public:
 	void _ready() override;
 	void _physics_process(double delta) override;
 	void _unhandled_input(const Ref<InputEvent> &event) override;
+	Dictionary raycast_block(float distance);
 };
 
 } // namespace godot

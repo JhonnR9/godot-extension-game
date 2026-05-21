@@ -113,28 +113,43 @@ void World::_cleanup_far_chunks() {
 }
 
 void World::_process(double delta) {
-    if (!_player_node) {
-       return;
-    }
+	if (!_player_node) {
+		return;
+	}
 	const Vector3i current_position = _world_to_chunk_pos(_player_node->get_global_position());
-    if (_did_player_change_chunk()) {
-    	_last_player_chunk_pos = current_position;
-    	_previous_player_chunk_pos = current_position;
+	if (_did_player_change_chunk()) {
+		_last_player_chunk_pos = current_position;
+		_previous_player_chunk_pos = current_position;
 
-    	_chunk_stream_manager->shift_chunks(current_position);
+		_chunk_stream_manager->shift_chunks(current_position);
 
-    	_update_visible_chunks();
-    }
-    _process_models();
-    _process_meshes(current_position);
+		_update_visible_chunks();
+	}
+	_process_models();
+	_process_meshes(current_position);
 
-    static double cleanup_timer = 0.0;
-    cleanup_timer += delta;
+	HashSet<Vector3i> dirty = _chunk_repository->consume_dirty_chunks();
 
-    if (cleanup_timer > 2.0) {
-       _cleanup_far_chunks();
-       cleanup_timer = 0.0;
-    }
+	for (const Vector3i &pos : dirty) {
+		_rebuild_chunk(pos);
+	}
+
+	static double cleanup_timer = 0.0;
+	cleanup_timer += delta;
+
+	if (cleanup_timer > 2.0) {
+		_cleanup_far_chunks();
+		cleanup_timer = 0.0;
+	}
+}
+void World::break_block(const Vector3 &world_pos) {
+	Vector3i block_pos(
+		Math::floor(world_pos.x),
+		Math::floor(world_pos.y),
+		Math::floor(world_pos.z)
+	);
+
+	_chunk_repository->set_block(block_pos, 0);
 }
 
 void World::_process_models() {
@@ -166,7 +181,6 @@ void World::_process_meshes(const Vector3i &p_pos) {
 	const MeshResultHashSet ready_meshes = _mesh_generator->consume_generated_meshes(_max_chunk_finalize_per_frame);
 
 	for (const MeshResult &result : ready_meshes) {
-
 		const int dist_x = ABS(result.pos.x - p_pos.x);
 		const int dist_y = ABS(result.pos.y - p_pos.y);
 		const int dist_z = ABS(result.pos.z - p_pos.z);
@@ -178,11 +192,27 @@ void World::_process_meshes(const Vector3i &p_pos) {
 		_finalize_chunk(result);
 	}
 }
+void World::_rebuild_chunk(const Vector3i &pos) {
+	const ChunkNeighbors neighbors = _get_neighbors_for(pos);
+
+	if (!neighbors.center) {
+		return;
+	}
+	uint64_t version = _chunk_repository->get_chunk_version(pos);
+
+	_mesh_generator->queue_async_generate_mesh(pos, neighbors, version);
+}
 
 void World::_finalize_chunk(const MeshResult &res) {
     if (res.mesh.is_null()) {
        return;
     }
+
+	uint64_t current_version = _chunk_repository->get_chunk_version(res.pos);
+
+	if (current_version != res.version) {
+		return;
+	}
 
     if (!_chunk_stream_manager->is_chunk_active(res.pos)) {
        return;
@@ -198,15 +228,15 @@ void World::_finalize_chunk(const MeshResult &res) {
     chunk->set_mesh(res.mesh);
     chunk->set_surface_override_material(0, chunk->get_material());
     chunk->set_collision_faces(res.collision_faces);
-    chunk->set_global_position(Vector3(res.pos.x * ChunkModel::SIZE, res.pos.y * ChunkModel::SIZE, res.pos.z * ChunkModel::SIZE));
+    chunk->set_global_position(Vector3(res.pos.x * ChunkModel::SIZE_X, res.pos.y * ChunkModel::SIZE_Y, res.pos.z * ChunkModel::SIZE_Z));
     chunk->set_visible(true);
 }
 
 Vector3i World::_world_to_chunk_pos(const Vector3 p_pos) {
     return Vector3i(
-          Math::floor(p_pos.x / ChunkModel::SIZE),
-          Math::floor(p_pos.y / ChunkModel::SIZE),
-          Math::floor(p_pos.z / ChunkModel::SIZE)
+          Math::floor(p_pos.x / ChunkModel::SIZE_X),
+          Math::floor(p_pos.y / ChunkModel::SIZE_Y),
+          Math::floor(p_pos.z / ChunkModel::SIZE_Z)
     );
 }
 
@@ -248,7 +278,7 @@ void World::_try_build_mesh_with_neighbors(const Vector3i p_pos) {
 		return;
 	}
 
-	_mesh_generator->queue_async_generate_mesh(p_pos, neighbors);
+	_mesh_generator->queue_async_generate_mesh(p_pos, neighbors, _chunk_repository->get_chunk_version(p_pos));
 }
 
 void World::_bind_methods() {

@@ -18,6 +18,7 @@ struct MeshResult {
 	Ref<ArrayMesh> mesh;
 	PackedVector3Array collision_faces;
 	Vector3i pos;
+	uint64_t version{0};
 
 	bool operator==(const MeshResult &p_b) const {
 		return pos == p_b.pos;
@@ -42,6 +43,7 @@ struct ChunkMeshJob {
 	Vector3i pos;
 	ChunkNeighbors neighbors;
 	ChunkMeshAsyncGenerator *generator;
+	uint64_t version;
 };
 
 class ChunkMeshAsyncGenerator : public RefCounted {
@@ -58,7 +60,7 @@ private:
 	HashSet<Vector3i> _generating_meshes;
 
 public:
-	void queue_async_generate_mesh(Vector3i p_pos, ChunkNeighbors p_neighbors);
+	void queue_async_generate_mesh(Vector3i p_pos, ChunkNeighbors p_neighbors, uint64_t p_version);
 	bool is_queued_mesh(Vector3i p_pos);
 
 	MeshResultHashSet consume_generated_meshes(int amount = -1);

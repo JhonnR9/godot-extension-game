@@ -1,11 +1,19 @@
 #include "player.h"
 
+#include "world.h"
+
+#include "crosshair.h"
+#include <godot_cpp/classes/canvas_layer.hpp>
 #include <godot_cpp/classes/collision_shape3d.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/input_event_mouse_button.hpp>
+#include <godot_cpp/classes/physics_direct_space_state3d.hpp>
+#include <godot_cpp/classes/physics_ray_query_parameters3d.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/window.hpp>
+#include <godot_cpp/classes/world3d.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
 namespace godot {
@@ -18,75 +26,93 @@ void Player::_ready() {
 	_camera->set_current(true);
 
 	Input::get_singleton()->set_mouse_mode(Input::MOUSE_MODE_CAPTURED);
+
+	CanvasLayer *canvas = memnew(CanvasLayer);
+	Crosshair *crosshair = memnew(Crosshair);
+	crosshair->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
+	crosshair->set_anchors_preset(Control::PRESET_FULL_RECT);
+
+	canvas->add_child(crosshair);
+
+	get_tree()->get_current_scene()->call_deferred("add_child", canvas);
 }
 
 void Player::_physics_process(double delta) {
-    Input *input = Input::get_singleton();
-    Vector3 current_velocity = get_velocity();
+	Input *input = Input::get_singleton();
+	Vector3 current_velocity = get_velocity();
 
-    if (_double_tap_timer > 0) _double_tap_timer -= delta;
+	if (_double_tap_timer > 0)
+		_double_tap_timer -= delta;
 
-    if (input->is_action_just_pressed("jump")) {
-        if (_double_tap_timer > 0) {
-            _current_mode = (_current_mode == WALK) ? FLY : WALK;
-            _double_tap_timer = 0;
-        } else {
-            _double_tap_timer = DOUBLE_TAP_TIME;
-        }
-    }
+	if (input->is_action_just_pressed("jump")) {
+		if (_double_tap_timer > 0) {
+			_current_mode = (_current_mode == WALK) ? FLY : WALK;
+			_double_tap_timer = 0;
+		} else {
+			_double_tap_timer = DOUBLE_TAP_TIME;
+		}
+	}
 
-    if (input->is_action_just_pressed("toggle_mode")) {
-        _current_mode = (_current_mode == NOCLIP) ? WALK : NOCLIP;
-    }
+	if (input->is_action_just_pressed("toggle_mode")) {
+		_current_mode = (_current_mode == NOCLIP) ? WALK : NOCLIP;
+	}
 
-    get_node<CollisionShape3D>("CollisionShape3D")->set_disabled(_current_mode == NOCLIP);
+	get_node<CollisionShape3D>("CollisionShape3D")->set_disabled(_current_mode == NOCLIP);
 
-    Vector3 direction;
-    Basis basis = get_transform().basis;
-    Vector3 forward = -basis.get_column(2);
-    Vector3 right = basis.get_column(0);
+	Vector3 direction;
+	Basis basis = get_transform().basis;
+	Vector3 forward = -basis.get_column(2);
+	Vector3 right = basis.get_column(0);
 
-    if (input->is_action_pressed("move_forward")) direction += forward;
-    if (input->is_action_pressed("move_backward")) direction -= forward;
-    if (input->is_action_pressed("move_left")) direction -= right;
-    if (input->is_action_pressed("move_right")) direction += right;
+	if (input->is_action_pressed("move_forward"))
+		direction += forward;
+	if (input->is_action_pressed("move_backward"))
+		direction -= forward;
+	if (input->is_action_pressed("move_left"))
+		direction -= right;
+	if (input->is_action_pressed("move_right"))
+		direction += right;
 
-    if (_current_mode == WALK) {
-        forward.y = 0; right.y = 0;
-        forward.normalize(); right.normalize();
+	if (_current_mode == WALK) {
+		forward.y = 0;
+		right.y = 0;
+		forward.normalize();
+		right.normalize();
 
-        if (!is_on_floor()) {
-            float gravity = ProjectSettings::get_singleton()->get_setting("physics/3d/default_gravity");
-            current_velocity.y -= gravity * delta;
-        }
-        if (input->is_action_just_pressed("jump") && is_on_floor()) {
-            current_velocity.y = _jump_force;
-        }
+		if (!is_on_floor()) {
+			float gravity = ProjectSettings::get_singleton()->get_setting("physics/3d/default_gravity");
+			current_velocity.y -= gravity * delta;
+		}
+		if (input->is_action_just_pressed("jump") && is_on_floor()) {
+			current_velocity.y = _jump_force;
+		}
 
-        if (direction.length() > 0) {
-            direction = direction.normalized();
-            current_velocity.x = direction.x * _speed;
-            current_velocity.z = direction.z * _speed;
-        } else {
-            current_velocity.x = Math::lerp(current_velocity.x, 0.0f, 0.15f);
-            current_velocity.z = Math::lerp(current_velocity.z, 0.0f, 0.15f);
-        }
+		if (direction.length() > 0) {
+			direction = direction.normalized();
+			current_velocity.x = direction.x * _speed;
+			current_velocity.z = direction.z * _speed;
+		} else {
+			current_velocity.x = Math::lerp(current_velocity.x, 0.0f, 0.15f);
+			current_velocity.z = Math::lerp(current_velocity.z, 0.0f, 0.15f);
+		}
 
-    } else {
-        if (input->is_action_pressed("move_up")) direction.y += 1;
-        if (input->is_action_pressed("move_down")) direction.y -= 1;
+	} else {
+		if (input->is_action_pressed("move_up"))
+			direction.y += 1;
+		if (input->is_action_pressed("move_down"))
+			direction.y -= 1;
 
-        float speed_to_use = (_current_mode == FLY) ? _fly_speed : _noclip_speed;
+		float speed_to_use = (_current_mode == FLY) ? _fly_speed : _noclip_speed;
 
-        if (direction.length() > 0) {
-            current_velocity = direction.normalized() * speed_to_use;
-        } else {
-            current_velocity = current_velocity.lerp(Vector3(0, 0, 0), 0.1f);
-        }
-    }
+		if (direction.length() > 0) {
+			current_velocity = direction.normalized() * speed_to_use;
+		} else {
+			current_velocity = current_velocity.lerp(Vector3(0, 0, 0), 0.1f);
+		}
+	}
 
-    set_velocity(current_velocity);
-    move_and_slide();
+	set_velocity(current_velocity);
+	move_and_slide();
 }
 void Player::_unhandled_input(const Ref<InputEvent> &event) {
 	Ref<InputEventMouseMotion> motion = event;
@@ -121,6 +147,35 @@ void Player::_unhandled_input(const Ref<InputEvent> &event) {
 
 		_camera->set_fov(fov);
 	}
+
+	if (mouse_button.is_valid() &&
+			mouse_button->is_pressed() &&
+			mouse_button->get_button_index() == MouseButton::MOUSE_BUTTON_LEFT) {
+		Dictionary hit = raycast_block(8.0f);
+
+		if (!hit.is_empty()) {
+			Vector3 position = hit["position"];
+			Vector3 normal = hit["normal"];
+
+			position -= normal * 0.01f;
+
+			World *world = get_node<World>("../World");
+
+			if (world) {
+				world->break_block(position);
+			}
+		}
+	}
+}
+Dictionary Player::raycast_block(float distance) {
+	Vector3 from = _camera->get_global_position();
+	Vector3 to = from + (-_camera->get_global_transform().basis.get_column(2)) * distance;
+
+	Ref<PhysicsRayQueryParameters3D> query = PhysicsRayQueryParameters3D::create(from, to);
+
+	Ref<World3D> world = get_world_3d();
+
+	return world->get_direct_space_state()->intersect_ray(query);
 }
 
 void Player::_bind_methods() {

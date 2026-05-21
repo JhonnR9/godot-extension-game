@@ -26,6 +26,8 @@ public:
     void _ready() override;
     void _process(double delta) override;
 
+	void break_block(const Vector3 &world_pos);
+
 protected:
     static void _bind_methods();
 
@@ -39,7 +41,7 @@ private:
     // Optimization
     int _world_radius = 6;
     int _cache_radius = _world_radius + (_world_radius * .5f);
-    int _world_height = 8;
+    int _world_height = 5;
     int _prewarm_chunk_pool = 8192 * 2;
     int _max_chunk_finalize_per_frame = 20;
 
@@ -73,6 +75,7 @@ private:
 
     void _process_models();
     void _process_meshes(const Vector3i &p_pos);
+	void _rebuild_chunk(const Vector3i &pos);
 
     // World state
     HashMap<Vector3i, ChunkNode *> _rendered_chunks;

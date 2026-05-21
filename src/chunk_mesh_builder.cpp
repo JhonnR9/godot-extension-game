@@ -4,32 +4,31 @@
 namespace godot {
 
 bool ChunkMeshBuilder::_is_air(const ChunkNeighbors &n, int x, int y, int z) {
-	if (x >= 0 && x < ChunkModel::SIZE && y >= 0 && y < ChunkModel::SIZE && z >= 0 && z < ChunkModel::SIZE) {
+	if (x >= 0 && x < ChunkModel::SIZE_X && y >= 0 && y < ChunkModel::SIZE_Y && z >= 0 && z < ChunkModel::SIZE_Z) {
 		return block::is_air(n.center->get_block(x, y, z));
 	}
 
 	if (x < 0) {
-		return n.left ? block::is_air(n.left->get_block(ChunkModel::SIZE - 1, y, z)) : true;
+		return n.left ? block::is_air(n.left->get_block(ChunkModel::SIZE_X - 1, y, z)) : true;
 	}
 
-	if (x >= ChunkModel::SIZE) {
+	if (x >= ChunkModel::SIZE_X) {
 		return n.right ? block::is_air(n.right->get_block(0, y, z)) : true;
 	}
 
 	if (y < 0) {
-		return n.bottom ? block::is_air(n.bottom->get_block(x, ChunkModel::SIZE - 1, z)) : true;
+		return n.bottom ? block::is_air(n.bottom->get_block(x, ChunkModel::SIZE_Y - 1, z)) : true;
 	}
 
-	if (y >= ChunkModel::SIZE) {
-		return n.top? block::is_air(n.top->get_block(x, 0, z)): true;
+	if (y >= ChunkModel::SIZE_Y) {
+		return n.top ? block::is_air(n.top->get_block(x, 0, z)) : true;
 	}
 
 	if (z < 0) {
-		return n.back ? block::is_air(n.back->get_block(x, y, ChunkModel::SIZE - 1)) : true;
+		return n.back ? block::is_air(n.back->get_block(x, y, ChunkModel::SIZE_Z - 1)) : true;
 	}
 
 	return n.front ? block::is_air(n.front->get_block(x, y, 0)) : true;
-
 }
 
 static AtlasUV get_uv(BlockType type, CubeFace face) {
@@ -85,80 +84,76 @@ Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
 
 	const ChunkModel *center = neighbors.center.get();
 
-	for (int z = 0; z < ChunkModel::SIZE; z++) {
-		for (int y = 0; y < ChunkModel::SIZE; y++) {
-			for (int x = 0; x < ChunkModel::SIZE; x++) {
-
-				const block::Block block =center->get_block(x, y, z);
+	for (int z = 0; z < ChunkModel::SIZE_Z; z++) {
+		for (int y = 0; y < ChunkModel::SIZE_Y; y++) {
+			for (int x = 0; x < ChunkModel::SIZE_X; x++) {
+				const block::Block block = center->get_block(x, y, z);
 
 				if (block::is_air(block))
 					continue;
 
-				const BlockType type =block::type(block);
+				const BlockType type = block::type(block);
 
 				Vector3i pos(x, y, z);
 
 				// RIGHT
-				if (x < ChunkModel::SIZE - 1) {
+				if (x < ChunkModel::SIZE_X - 1) {
 					if (block::is_air(center->get_block(x + 1, y, z))) {
-						mesher.add_face(CubeFace::R,pos,get_uv(type, CubeFace::R));
+						mesher.add_face(CubeFace::R, pos, get_uv(type, CubeFace::R));
 					}
 
 				} else if (_is_air(neighbors, x + 1, y, z)) {
-					mesher.add_face(CubeFace::R,pos,get_uv(type, CubeFace::R));
+					mesher.add_face(CubeFace::R, pos, get_uv(type, CubeFace::R));
 				}
 
 				// LEFT
 				if (x > 0) {
 					if (block::is_air(center->get_block(x - 1, y, z))) {
-						mesher.add_face(CubeFace::L,pos,get_uv(type, CubeFace::L));
+						mesher.add_face(CubeFace::L, pos, get_uv(type, CubeFace::L));
 					}
 
 				} else if (_is_air(neighbors, x - 1, y, z)) {
-
-					mesher.add_face(CubeFace::L,pos,get_uv(type, CubeFace::L));
+					mesher.add_face(CubeFace::L, pos, get_uv(type, CubeFace::L));
 				}
 
 				// UP
-				if (y < ChunkModel::SIZE - 1) {
-
+				if (y < ChunkModel::SIZE_Y - 1) {
 					if (block::is_air(center->get_block(x, y + 1, z))) {
-						mesher.add_face(CubeFace::U,pos,get_uv(type, CubeFace::U));
+						mesher.add_face(CubeFace::U, pos, get_uv(type, CubeFace::U));
 					}
 
 				} else if (_is_air(neighbors, x, y + 1, z)) {
-					mesher.add_face(CubeFace::U,pos,get_uv(type, CubeFace::U));
+					mesher.add_face(CubeFace::U, pos, get_uv(type, CubeFace::U));
 				}
 
 				// DOWN
 				if (y > 0) {
 					if (block::is_air(center->get_block(x, y - 1, z))) {
-						mesher.add_face(CubeFace::D,pos,get_uv(type, CubeFace::D));
+						mesher.add_face(CubeFace::D, pos, get_uv(type, CubeFace::D));
 					}
 
 				} else if (_is_air(neighbors, x, y - 1, z)) {
-					mesher.add_face(CubeFace::D,pos,get_uv(type, CubeFace::D));
+					mesher.add_face(CubeFace::D, pos, get_uv(type, CubeFace::D));
 				}
 
 				// FRONT
-				if (z < ChunkModel::SIZE - 1) {
+				if (z < ChunkModel::SIZE_Z - 1) {
 					if (block::is_air(center->get_block(x, y, z + 1))) {
-						mesher.add_face(CubeFace::F,pos,get_uv(type, CubeFace::F));
+						mesher.add_face(CubeFace::F, pos, get_uv(type, CubeFace::F));
 					}
 
 				} else if (_is_air(neighbors, x, y, z + 1)) {
-
-					mesher.add_face(CubeFace::F,pos,get_uv(type, CubeFace::F));
+					mesher.add_face(CubeFace::F, pos, get_uv(type, CubeFace::F));
 				}
 
 				// BACK
 				if (z > 0) {
 					if (block::is_air(center->get_block(x, y, z - 1))) {
-						mesher.add_face(CubeFace::B,pos,get_uv(type, CubeFace::B));
+						mesher.add_face(CubeFace::B, pos, get_uv(type, CubeFace::B));
 					}
 
 				} else if (_is_air(neighbors, x, y, z - 1)) {
-					mesher.add_face(CubeFace::B,pos,get_uv(type, CubeFace::B));
+					mesher.add_face(CubeFace::B, pos, get_uv(type, CubeFace::B));
 				}
 			}
 		}
@@ -177,7 +172,7 @@ Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
 	Ref<ArrayMesh> mesh;
 	mesh.instantiate();
 
-	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES,arrays);
+	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
 
 	return mesh;
 }

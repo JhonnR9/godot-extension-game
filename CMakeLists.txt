@@ -70,7 +70,9 @@ add_library(${LIBNAME} SHARED
         src/chunk_model_generator.cpp
         src/chunk_model_generator.h
         src/chunk_mesh_async_generator.cpp
-        src/chunk_mesh_async_generator.h)
+        src/chunk_mesh_async_generator.h
+        src/crosshair.cpp
+        src/crosshair.h)
 
 target_sources(${LIBNAME}
     PRIVATE
