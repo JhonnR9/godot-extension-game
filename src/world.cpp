@@ -159,20 +159,27 @@ void World::_process_models() {
 		return;
 	}
 
+	// 1. Primeiro adicionamos todos os novos modelos prontos ao repositório
 	for (auto it = ready_models.begin(); it != ready_models.end(); ++it) {
 		_chunk_repository->add_chunk(it->key, it->value);
 	}
 
 	for (auto it = ready_models.begin(); it != ready_models.end(); ++it) {
 		Vector3i pos = it->key;
+
 		_try_build_mesh_with_neighbors(pos);
+
 
 		Vector3i dirs[] = {
 			{ 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 }
 		};
 
 		for (const Vector3i &dir : dirs) {
-			_try_build_mesh_with_neighbors(pos + dir);
+			Vector3i neighbor_pos = pos + dir;
+
+			if (_chunk_repository->contains_chunk(neighbor_pos)) {
+				_try_build_mesh_with_neighbors(neighbor_pos);
+			}
 		}
 	}
 }
@@ -274,11 +281,11 @@ void World::_try_build_mesh_with_neighbors(const Vector3i p_pos) {
 		return;
 	}
 
-	if (const bool ready = neighbors.left && neighbors.right && neighbors.top && neighbors.bottom && neighbors.front && neighbors.back; !ready) {
-		return;
-	}
-
-	_mesh_generator->queue_async_generate_mesh(p_pos, neighbors, _chunk_repository->get_chunk_version(p_pos));
+	_mesh_generator->queue_async_generate_mesh(
+	   p_pos,
+	   neighbors,
+	   _chunk_repository->get_chunk_version(p_pos)
+	);
 }
 
 void World::_bind_methods() {

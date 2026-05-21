@@ -19,87 +19,136 @@ void VoxelMesher::clear() {
 }
 
 void VoxelMesher::add_face(
-	CubeFace face,
-	Vector3 pos,
-	const AtlasUV &uv,
-	Color color,
-	float size
-) {
+		CubeFace face,
+		Vector3 pos,
+		const AtlasUV &uv,
+		Color color,
+		float size) {
 	float s = size * 0.5f;
 
 	switch (face) {
 		case CubeFace::F:
 			_add_quad(
-				pos + Vector3(-s, -s, s),
-				pos + Vector3(s, -s, s),
-				pos + Vector3(s, s, s),
-				pos + Vector3(-s, s, s),
-				Vector3(0, 0, 1),
-				uv,
-				color
-			);
+					pos + Vector3(-s, -s, s),
+					pos + Vector3(s, -s, s),
+					pos + Vector3(s, s, s),
+					pos + Vector3(-s, s, s),
+					Vector3(0, 0, 1),
+					uv,
+					color);
 			break;
 
 		case CubeFace::B:
 			_add_quad(
-				pos + Vector3(s, -s, -s),
-				pos + Vector3(-s, -s, -s),
-				pos + Vector3(-s, s, -s),
-				pos + Vector3(s, s, -s),
-				Vector3(0, 0, -1),
-				uv,
-				color
-			);
+					pos + Vector3(s, -s, -s),
+					pos + Vector3(-s, -s, -s),
+					pos + Vector3(-s, s, -s),
+					pos + Vector3(s, s, -s),
+					Vector3(0, 0, -1),
+					uv,
+					color);
 			break;
 
 		case CubeFace::L:
 			_add_quad(
-				pos + Vector3(-s, -s, -s),
-				pos + Vector3(-s, -s, s),
-				pos + Vector3(-s, s, s),
-				pos + Vector3(-s, s, -s),
-				Vector3(-1, 0, 0),
-				uv,
-				color
-			);
+					pos + Vector3(-s, -s, -s),
+					pos + Vector3(-s, -s, s),
+					pos + Vector3(-s, s, s),
+					pos + Vector3(-s, s, -s),
+					Vector3(-1, 0, 0),
+					uv,
+					color);
 			break;
 
 		case CubeFace::R:
 			_add_quad(
-				pos + Vector3(s, -s, s),
-				pos + Vector3(s, -s, -s),
-				pos + Vector3(s, s, -s),
-				pos + Vector3(s, s, s),
-				Vector3(1, 0, 0),
-				uv,
-				color
-			);
+					pos + Vector3(s, -s, s),
+					pos + Vector3(s, -s, -s),
+					pos + Vector3(s, s, -s),
+					pos + Vector3(s, s, s),
+					Vector3(1, 0, 0),
+					uv,
+					color);
 			break;
 
 		case CubeFace::U:
 			_add_quad(
-				pos + Vector3(-s, s, s),
-				pos + Vector3(s, s, s),
-				pos + Vector3(s, s, -s),
-				pos + Vector3(-s, s, -s),
-				Vector3(0, 1, 0),
-				uv,
-				color
-			);
+					pos + Vector3(-s, s, s),
+					pos + Vector3(s, s, s),
+					pos + Vector3(s, s, -s),
+					pos + Vector3(-s, s, -s),
+					Vector3(0, 1, 0),
+					uv,
+					color);
 			break;
 
 		case CubeFace::D:
 			_add_quad(
-				pos + Vector3(-s, -s, -s),
-				pos + Vector3(s, -s, -s),
-				pos + Vector3(s, -s, s),
-				pos + Vector3(-s, -s, s),
-				Vector3(0, -1, 0),
-				uv,
-				color
-			);
+					pos + Vector3(-s, -s, -s),
+					pos + Vector3(s, -s, -s),
+					pos + Vector3(s, -s, s),
+					pos + Vector3(-s, -s, s),
+					Vector3(0, -1, 0),
+					uv,
+					color);
 			break;
 	}
+}
+void VoxelMesher::add_quad(const Vector3 &v0, const Vector3 &v1, const Vector3 &v2, const Vector3 &v3, const Vector3 &normal, const AtlasUV &uv, const Color &color, float uv_width, float uv_height) {
+	int start = _vertices.size();
+
+	// vertices
+	_vertices.append(v0);
+	_vertices.append(v1);
+	_vertices.append(v2);
+	_vertices.append(v3);
+
+	// normals + colors
+	for (int i = 0; i < 4; i++) {
+		_normals.append(normal);
+		_colors.append(color);
+	}
+
+	float u_size = uv.max.x - uv.min.x;
+	float v_size = uv.max.y - uv.min.y;
+
+	_uvs.append(Vector2(
+		uv.min.x,
+		uv.min.y + v_size * uv_height
+	));
+
+	_uvs.append(Vector2(
+		uv.min.x + u_size * uv_width,
+		uv.min.y + v_size * uv_height
+	));
+
+	_uvs.append(Vector2(
+		uv.min.x + u_size * uv_width,
+		uv.min.y
+	));
+
+	_uvs.append(Vector2(
+		uv.min.x,
+		uv.min.y
+	));
+
+	// triangles
+	_indices.append(start);
+	_indices.append(start + 2);
+	_indices.append(start + 1);
+
+	_indices.append(start);
+	_indices.append(start + 3);
+	_indices.append(start + 2);
+
+	// collision
+	_collision_faces.append(v0);
+	_collision_faces.append(v2);
+	_collision_faces.append(v1);
+
+	_collision_faces.append(v0);
+	_collision_faces.append(v3);
+	_collision_faces.append(v2);
 }
 
 void VoxelMesher::_add_quad(

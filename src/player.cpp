@@ -159,9 +159,7 @@ void Player::_unhandled_input(const Ref<InputEvent> &event) {
 
 			position -= normal * 0.01f;
 
-			World *world = get_node<World>("../World");
-
-			if (world) {
+			if (World *world = get_node<World>("../World")) {
 				world->break_block(position);
 			}
 		}
@@ -171,10 +169,12 @@ Dictionary Player::raycast_block(float distance) {
 	Vector3 from = _camera->get_global_position();
 	Vector3 to = from + (-_camera->get_global_transform().basis.get_column(2)) * distance;
 
+
 	Ref<PhysicsRayQueryParameters3D> query = PhysicsRayQueryParameters3D::create(from, to);
 
-	Ref<World3D> world = get_world_3d();
+	query->set_exclude(Array::make(get_rid()));
 
+	Ref<World3D> world = get_world_3d();
 	return world->get_direct_space_state()->intersect_ray(query);
 }
 

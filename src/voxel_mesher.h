@@ -22,12 +22,22 @@ public:
 	void clear();
 
 	void add_face(
-		CubeFace face,
-		Vector3 position,
-		const AtlasUV &uv,
-		Color color = Color(1.0f, 1.0f, 1.0f, 1.0f),
-		float size = 1.0f
-	);
+			CubeFace face,
+			Vector3 position,
+			const AtlasUV &uv,
+			Color color = Color(1.0f, 1.0f, 1.0f, 1.0f),
+			float size = 1.0f);
+
+	void add_quad(
+			const Vector3 &v0,
+			const Vector3 &v1,
+			const Vector3 &v2,
+			const Vector3 &v3,
+			const Vector3 &normal,
+			const AtlasUV &uv,
+			const Color &color,
+			float uv_width = 1.0f,
+			float uv_height = 1.0f);
 
 	[[nodiscard]] Array build_arrays() const;
 	PackedVector3Array get_collision_faces() const;
@@ -41,14 +51,13 @@ private:
 	PackedVector3Array _collision_faces;
 
 	void _add_quad(
-		Vector3 v0,
-		Vector3 v1,
-		Vector3 v2,
-		Vector3 v3,
-		Vector3 normal,
-		const AtlasUV &uv,
-		Color color
-	);
+			Vector3 v0,
+			Vector3 v1,
+			Vector3 v2,
+			Vector3 v3,
+			Vector3 normal,
+			const AtlasUV &uv,
+			Color color);
 };
 
 } // namespace godot
