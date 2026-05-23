@@ -28,9 +28,24 @@ struct ChunkNeighbors {
 	std::shared_ptr<ChunkModel> front;
 	std::shared_ptr<ChunkModel> back;
 };
+struct FaceAxis {
+	int normal_axis;
+	int u_axis;
+	int v_axis;
+
+	int normal_dir;
+	Vector3 normal;
+};
 
 class ChunkMeshBuilder {
 	VoxelMesher mesher;
+	void _add_right_faces(const ChunkNeighbors& neighbors);
+	void _add_up_faces(const ChunkNeighbors& neighbors);
+	void _add_left_faces(const ChunkNeighbors& neighbors);
+	void _add_down_faces(const ChunkNeighbors& neighbors);
+
+	void _add_front_faces(const ChunkNeighbors& neighbors);
+	void _add_back_faces(const ChunkNeighbors& neighbors);
 
 public:
 	Ref<ArrayMesh> build(const ChunkNeighbors& neighbors);

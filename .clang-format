@@ -9,6 +9,7 @@ AlignAfterOpenBracket: DontAlign
 # AlignArrayOfStructures: None
 # AlignConsecutiveMacros: None
 # AlignConsecutiveAssignments: None
+AlignConsecutiveAssignments: Consecutive
 # AlignConsecutiveBitFields: None
 # AlignConsecutiveDeclarations: None
 # AlignEscapedNewlines: Right

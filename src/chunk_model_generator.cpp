@@ -1,6 +1,5 @@
 
 #include "chunk_model_generator.h"
-
 #include <godot_cpp/classes/worker_thread_pool.hpp>
 #include <memory>
 
