@@ -1,6 +1,8 @@
 [gd_scene format=3 uid="uid://bx7k6wka5el6q"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_4xowi"]
+radius = 0.2
+height = 1.0
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_4xowi"]
 sky_top_color = Color(0.5448363, 0.61647886, 0.7121759, 1)
@@ -33,6 +35,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.071924, 58.24952, 20.2660
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=62282504]
 shape = SubResource("CapsuleShape3D_4xowi")
+debug_color = Color(0.94598395, 8.95232e-06, 0.59221935, 0.41960785)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1386083802]
 environment = SubResource("Environment_4xowi")

@@ -25,7 +25,7 @@ void ChunkNode::_setup() {
 	if (!_material.is_valid()) {
 		_material.instantiate();
 
-		_material->set_texture_filter(BaseMaterial3D::TEXTURE_FILTER_NEAREST);
+		_material->set_texture_filter(BaseMaterial3D::TEXTURE_FILTER_NEAREST_WITH_MIPMAPS);
 		_material->set_flag(BaseMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, false);
 
 		Ref<Resource> tex_res = ResourceLoader::get_singleton()->load("res://sprites/atlas.png");

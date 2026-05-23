@@ -1,13 +1,14 @@
 #include "chunk_mesh_async_generator.h"
 #include "chunk_mesh_builder.h"
 #include <godot_cpp/classes/worker_thread_pool.hpp>
+#include <utility>
 
 namespace godot {
 
 void ChunkMeshAsyncGenerator::_bind_methods() {
 }
 
-void ChunkMeshAsyncGenerator::queue_async_generate_mesh(Vector3i p_pos, ChunkNeighbors p_neighbors, uint64_t version) {
+void ChunkMeshAsyncGenerator::queue_async_generate_mesh(Vector3i p_pos, ChunkNeighbors p_neighbors, uint64_t version, bool p_priority) {
 	{
 		std::lock_guard lock(_generating_meshes_mutex);
 		_generating_meshes.insert(p_pos);
@@ -15,7 +16,7 @@ void ChunkMeshAsyncGenerator::queue_async_generate_mesh(Vector3i p_pos, ChunkNei
 
 	auto *chunk_mesh_job = new ChunkMeshJob{
 		p_pos,
-		p_neighbors,
+		std::move(p_neighbors),
 		this,
 		version
 	};
@@ -46,7 +47,7 @@ void ChunkMeshAsyncGenerator::queue_async_generate_mesh(Vector3i p_pos, ChunkNei
 				delete chunk_job;
 			},
 			chunk_mesh_job,
-			false,
+			p_priority,
 			"chunk_mesh_task");
 }
 

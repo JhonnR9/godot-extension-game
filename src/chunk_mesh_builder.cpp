@@ -477,7 +477,7 @@ void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
 				while (x + quad_h < SX && can_expand) {
 					for (int k = 0; k < quad_w; k++) {
 						if (!mask[x + quad_h][z + k] ||
-								visited[x + quad_h][z + k]) {
+							visited[x + quad_h][z + k]) {
 							can_expand = false;
 							break;
 						}
@@ -567,7 +567,7 @@ void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
 
 				while (x + quad_w < SX) {
 					if (!mask[x + quad_w][y] ||
-							visited[x + quad_w][y]) {
+						visited[x + quad_w][y]) {
 						break;
 					}
 
@@ -586,7 +586,7 @@ void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
 				while (y + quad_h < SY && can_expand) {
 					for (int k = 0; k < quad_w; k++) {
 						if (!mask[x + k][y + quad_h] ||
-								visited[x + k][y + quad_h]) {
+							visited[x + k][y + quad_h]) {
 							can_expand = false;
 							break;
 						}
@@ -676,7 +676,7 @@ void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
 
 				while (x + quad_w < SX) {
 					if (!mask[x + quad_w][y] ||
-							visited[x + quad_w][y]) {
+						visited[x + quad_w][y]) {
 						break;
 					}
 
@@ -695,7 +695,7 @@ void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
 				while (y + quad_h < SY && can_expand) {
 					for (int k = 0; k < quad_w; k++) {
 						if (!mask[x + k][y + quad_h] ||
-								visited[x + k][y + quad_h]) {
+							visited[x + k][y + quad_h]) {
 							can_expand = false;
 							break;
 						}
@@ -738,6 +738,7 @@ void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
 		}
 	}
 }
+
 Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
 	mesher.clear();
 

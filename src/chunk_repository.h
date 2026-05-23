@@ -31,6 +31,7 @@ public:
 	void set_block(const Vector3i &world_block_pos,block::Block block);
 	HashSet<Vector3i>consume_dirty_chunks();
 	uint64_t get_chunk_version(const Vector3i &p_pos);
+	bool is_chunk_dirty(const Vector3i &p_pos);
 
 };
 

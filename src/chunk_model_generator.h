@@ -37,7 +37,7 @@ private:
 
 public:
 	HashMap<Vector3i, std::shared_ptr<ChunkModel>> consume_generated_results(int amount = -1);
-	void _queue_async_generate_chunk_model(Vector3i p_pos, const TerrainSettings &p_settings);
+	void _queue_async_generate_chunk_model(Vector3i p_pos, const TerrainSettings &p_settings, bool p_priority = false);
 	bool is_loading_chunk(const Vector3i &p_pos);
 };
 

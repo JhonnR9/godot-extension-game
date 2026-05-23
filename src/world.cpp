@@ -156,7 +156,7 @@ void World::_process_models() {
 		return;
 	}
 
-	for (auto & ready_model : ready_models) {
+	for (auto &ready_model : ready_models) {
 		_chunk_repository->add_chunk(ready_model.key, ready_model.value);
 	}
 
@@ -203,7 +203,33 @@ void World::_rebuild_chunk(const Vector3i &pos) {
 	}
 	uint64_t version = _chunk_repository->get_chunk_version(pos);
 
-	_mesh_generator->queue_async_generate_mesh(pos, neighbors, version);
+	bool dirty = _chunk_repository->is_chunk_dirty(pos);
+
+	bool high_priority = _is_high_priority(pos, dirty);
+
+	_mesh_generator->queue_async_generate_mesh(
+		pos,
+		neighbors,
+		version,
+		high_priority
+	);
+}
+
+bool World::_is_high_priority(const Vector3i &pos, bool dirty) {
+	const Vector3i player = _last_player_chunk_pos;
+
+	int dx = ABS(pos.x - player.x);
+	int dy = ABS(pos.y - player.y);
+	int dz = ABS(pos.z - player.z);
+
+	int dist = dx + dy + dz;
+
+	if (dirty)
+		return true;
+	if (dist < _cache_radius * 1.5)
+		return true;
+
+	return false;
 }
 
 void World::_finalize_chunk(const MeshResult &res) {
@@ -251,7 +277,11 @@ void World::_queue_async_generate_chunk(const Vector3i p_pos) {
 	settings.noise_set.terrain_noise = _terrain_noise;
 	settings.noise_set.cave_noise    = _cave_noise;
 
-	_model_generator->_queue_async_generate_chunk_model(p_pos, settings);
+	bool dirty = false;
+
+	bool high_priority = _is_high_priority(p_pos, dirty);
+
+	_model_generator->_queue_async_generate_chunk_model(p_pos, settings, high_priority);
 }
 
 ChunkNeighbors World::_get_neighbors_for(const Vector3i p_pos) {

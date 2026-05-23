@@ -13,6 +13,11 @@ uint64_t ChunkRepository::get_chunk_version(const Vector3i &p_pos) {
 	return 0;
 }
 
+bool ChunkRepository::is_chunk_dirty(const Vector3i &p_pos) {
+	std::lock_guard lock(_dirty_chunks_mutex);
+	return _dirty_chunks.has(p_pos);
+}
+
 void ChunkRepository::_bind_methods() {
 }
 void ChunkRepository::add_chunk(const Vector3i &p_pos, const std::shared_ptr<ChunkModel> &p_model) {

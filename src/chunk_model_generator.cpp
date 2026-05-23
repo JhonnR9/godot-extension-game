@@ -7,7 +7,7 @@ namespace godot {
 void ChunkModelGenerator::_bind_methods() {
 }
 
-void ChunkModelGenerator::_queue_async_generate_chunk_model(Vector3i p_pos, const TerrainSettings &p_settings) {
+void ChunkModelGenerator::_queue_async_generate_chunk_model(Vector3i p_pos, const TerrainSettings &p_settings, bool p_priotity) {
 	{
 		std::lock_guard lock(_loading_chunks_mutex);
 		_loading_chunks.insert(p_pos);
@@ -32,7 +32,7 @@ void ChunkModelGenerator::_queue_async_generate_chunk_model(Vector3i p_pos, cons
 				delete chunk_job;
 			},
 			job,
-			false,
+			p_priotity,
 			"chunk_gen");
 }
 bool ChunkModelGenerator::is_loading_chunk(const Vector3i &p_pos) {

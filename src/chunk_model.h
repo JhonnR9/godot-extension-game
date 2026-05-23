@@ -6,9 +6,9 @@
 namespace godot {
 
 struct ChunkModel {
-	static constexpr int SIZE_X = 8;
-	static constexpr int SIZE_Y = 8;
-	static constexpr int SIZE_Z = 8;
+	static constexpr int SIZE_X = 32;
+	static constexpr int SIZE_Y = 32;
+	static constexpr int SIZE_Z = 32;
 
 	static constexpr int VOLUME = SIZE_X * SIZE_Y * SIZE_Z;
 

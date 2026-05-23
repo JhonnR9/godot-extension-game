@@ -39,11 +39,11 @@ private:
 	Ref<ChunkMeshAsyncGenerator> _mesh_generator;
 
 	// Optimization
-	int _world_radius = 6;
+	int _world_radius = 8;
 	int _cache_radius = _world_radius + (_world_radius * .5f);
-	int _world_height = 5;
+	int _world_height = 6;
 	int _prewarm_chunk_pool = 8192 * 2;
-	int _max_chunk_finalize_per_frame = 20;
+	int _max_chunk_finalize_per_frame = 12;
 
 	// Terrain settings
 	uint64_t _seed = 546546;
@@ -76,6 +76,7 @@ private:
 	void _process_models();
 	void _process_meshes(const Vector3i &p_pos);
 	void _rebuild_chunk(const Vector3i &pos);
+	bool _is_high_priority(const Vector3i &pos, bool dirty);
 
 	// World state
 	HashMap<Vector3i, ChunkNode *> _rendered_chunks;
