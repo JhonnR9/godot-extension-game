@@ -14,30 +14,27 @@
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/classes/world3d.hpp>
-#include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/classes/engine.hpp>
 
 namespace godot {
 
 void Player::_ready() {
-	_camera = memnew(Camera3D);
-	add_child(_camera);
+	if (!Engine::get_singleton()->is_editor_hint()) {
+		Input::get_singleton()->set_mouse_mode(Input::MOUSE_MODE_CAPTURED);
+	}
 
-	_camera->set_position(Vector3(0, 1.6, 0));
-	_camera->set_current(true);
+	_camera = get_node<Camera3D>("Camera3D");
+	if (_camera) {
+		_camera->set_position(Vector3(0, 1.6, 0));
+		_camera->set_current(true);
+	}
 
-	Input::get_singleton()->set_mouse_mode(Input::MOUSE_MODE_CAPTURED);
-
-	CanvasLayer *canvas = memnew(CanvasLayer);
-	Crosshair *crosshair = memnew(Crosshair);
-	crosshair->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
-	crosshair->set_anchors_preset(Control::PRESET_FULL_RECT);
-
-	canvas->add_child(crosshair);
-
-	get_tree()->get_current_scene()->call_deferred("add_child", canvas);
 }
 
 void Player::_physics_process(double delta) {
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
 	Input *input = Input::get_singleton();
 	Vector3 current_velocity = get_velocity();
 
@@ -165,6 +162,9 @@ void Player::_unhandled_input(const Ref<InputEvent> &event) {
 		}
 	}
 }
+
+
+
 Dictionary Player::raycast_block(float distance) {
 	Vector3 from = _camera->get_global_position();
 	Vector3 to = from + (-_camera->get_global_transform().basis.get_column(2)) * distance;

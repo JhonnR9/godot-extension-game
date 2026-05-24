@@ -40,15 +40,15 @@ private:
 
 	// Optimization
 	int _world_radius = 8;
-	int _cache_radius = _world_radius + (_world_radius * .5f);
-	int _world_height = 6;
-	int _prewarm_chunk_pool = 8192 * 2;
-	int _max_chunk_finalize_per_frame = 12;
+	int _cache_radius = _world_radius + (_world_radius  / 2);
+	int _world_height = 4;
+	int _prewarm_chunk_pool = 8192;
+	int _current_chunks_finalize_in_frame = 100;
 
 	// Terrain settings
 	uint64_t _seed = 546546;
 	int _terrain_base_height = 24;
-	float _terrain_amplitude = 18.0f;
+	float _terrain_amplitude = 5.0f;
 	int _dirt_layer_depth = 20;
 	float _cave_threshold = 0.2f;
 
@@ -67,7 +67,8 @@ private:
 	bool _did_player_change_chunk() const;
 	void _remove_chunk(ChunkNode *p_chunk_node);
 	void _update_visible_chunks();
-	void _cleanup_far_chunks();
+	void _cleanup_far_chunks() const;
+	float _get_current_chunks_finalize_amount(float delta);
 
 	static Vector3i _world_to_chunk_pos(Vector3 p_pos);
 	void _finalize_chunk(const MeshResult &res);

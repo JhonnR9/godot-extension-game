@@ -1,32 +1,15 @@
 [gd_scene format=3 uid="uid://bx7k6wka5el6q"]
 
+[ext_resource type="Script" uid="uid://darldrg0or1ui" path="res://control.gd" id="2_noarx"]
+
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_4xowi"]
 radius = 0.2
 height = 1.0
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_4xowi"]
-sky_top_color = Color(0.5448363, 0.61647886, 0.7121759, 1)
-sky_horizon_color = Color(0.7756898, 0.6235828, 0.45837754, 1)
-
-[sub_resource type="Sky" id="Sky_4xowi"]
-sky_material = SubResource("ProceduralSkyMaterial_4xowi")
-
-[sub_resource type="Environment" id="Environment_4xowi"]
-sky = SubResource("Sky_4xowi")
-ambient_light_source = 3
+[sub_resource type="Environment" id="Environment_a202f"]
 ambient_light_color = Color(1, 1, 1, 1)
-ssao_enabled = true
-fog_height = -316.7
-volumetric_fog_length = 0.66
-volumetric_fog_detail_spread = 0.5
-adjustment_contrast = 1.05
 
 [node name="Node3D" type="Node3D" unique_id=1977859618]
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=224629533]
-transform = Transform3D(0.1466999, 0.9424369, -0.3004865, -0.09548254, 0.31584582, 0.943994, 0.98456204, -0.1097926, 0.13632086, 0, 58.92252, 0)
-light_color = Color(0.74, 0.805, 1, 1)
-sky_mode = 1
 
 [node name="World" type="World" parent="." unique_id=538717011]
 
@@ -37,5 +20,32 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.071924, 58.24952, 20.2660
 shape = SubResource("CapsuleShape3D_4xowi")
 debug_color = Color(0.94598395, 8.95232e-06, 0.59221935, 0.41960785)
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1386083802]
-environment = SubResource("Environment_4xowi")
+[node name="Camera3D" type="Camera3D" parent="Player" unique_id=224897343]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+current = true
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=655011314]
+
+[node name="Control" type="Control" parent="CanvasLayer" unique_id=476137383]
+layout_mode = 3
+anchor_right = 0.9791667
+anchor_bottom = 0.96481484
+offset_right = 40.0
+offset_bottom = 40.0
+size_flags_horizontal = 10
+size_flags_vertical = 3
+script = ExtResource("2_noarx")
+metadata/_edit_use_anchors_ = true
+
+[node name="Crosshair" type="Crosshair" parent="CanvasLayer/Control" unique_id=2106287389]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1900642398]
+environment = SubResource("Environment_a202f")

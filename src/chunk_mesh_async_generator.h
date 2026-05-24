@@ -61,6 +61,7 @@ private:
 public:
 	void queue_async_generate_mesh(Vector3i p_pos, ChunkNeighbors p_neighbors, uint64_t p_version, bool p_priority = false);
 	bool is_queued_mesh(Vector3i p_pos);
+	size_t get_queue_size();
 
 	MeshResultHashSet consume_generated_meshes(int amount = -1);
 };

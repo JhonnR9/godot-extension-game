@@ -8,6 +8,10 @@ namespace block {
 using Block = uint32_t;
 
 constexpr uint32_t BLOCK_ID_MASK = 0x3FF; // 10 bits
+constexpr uint32_t BLOCK_FLAG_SOLID      = 1 << 10;
+constexpr uint32_t BLOCK_FLAG_TRANSPARENT= 1 << 11;
+constexpr uint32_t BLOCK_FLAG_EMISSIVE   = 1 << 12;
+constexpr uint32_t BLOCK_FLAG_WATERLOG   = 1 << 13;
 
 constexpr uint16_t block_id(Block b) {
 	return b & BLOCK_ID_MASK;

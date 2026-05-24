@@ -12,18 +12,13 @@ void ChunkPool::set_owner(Node *owner) {
 void ChunkPool::_bind_methods() {
 }
 ChunkNode *ChunkPool::acquire() {
-	if (!_owner) return nullptr;
-
-	ChunkNode *chunk;
+	if (!_owner_node) return nullptr;
 
 	if (_pool.empty()) {
-		chunk = memnew(ChunkNode);
-		_owner_node->add_child(chunk);
-	} else {
-		chunk = _pool.back();
-		_pool.pop_back();
+		return nullptr;
 	}
-
+	ChunkNode *chunk = _pool.back();
+	_pool.pop_back();
 	chunk->enable();
 	return chunk;
 }
@@ -35,7 +30,7 @@ void ChunkPool::release(ChunkNode *chunk) {
 	_pool.push_back(chunk);
 }
 void ChunkPool::set_prewarm(const int count) {
-	if (!_owner) return;
+	if (!_owner_node) return;
 	for (int i = 0; i < count; i++) {
 		auto *chunk = memnew(ChunkNode);
 		_owner_node->add_child(chunk);

@@ -46,7 +46,7 @@ private:
 	PackedVector3Array _vertices;
 	PackedVector3Array _normals;
 	PackedVector2Array _uvs;
-	PackedColorArray _colors;
+	PackedColorArray _quad_uv_size;
 	PackedInt32Array _indices;
 	PackedVector3Array _collision_faces;
 

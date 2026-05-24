@@ -8,14 +8,13 @@
 #include <godot_cpp/classes/mesh.hpp>
 
 namespace godot {
-
 void VoxelMesher::clear() {
 	_vertices.clear();
 	_normals.clear();
 	_uvs.clear();
-	_colors.clear();
 	_indices.clear();
 	_collision_faces.clear();
+	_quad_uv_size.clear();
 }
 
 void VoxelMesher::add_face(
@@ -94,6 +93,7 @@ void VoxelMesher::add_face(
 			break;
 	}
 }
+
 void VoxelMesher::add_quad(const Vector3 &v0, const Vector3 &v1, const Vector3 &v2, const Vector3 &v3, const Vector3 &normal, const AtlasUV &uv, const Color &color, float uv_width, float uv_height) {
 	int start = _vertices.size();
 
@@ -106,31 +106,13 @@ void VoxelMesher::add_quad(const Vector3 &v0, const Vector3 &v1, const Vector3 &
 	// normals + colors
 	for (int i = 0; i < 4; i++) {
 		_normals.append(normal);
-		_colors.append(color);
+		_quad_uv_size.append(Color(uv_width, uv_height, 0, 0));
 	}
 
-	float u_size = uv.max.x - uv.min.x;
-	float v_size = uv.max.y - uv.min.y;
-
-	_uvs.append(Vector2(
-		uv.min.x,
-		uv.min.y + v_size * uv_height
-	));
-
-	_uvs.append(Vector2(
-		uv.min.x + u_size * uv_width,
-		uv.min.y + v_size * uv_height
-	));
-
-	_uvs.append(Vector2(
-		uv.min.x + u_size * uv_width,
-		uv.min.y
-	));
-
-	_uvs.append(Vector2(
-		uv.min.x,
-		uv.min.y
-	));
+	_uvs.append(Vector2(uv.min.x, uv.max.y)); // v0
+	_uvs.append(Vector2(uv.max.x, uv.max.y)); // v1
+	_uvs.append(Vector2(uv.max.x, uv.min.y)); // v2
+	_uvs.append(Vector2(uv.min.x, uv.min.y)); // v3
 
 	// triangles
 	_indices.append(start);
@@ -152,14 +134,14 @@ void VoxelMesher::add_quad(const Vector3 &v0, const Vector3 &v1, const Vector3 &
 }
 
 void VoxelMesher::_add_quad(
-	Vector3 v0,
-	Vector3 v1,
-	Vector3 v2,
-	Vector3 v3,
-	Vector3 normal,
-	const AtlasUV &uv,
-	Color color
-) {
+		Vector3 v0,
+		Vector3 v1,
+		Vector3 v2,
+		Vector3 v3,
+		Vector3 normal,
+		const AtlasUV &uv,
+		Color color
+		) {
 	int start = _vertices.size();
 
 	_vertices.append(v0);
@@ -169,7 +151,7 @@ void VoxelMesher::_add_quad(
 
 	for (int i = 0; i < 4; i++) {
 		_normals.append(normal);
-		_colors.append(color);
+
 	}
 
 	_uvs.append(Vector2(uv.min.x, uv.max.y));
@@ -198,18 +180,18 @@ void VoxelMesher::_add_quad(
 
 Array VoxelMesher::build_arrays() const {
 	Array arrays;
-	arrays.resize(Mesh::ARRAY_MAX);
+	arrays.resize(Mesh::ARRAY_MAX );
 
 	arrays[Mesh::ARRAY_VERTEX] = _vertices;
 	arrays[Mesh::ARRAY_NORMAL] = _normals;
-	arrays[Mesh::ARRAY_COLOR] = _colors;
+	arrays[Mesh::ARRAY_COLOR]  = _quad_uv_size;
 	arrays[Mesh::ARRAY_TEX_UV] = _uvs;
-	arrays[Mesh::ARRAY_INDEX] = _indices;
+	arrays[Mesh::ARRAY_INDEX]  = _indices;
 
 	return arrays;
 }
+
 PackedVector3Array VoxelMesher::get_collision_faces() const {
 	return _collision_faces;
 }
-
 } //namespace godot

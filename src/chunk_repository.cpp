@@ -82,7 +82,7 @@ void ChunkRepository::set_block(const Vector3i &world_block_pos, block::Block bl
 	chunk->set_block(local_x, local_y, local_z, 0);
 
 	{
-		std::lock_guard lock(_mutex);
+		std::lock_guard lock(_dirty_chunks_mutex);
 
 		_dirty_chunks.insert(chunk_pos);
 
@@ -104,7 +104,10 @@ void ChunkRepository::set_block(const Vector3i &world_block_pos, block::Block bl
 		if (local_z == ChunkModel::SIZE_Z - 1)
 			_dirty_chunks.insert(chunk_pos + Vector3i(0, 0, 1));
 	}
-	_chunk_versions[chunk_pos]++;
+	{
+		std::lock_guard lock(_mutex);
+		_chunk_versions[chunk_pos]++;
+	}
 }
 HashSet<Vector3i> ChunkRepository::consume_dirty_chunks() {
 	std::lock_guard lock(_dirty_chunks_mutex);

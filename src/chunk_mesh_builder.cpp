@@ -188,7 +188,9 @@ void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
 						v3,
 						Vector3(1, 0, 0),
 						get_uv(type, CubeFace::R),
-						Color(1.0, 1.0, 1.0)
+						Color(1.0, 1.0, 1.0),
+						static_cast<float>(quad_w),
+						static_cast<float>(quad_h)
 						);
 			}
 		}
@@ -290,7 +292,9 @@ void ChunkMeshBuilder::_add_up_faces(const ChunkNeighbors &neighbors) {
 						v3,
 						Vector3(0, 1, 0),
 						get_uv(type, CubeFace::U),
-						Color(1.0, 1.0, 1.0)
+						Color(1.0, 1.0, 1.0),
+						static_cast<float>(quad_w),
+						static_cast<float>(quad_h)
 						);
 			}
 		}
@@ -406,7 +410,9 @@ void ChunkMeshBuilder::_add_left_faces(const ChunkNeighbors &neighbors) {
 						v3,
 						Vector3(-1, 0, 0),
 						get_uv(type, CubeFace::L),
-						Color(1.0, 1.0, 1.0)
+						Color(1.0, 1.0, 1.0),
+						static_cast<float>(quad_w),
+						static_cast<float>(quad_h)
 						);
 			}
 		}
@@ -514,7 +520,9 @@ void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
 						v3,
 						Vector3(0, -1, 0),
 						get_uv(type, CubeFace::D),
-						Color(1.0, 1.0, 1.0)
+						Color(1.0, 1.0, 1.0),
+						static_cast<float>(quad_w),
+						static_cast<float>(quad_h)
 						);
 			}
 		}
@@ -623,7 +631,9 @@ void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
 						v3,
 						Vector3(0, 0, 1),
 						get_uv(type, CubeFace::F),
-						Color(1.0, 1.0, 1.0)
+						Color(1.0, 1.0, 1.0),
+						static_cast<float>(quad_w),
+						static_cast<float>(quad_h)
 						);
 			}
 		}
@@ -732,7 +742,9 @@ void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
 						v3,
 						Vector3(0, 0, -1),
 						get_uv(type, CubeFace::B),
-						Color(1.0, 1.0, 1.0)
+						Color(1.0, 1.0, 1.0),
+						static_cast<float>(quad_w),
+						static_cast<float>(quad_h)
 						);
 			}
 		}
@@ -764,10 +776,14 @@ Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
 	Ref<ArrayMesh> mesh;
 	mesh.instantiate();
 
-	mesh->add_surface_from_arrays(
-			Mesh::PRIMITIVE_TRIANGLES,
-			arrays
-			);
+	int64_t format = Mesh::ARRAY_FORMAT_VERTEX |
+				  Mesh::ARRAY_FORMAT_NORMAL |
+				  Mesh::ARRAY_FORMAT_COLOR |
+				  Mesh::ARRAY_FORMAT_TEX_UV |
+				  Mesh::ARRAY_FORMAT_INDEX ;
+
+
+	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays, Array(), Dictionary(), format);
 
 	return mesh;
 }

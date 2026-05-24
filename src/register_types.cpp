@@ -1,5 +1,6 @@
 #include "register_types.h"
 
+#include "atlas_loader.h"
 #include "chunk_mesh_async_generator.h"
 #include "chunk_model_generator.h"
 #include "chunk_node.h"
@@ -20,15 +21,18 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
-	GDREGISTER_CLASS(ChunkNode);
-	GDREGISTER_CLASS(World);
+
+	GDREGISTER_RUNTIME_CLASS(ChunkNode);
+	GDREGISTER_RUNTIME_CLASS(World);
 	GDREGISTER_RUNTIME_CLASS(Player);
-	GDREGISTER_CLASS(ChunkPool);
-	GDREGISTER_CLASS(ChunkRepository);
-	GDREGISTER_CLASS(ChunkStreamingManager);
-	GDREGISTER_CLASS(ChunkMeshAsyncGenerator);
-	GDREGISTER_CLASS(ChunkModelGenerator);
-	GDREGISTER_CLASS(Crosshair);
+	GDREGISTER_RUNTIME_CLASS(ChunkPool);
+	GDREGISTER_RUNTIME_CLASS(ChunkRepository);
+	GDREGISTER_RUNTIME_CLASS(ChunkStreamingManager);
+	GDREGISTER_RUNTIME_CLASS(ChunkMeshAsyncGenerator);
+	GDREGISTER_RUNTIME_CLASS(ChunkModelGenerator);
+	GDREGISTER_RUNTIME_CLASS(Crosshair);
+
+	load_atlas("res://sprites/atlas.json");
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {

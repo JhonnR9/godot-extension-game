@@ -7,7 +7,6 @@
 namespace godot {
 void World::_ready() {
 	_last_player_chunk_pos = Vector3i(INT_MAX, INT_MAX, INT_MAX);
-	load_atlas("res://sprites/atlas.json");
 
 	_chunk_pool.instantiate();
 	_chunk_repository.instantiate();
@@ -46,8 +45,13 @@ void World::_init_chunks() {
 	_chunk_pool->set_prewarm(_prewarm_chunk_pool);
 
 	_player_node = get_node<Node3D>("../Player");
+	if (!_player_node) {
+		_last_player_chunk_pos     = _world_to_chunk_pos(Vector3()); // fallback
+		_chunk_stream_manager->rebuild_all_chunks(_last_player_chunk_pos);
+		return;
+	}
 
-	ERR_FAIL_NULL(_player_node);
+
 	_last_player_chunk_pos     = _world_to_chunk_pos(_player_node->get_global_position());
 	_previous_player_chunk_pos = _last_player_chunk_pos;
 	_chunk_stream_manager->rebuild_all_chunks(_last_player_chunk_pos);
@@ -88,7 +92,7 @@ void World::_update_visible_chunks() {
 	}
 }
 
-void World::_cleanup_far_chunks() {
+void World::_cleanup_far_chunks() const {
 	std::vector<Vector3i> to_remove;
 
 	for (const auto pos : _chunk_repository->get_keys_snapshot()) {
@@ -109,18 +113,31 @@ void World::_cleanup_far_chunks() {
 }
 
 void World::_process(double delta) {
-	if (!_player_node) {
-		return;
-	}
-	const Vector3i current_position = _world_to_chunk_pos(_player_node->get_global_position());
-	if (_did_player_change_chunk()) {
-		_last_player_chunk_pos     = current_position;
-		_previous_player_chunk_pos = current_position;
+	Vector3i current_position = Vector3();
+	if (_player_node) {
+		current_position = _world_to_chunk_pos(_player_node->get_global_position());
+		if (_did_player_change_chunk()) {
+			_last_player_chunk_pos     = current_position;
+			_previous_player_chunk_pos = current_position;
 
-		_chunk_stream_manager->shift_chunks(current_position);
+			_chunk_stream_manager->shift_chunks(current_position);
 
-		_update_visible_chunks();
+			_update_visible_chunks();
+		}
 	}
+
+
+	float frame_ms = delta * 1000.0f;
+	size_t mesh_queue_size = _mesh_generator->get_queue_size();
+
+
+	if (mesh_queue_size > 200)
+		_current_chunks_finalize_in_frame = 100;
+	else if (frame_ms > 16.0f)
+		_current_chunks_finalize_in_frame = 10;
+	else
+		_current_chunks_finalize_in_frame = 25;
+
 	_process_models();
 	_process_meshes(current_position);
 
@@ -180,7 +197,7 @@ void World::_process_models() {
 }
 
 void World::_process_meshes(const Vector3i &p_pos) {
-	const MeshResultHashSet ready_meshes = _mesh_generator->consume_generated_meshes(_max_chunk_finalize_per_frame);
+	const MeshResultHashSet ready_meshes = _mesh_generator->consume_generated_meshes(_current_chunks_finalize_in_frame);
 
 	for (const MeshResult &result : ready_meshes) {
 		const int dist_x = ABS(result.pos.x - p_pos.x);

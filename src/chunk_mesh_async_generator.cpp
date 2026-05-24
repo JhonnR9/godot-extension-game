@@ -56,6 +56,11 @@ bool ChunkMeshAsyncGenerator::is_queued_mesh(const Vector3i p_pos) {
 	return _generating_meshes.has(p_pos);
 }
 
+size_t ChunkMeshAsyncGenerator::get_queue_size() {
+	std::lock_guard lock(_generated_meshes_mutex);
+	return _generated_meshes.size();
+}
+
 MeshResultHashSet ChunkMeshAsyncGenerator::consume_generated_meshes(int amount) {
 	MeshResultHashSet consumed;
 	MeshResultHashSet remaining;
