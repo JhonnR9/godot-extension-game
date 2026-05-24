@@ -7,14 +7,15 @@
 
 #include "chunk_model.h"
 #include "voxel_mesher.h"
+#include "godot_cpp/templates/hash_map.hpp"
 
 #include <godot_cpp/classes/array_mesh.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <godot_cpp/classes/texture2d_array.hpp>
 
 namespace godot {
-inline std::unordered_map<std::string, AtlasUV> atlas;
 
 struct ChunkNeighbors {
 	std::shared_ptr<ChunkModel> center;
@@ -28,13 +29,21 @@ struct ChunkNeighbors {
 	std::shared_ptr<ChunkModel> front;
 	std::shared_ptr<ChunkModel> back;
 };
-struct FaceAxis {
-	int normal_axis;
-	int u_axis;
-	int v_axis;
 
-	int normal_dir;
-	Vector3 normal;
+struct TextureKey {
+	BlockType type;
+	CubeFace face;
+
+	bool operator==(const TextureKey &p_other) const {
+		return type == p_other.type && face == p_other.face;
+	}
+};
+struct TextureKeyHasher {
+	static uint32_t hash(const TextureKey &p_key) {
+		uint32_t h = hash_murmur3_buffer(&p_key.type, sizeof(BlockType));
+		h = hash_murmur3_buffer(&p_key.face, sizeof(CubeFace), h);
+		return h;
+	}
 };
 
 class ChunkMeshBuilder {
@@ -46,8 +55,16 @@ class ChunkMeshBuilder {
 
 	void _add_front_faces(const ChunkNeighbors& neighbors);
 	void _add_back_faces(const ChunkNeighbors& neighbors);
+	int _get_tex_layer(const CubeFace& face,const BlockType& type);
 
+	Ref<Texture2DArray> block_texture_array;
+	void _load_textures();
+	void _initialize_texture_map();
+	static BlockType map_string_to_type(const String &name);
+
+	HashMap<TextureKey, int, TextureKeyHasher> texture_map;
 public:
+	ChunkMeshBuilder();
 	Ref<ArrayMesh> build(const ChunkNeighbors& neighbors);
 
 	static bool _is_air(const ChunkNeighbors& n, int x, int y, int z);

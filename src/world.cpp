@@ -1,6 +1,5 @@
 #include "world.h"
 
-#include "atlas_loader.h"
 #include "chunk_pool.h"
 
 
@@ -157,13 +156,21 @@ void World::_process(double delta) {
 }
 
 void World::break_block(const Vector3 &world_pos) {
-	Vector3i block_pos(
-			Math::floor(world_pos.x),
-			Math::floor(world_pos.y),
-			Math::floor(world_pos.z)
-			);
-
+	Vector3i block_pos = Vector3i(
+		Math::floor(world_pos.x),
+		Math::floor(world_pos.y),
+		Math::floor(world_pos.z)
+	);
 	_chunk_repository->set_block(block_pos, 0);
+}
+
+void World::set_block(const Vector3 &p_world_pos, const block::Block &p_block) {
+	Vector3i block_pos = Vector3i(
+		Math::floor(p_world_pos.x),
+		Math::floor(p_world_pos.y),
+		Math::floor(p_world_pos.z)
+	);
+	_chunk_repository->set_block(block_pos, p_block);
 }
 
 void World::_process_models() {

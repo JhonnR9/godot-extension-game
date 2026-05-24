@@ -1,0 +1,11 @@
+{
+	"grass_bottom": 0,
+	"grass_side": 1,
+	"grass_top": 2,
+	"leaves_bottom": 3,
+	"leaves_side": 4,
+	"leaves_top": 5,
+	"stone_bottom": 6,
+	"stone_side": 7,
+	"stone_top": 8
+}

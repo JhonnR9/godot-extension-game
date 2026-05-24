@@ -1,6 +1,5 @@
 #include "register_types.h"
 
-#include "atlas_loader.h"
 #include "chunk_mesh_async_generator.h"
 #include "chunk_model_generator.h"
 #include "chunk_node.h"
@@ -32,7 +31,6 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	GDREGISTER_RUNTIME_CLASS(ChunkModelGenerator);
 	GDREGISTER_RUNTIME_CLASS(Crosshair);
 
-	load_atlas("res://sprites/atlas.json");
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {

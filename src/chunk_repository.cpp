@@ -65,9 +65,9 @@ void ChunkRepository::clear_all() {
 }
 void ChunkRepository::set_block(const Vector3i &world_block_pos, block::Block block) {
 	Vector3i chunk_pos(
-			Math::floor((float)world_block_pos.x / ChunkModel::SIZE_X),
-			Math::floor((float)world_block_pos.y / ChunkModel::SIZE_Y),
-			Math::floor((float)world_block_pos.z / ChunkModel::SIZE_Z));
+		  Math::floor((float)world_block_pos.x / ChunkModel::SIZE_X),
+		  Math::floor((float)world_block_pos.y / ChunkModel::SIZE_Y),
+		  Math::floor((float)world_block_pos.z / ChunkModel::SIZE_Z));
 
 	auto chunk = get_chunk(chunk_pos);
 
@@ -79,36 +79,25 @@ void ChunkRepository::set_block(const Vector3i &world_block_pos, block::Block bl
 	int local_y = Math::posmod(world_block_pos.y, ChunkModel::SIZE_Y);
 	int local_z = Math::posmod(world_block_pos.z, ChunkModel::SIZE_Z);
 
-	chunk->set_block(local_x, local_y, local_z, 0);
+	chunk->set_block(local_x, local_y, local_z, block);
 
 	{
 		std::lock_guard lock(_dirty_chunks_mutex);
-
 		_dirty_chunks.insert(chunk_pos);
 
-		if (local_x == 0)
-			_dirty_chunks.insert(chunk_pos + Vector3i(-1, 0, 0));
-
-		if (local_x == ChunkModel::SIZE_X - 1)
-			_dirty_chunks.insert(chunk_pos + Vector3i(1, 0, 0));
-
-		if (local_y == 0)
-			_dirty_chunks.insert(chunk_pos + Vector3i(0, -1, 0));
-
-		if (local_y == ChunkModel::SIZE_Y - 1)
-			_dirty_chunks.insert(chunk_pos + Vector3i(0, 1, 0));
-
-		if (local_z == 0)
-			_dirty_chunks.insert(chunk_pos + Vector3i(0, 0, -1));
-
-		if (local_z == ChunkModel::SIZE_Z - 1)
-			_dirty_chunks.insert(chunk_pos + Vector3i(0, 0, 1));
+		if (local_x == 0) _dirty_chunks.insert(chunk_pos + Vector3i(-1, 0, 0));
+		if (local_x == ChunkModel::SIZE_X - 1) _dirty_chunks.insert(chunk_pos + Vector3i(1, 0, 0));
+		if (local_y == 0) _dirty_chunks.insert(chunk_pos + Vector3i(0, -1, 0));
+		if (local_y == ChunkModel::SIZE_Y - 1) _dirty_chunks.insert(chunk_pos + Vector3i(0, 1, 0));
+		if (local_z == 0) _dirty_chunks.insert(chunk_pos + Vector3i(0, 0, -1));
+		if (local_z == ChunkModel::SIZE_Z - 1) _dirty_chunks.insert(chunk_pos + Vector3i(0, 0, 1));
 	}
 	{
 		std::lock_guard lock(_mutex);
 		_chunk_versions[chunk_pos]++;
 	}
 }
+
 HashSet<Vector3i> ChunkRepository::consume_dirty_chunks() {
 	std::lock_guard lock(_dirty_chunks_mutex);
 	HashSet<Vector3i> dirty = _dirty_chunks;

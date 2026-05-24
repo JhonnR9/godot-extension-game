@@ -27,6 +27,7 @@ public:
 	void _process(double delta) override;
 
 	void break_block(const Vector3 &world_pos);
+	void set_block(const Vector3& p_world_pos, const block::Block& p_block);
 
 protected:
 	static void _bind_methods();

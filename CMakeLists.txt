@@ -58,9 +58,6 @@ add_library(${LIBNAME} SHARED
         src/chunk_generator.h
         src/chunk_mesh_builder.cpp
         src/chunk_mesh_builder.h
-        src/atlas_loader.cpp
-        src/atlas_loader.cpp
-        src/atlas_loader.h
         src/chunk_pool.cpp
         src/chunk_pool.h
         src/chunk_repository.cpp

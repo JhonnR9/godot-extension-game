@@ -1,23 +1,35 @@
 shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back;
 
-uniform sampler2D albedo_tex : source_color, repeat_enable, filter_nearest,hint_default_white ;
-uniform float highlight_power = 1.0;
+uniform sampler2DArray albedo_array : source_color, filter_nearest, repeat_enable;
+
+uniform float light_steps = 3.0;
+uniform float dark_intensity = 0.45;
+uniform vec3 shadow_tint : source_color = vec3(0.82, 0.85, 0.96);
+
+uniform vec3 fresnel_color : source_color = vec3(1.0);
+uniform float fresnel_strength = 0.4;
+uniform float fresnel_power = 6.0;
+
+varying flat float v_layer;
+
+void vertex() {
+    v_layer = float(CUSTOM0.x);
+}
 
 void fragment() {
-    float uv_w = COLOR.r;
-    float uv_h = COLOR.g;
-	
-	
-    vec2 local_uv = (UV - .005) / 16.0;
-    
-    vec2 tiled_uv = fract(local_uv * vec2(uv_w, uv_h));
-    
-    vec2 final_uv = .005 + (tiled_uv * 16.0);
-    
-    vec4 tex = texture(albedo_tex, final_uv);
+    vec4 tex = texture(albedo_array, vec3(UV, v_layer));
 
-    
-    // ... restante do código
     ALBEDO = tex.rgb;
-    EMISSION = tex.rgb * highlight_power * pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.0);
+}
+
+void light() {
+    float NdotL = max(dot(NORMAL, normalize(LIGHT)), 0.0);
+
+    float toon = floor(NdotL * light_steps) / light_steps;
+
+    vec3 shadowed = ALBEDO * dark_intensity * shadow_tint;
+    vec3 shaded = mix(shadowed, ALBEDO, toon);
+
+    DIFFUSE_LIGHT = shaded * LIGHT_COLOR;
 }

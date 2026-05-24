@@ -9,24 +9,11 @@
 #include <godot_cpp/variant/packed_vector3_array.hpp>
 
 namespace godot {
-
 struct ChunkNeighbors;
-
-struct AtlasUV {
-	Vector2 min;
-	Vector2 max;
-};
 
 class VoxelMesher {
 public:
 	void clear();
-
-	void add_face(
-			CubeFace face,
-			Vector3 position,
-			const AtlasUV &uv,
-			Color color = Color(1.0f, 1.0f, 1.0f, 1.0f),
-			float size = 1.0f);
 
 	void add_quad(
 			const Vector3 &v0,
@@ -34,32 +21,21 @@ public:
 			const Vector3 &v2,
 			const Vector3 &v3,
 			const Vector3 &normal,
-			const AtlasUV &uv,
-			const Color &color,
-			float uv_width = 1.0f,
-			float uv_height = 1.0f);
+			int tex_layer,
+			const Vector2 &tile_scale,
+			bool swap_uvs = false);
 
 	[[nodiscard]] Array build_arrays() const;
-	PackedVector3Array get_collision_faces() const;
+	[[nodiscard]] PackedVector3Array get_collision_faces() const;
 
 private:
 	PackedVector3Array _vertices;
 	PackedVector3Array _normals;
 	PackedVector2Array _uvs;
-	PackedColorArray _quad_uv_size;
 	PackedInt32Array _indices;
+	PackedFloat32Array _tex_layer;
 	PackedVector3Array _collision_faces;
-
-	void _add_quad(
-			Vector3 v0,
-			Vector3 v1,
-			Vector3 v2,
-			Vector3 v3,
-			Vector3 normal,
-			const AtlasUV &uv,
-			Color color);
 };
-
 } // namespace godot
 
 #endif

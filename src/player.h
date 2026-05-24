@@ -28,6 +28,7 @@ private:
 	const float DOUBLE_TAP_TIME = 0.3f;
 	float _fly_speed = 15.0f;
 	float _noclip_speed = 25.0f;
+	int _selected_block_id= 0;
 
 protected:
 	static void _bind_methods();

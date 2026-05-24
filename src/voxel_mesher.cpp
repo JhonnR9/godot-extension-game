@@ -14,152 +14,45 @@ void VoxelMesher::clear() {
 	_uvs.clear();
 	_indices.clear();
 	_collision_faces.clear();
-	_quad_uv_size.clear();
+	_tex_layer.clear();
 }
 
-void VoxelMesher::add_face(
-		CubeFace face,
-		Vector3 pos,
-		const AtlasUV &uv,
-		Color color,
-		float size) {
-	float s = size * 0.5f;
 
-	switch (face) {
-		case CubeFace::F:
-			_add_quad(
-					pos + Vector3(-s, -s, s),
-					pos + Vector3(s, -s, s),
-					pos + Vector3(s, s, s),
-					pos + Vector3(-s, s, s),
-					Vector3(0, 0, 1),
-					uv,
-					color);
-			break;
-
-		case CubeFace::B:
-			_add_quad(
-					pos + Vector3(s, -s, -s),
-					pos + Vector3(-s, -s, -s),
-					pos + Vector3(-s, s, -s),
-					pos + Vector3(s, s, -s),
-					Vector3(0, 0, -1),
-					uv,
-					color);
-			break;
-
-		case CubeFace::L:
-			_add_quad(
-					pos + Vector3(-s, -s, -s),
-					pos + Vector3(-s, -s, s),
-					pos + Vector3(-s, s, s),
-					pos + Vector3(-s, s, -s),
-					Vector3(-1, 0, 0),
-					uv,
-					color);
-			break;
-
-		case CubeFace::R:
-			_add_quad(
-					pos + Vector3(s, -s, s),
-					pos + Vector3(s, -s, -s),
-					pos + Vector3(s, s, -s),
-					pos + Vector3(s, s, s),
-					Vector3(1, 0, 0),
-					uv,
-					color);
-			break;
-
-		case CubeFace::U:
-			_add_quad(
-					pos + Vector3(-s, s, s),
-					pos + Vector3(s, s, s),
-					pos + Vector3(s, s, -s),
-					pos + Vector3(-s, s, -s),
-					Vector3(0, 1, 0),
-					uv,
-					color);
-			break;
-
-		case CubeFace::D:
-			_add_quad(
-					pos + Vector3(-s, -s, -s),
-					pos + Vector3(s, -s, -s),
-					pos + Vector3(s, -s, s),
-					pos + Vector3(-s, -s, s),
-					Vector3(0, -1, 0),
-					uv,
-					color);
-			break;
-	}
-}
-
-void VoxelMesher::add_quad(const Vector3 &v0, const Vector3 &v1, const Vector3 &v2, const Vector3 &v3, const Vector3 &normal, const AtlasUV &uv, const Color &color, float uv_width, float uv_height) {
-	int start = _vertices.size();
-
-	// vertices
-	_vertices.append(v0);
-	_vertices.append(v1);
-	_vertices.append(v2);
-	_vertices.append(v3);
-
-	// normals + colors
-	for (int i = 0; i < 4; i++) {
-		_normals.append(normal);
-		_quad_uv_size.append(Color(uv_width, uv_height, 0, 0));
-	}
-
-	_uvs.append(Vector2(uv.min.x, uv.max.y)); // v0
-	_uvs.append(Vector2(uv.max.x, uv.max.y)); // v1
-	_uvs.append(Vector2(uv.max.x, uv.min.y)); // v2
-	_uvs.append(Vector2(uv.min.x, uv.min.y)); // v3
-
-	// triangles
-	_indices.append(start);
-	_indices.append(start + 2);
-	_indices.append(start + 1);
-
-	_indices.append(start);
-	_indices.append(start + 3);
-	_indices.append(start + 2);
-
-	// collision
-	_collision_faces.append(v0);
-	_collision_faces.append(v2);
-	_collision_faces.append(v1);
-
-	_collision_faces.append(v0);
-	_collision_faces.append(v3);
-	_collision_faces.append(v2);
-}
-
-void VoxelMesher::_add_quad(
-		Vector3 v0,
-		Vector3 v1,
-		Vector3 v2,
-		Vector3 v3,
-		Vector3 normal,
-		const AtlasUV &uv,
-		Color color
+void VoxelMesher::add_quad(
+		const Vector3 &v0,
+		const Vector3 &v1,
+		const Vector3 &v2,
+		const Vector3 &v3,
+		const Vector3 &normal,
+		const int tex_layer,
+		const Vector2 &tile_scale,
+		bool swap_uvs
 		) {
-	int start = _vertices.size();
+	const int start = static_cast<int>(_vertices.size());
 
 	_vertices.append(v0);
 	_vertices.append(v1);
 	_vertices.append(v2);
 	_vertices.append(v3);
 
+
 	for (int i = 0; i < 4; i++) {
 		_normals.append(normal);
-
+		_tex_layer.append(static_cast<float>(tex_layer));
 	}
 
-	_uvs.append(Vector2(uv.min.x, uv.max.y));
-	_uvs.append(Vector2(uv.max.x, uv.max.y));
-	_uvs.append(Vector2(uv.max.x, uv.min.y));
-	_uvs.append(Vector2(uv.min.x, uv.min.y));
+	if (swap_uvs) {
+		 _uvs.append(Vector2(0.0f, tile_scale.x));
+		 _uvs.append(Vector2(0.0f, 0.0f));
+		 _uvs.append(Vector2(tile_scale.y, 0.0f));
+		 _uvs.append(Vector2(tile_scale.y, tile_scale.x));
+	} else {
+		_uvs.append(Vector2(0.0f, tile_scale.y));
+		_uvs.append(Vector2(tile_scale.x, tile_scale.y));
+		_uvs.append(Vector2(tile_scale.x, 0.0f));
+		_uvs.append(Vector2(0.0f, 0.0f));
+	}
 
-	// indices
 	_indices.append(start);
 	_indices.append(start + 2);
 	_indices.append(start + 1);
@@ -168,7 +61,6 @@ void VoxelMesher::_add_quad(
 	_indices.append(start + 3);
 	_indices.append(start + 2);
 
-	// collision
 	_collision_faces.append(v0);
 	_collision_faces.append(v2);
 	_collision_faces.append(v1);
@@ -177,16 +69,17 @@ void VoxelMesher::_add_quad(
 	_collision_faces.append(v3);
 	_collision_faces.append(v2);
 }
+
 
 Array VoxelMesher::build_arrays() const {
 	Array arrays;
-	arrays.resize(Mesh::ARRAY_MAX );
+	arrays.resize(Mesh::ARRAY_MAX);
 
-	arrays[Mesh::ARRAY_VERTEX] = _vertices;
-	arrays[Mesh::ARRAY_NORMAL] = _normals;
-	arrays[Mesh::ARRAY_COLOR]  = _quad_uv_size;
-	arrays[Mesh::ARRAY_TEX_UV] = _uvs;
-	arrays[Mesh::ARRAY_INDEX]  = _indices;
+	arrays[Mesh::ARRAY_VERTEX]  = _vertices;
+	arrays[Mesh::ARRAY_NORMAL]  = _normals;
+	arrays[Mesh::ARRAY_TEX_UV]  = _uvs;
+	arrays[Mesh::ARRAY_CUSTOM0] = _tex_layer;
+	arrays[Mesh::ARRAY_INDEX]   = _indices;
 
 	return arrays;
 }
