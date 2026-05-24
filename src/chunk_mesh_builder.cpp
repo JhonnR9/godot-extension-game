@@ -453,7 +453,8 @@ void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
 					v0, v1, v2, v3,
 					Vector3(0, -1, 0),
 					tex_layer,
-					Vector2((float)quad_w, (float)quad_h)
+					Vector2((float)quad_h, (float)quad_w),
+					true
 				);
 			}
 		}
