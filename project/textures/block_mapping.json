@@ -1,11 +1,14 @@
 {
-	"grass_bottom": 0,
-	"grass_side": 1,
-	"grass_top": 2,
-	"leaves_bottom": 3,
-	"leaves_side": 4,
-	"leaves_top": 5,
-	"stone_bottom": 6,
-	"stone_side": 7,
-	"stone_top": 8
+	"dirt_down": 0,
+	"dirt_side": 1,
+	"dirt_top": 2,
+	"grass_bottom": 3,
+	"grass_side": 4,
+	"grass_top": 5,
+	"leaves_bottom": 6,
+	"leaves_side": 7,
+	"leaves_top": 8,
+	"stone_bottom": 9,
+	"stone_side": 10,
+	"stone_top": 11
 }

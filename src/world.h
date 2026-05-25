@@ -42,7 +42,7 @@ private:
 	// Optimization
 	int _world_radius = 8;
 	int _cache_radius = _world_radius + (_world_radius  / 2);
-	int _world_height = 4;
+	int _world_height = 6;
 	int _prewarm_chunk_pool = 8192;
 	int _current_chunks_finalize_in_frame = 100;
 

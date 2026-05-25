@@ -2,7 +2,7 @@
 extends EditorScript
 
 const TEXTURE_PATH = "res://textures/blocks/"
-const OUTPUT_PATH = "res://textures/block_array.trezs"
+const OUTPUT_PATH = "res://textures/block_array.tres"
 const JSON_PATH = "res://textures/block_mapping.json"
 
 func _run():
@@ -26,7 +26,6 @@ func _run():
 	if file_paths.size() > 0:
 		var images: Array[Image] = []
 		
-		# Define o tamanho baseado na primeira imagem
 		var first_image: Image = load(file_paths[0]).get_image()
 		first_image.convert(Image.FORMAT_RGBA8)
 		var size = first_image.get_size()
@@ -37,14 +36,14 @@ func _run():
 				var img = tex.get_image()
 				img.convert(Image.FORMAT_RGBA8)
 				
-				# Garante consistência de tamanho
+				
 				if img.get_size() == size:
 					images.append(img)
 					print("Adicionada: ", path.get_file())
 				else:
 					printerr("Ignorada (tamanho diferente): ", path.get_file())
 
-		# Cria e salva o Texture2DArray
+
 		var tex_array = Texture2DArray.new()
 		var error = tex_array.create_from_images(images)
 		
@@ -52,7 +51,7 @@ func _run():
 			ResourceSaver.save(tex_array, OUTPUT_PATH)
 			print("Sucesso! Texture2DArray salvo em: ", OUTPUT_PATH)
 			
-			# Gera o arquivo JSON de mapeamento
+	
 			var json_map = {}
 			for i in range(file_paths.size()):
 				var name = file_paths[i].get_file().get_basename()
