@@ -27,7 +27,7 @@ public:
 	void _process(double delta) override;
 
 	void break_block(const Vector3 &world_pos);
-	void set_block(const Vector3& p_world_pos, const block::Block& p_block);
+	void set_block(const Vector3& p_world_pos, const voxel::Block& p_block);
 
 protected:
 	static void _bind_methods();
@@ -47,9 +47,9 @@ private:
 	int _current_chunks_finalize_in_frame = 100;
 
 	// Terrain settings
-	uint64_t _seed = 546546;
+	uint64_t _seed = 999999;
 	int _terrain_base_height = 24;
-	float _terrain_amplitude = 5.0f;
+	float _terrain_amplitude = 8.0f;
 	int _dirt_layer_depth = 20;
 	float _cave_threshold = 0.2f;
 
@@ -71,7 +71,6 @@ private:
 	void _cleanup_far_chunks() const;
 	float _get_current_chunks_finalize_amount(float delta);
 
-	static Vector3i _world_to_chunk_pos(Vector3 p_pos);
 	void _finalize_chunk(const MeshResult &res);
 	void _try_build_mesh_with_neighbors(Vector3i p_pos);
 

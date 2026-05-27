@@ -19,7 +19,7 @@ ChunkModel ChunkGenerator::generate(const Vector3i chunk_pos,const TerrainSettin
 
 				int terrain_height = terrain_settings.terrain_base_height + Math::round(terrain_n * terrain_settings.terrain_amplitude);
 
-				block::Block block = 0;
+				voxel::Block block = 0;
 
 				if (world_y <= terrain_height) {
 					float cave = cave_noise->get_noise_3d(world_x, world_y, world_z);

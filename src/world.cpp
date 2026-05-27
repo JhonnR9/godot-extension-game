@@ -1,7 +1,7 @@
 #include "world.h"
 
 #include "chunk_pool.h"
-
+#include "utils.h"
 
 namespace godot {
 void World::_ready() {
@@ -45,13 +45,13 @@ void World::_init_chunks() {
 
 	_player_node = get_node<Node3D>("../Player");
 	if (!_player_node) {
-		_last_player_chunk_pos     = _world_to_chunk_pos(Vector3()); // fallback
+		_last_player_chunk_pos     = voxel::world_to_chunk_pos(Vector3()); // fallback
 		_chunk_stream_manager->rebuild_all_chunks(_last_player_chunk_pos);
 		return;
 	}
 
 
-	_last_player_chunk_pos     = _world_to_chunk_pos(_player_node->get_global_position());
+	_last_player_chunk_pos     = voxel::world_to_chunk_pos(_player_node->get_global_position());
 	_previous_player_chunk_pos = _last_player_chunk_pos;
 	_chunk_stream_manager->rebuild_all_chunks(_last_player_chunk_pos);
 }
@@ -60,14 +60,14 @@ bool World::_did_player_change_chunk() const {
 	if (!_player_node) {
 		return false;
 	}
-	const Vector3i current_chunk_position = _world_to_chunk_pos(_player_node->get_global_position());
+	const Vector3i current_chunk_position = voxel::world_to_chunk_pos(_player_node->get_global_position());
 	return current_chunk_position != _last_player_chunk_pos;
 }
 
 void World::_remove_chunk(ChunkNode *p_chunk_node) {
 	ERR_FAIL_NULL(p_chunk_node);
 
-	const Vector3i pos = _world_to_chunk_pos(p_chunk_node->get_global_position());
+	const Vector3i pos = voxel::world_to_chunk_pos(p_chunk_node->get_global_position());
 	_rendered_chunks.erase(pos);
 	_chunk_pool->release(p_chunk_node);
 }
@@ -114,7 +114,7 @@ void World::_cleanup_far_chunks() const {
 void World::_process(double delta) {
 	Vector3i current_position = Vector3();
 	if (_player_node) {
-		current_position = _world_to_chunk_pos(_player_node->get_global_position());
+		current_position = voxel::world_to_chunk_pos(_player_node->get_global_position());
 		if (_did_player_change_chunk()) {
 			_last_player_chunk_pos     = current_position;
 			_previous_player_chunk_pos = current_position;
@@ -164,7 +164,7 @@ void World::break_block(const Vector3 &world_pos) {
 	_chunk_repository->set_block(block_pos, 0);
 }
 
-void World::set_block(const Vector3 &p_world_pos, const block::Block &p_block) {
+void World::set_block(const Vector3 &p_world_pos, const voxel::Block &p_block) {
 	Vector3i block_pos = Vector3i(
 		Math::floor(p_world_pos.x),
 		Math::floor(p_world_pos.y),
@@ -283,14 +283,6 @@ void World::_finalize_chunk(const MeshResult &res) {
 	chunk->set_collision_faces(res.collision_faces);
 	chunk->set_global_position(Vector3(res.pos.x * ChunkModel::SIZE_X, res.pos.y * ChunkModel::SIZE_Y, res.pos.z * ChunkModel::SIZE_Z));
 	chunk->set_visible(true);
-}
-
-Vector3i World::_world_to_chunk_pos(const Vector3 p_pos) {
-	return Vector3i(
-			Math::floor(p_pos.x / ChunkModel::SIZE_X),
-			Math::floor(p_pos.y / ChunkModel::SIZE_Y),
-			Math::floor(p_pos.z / ChunkModel::SIZE_Z)
-			);
 }
 
 void World::_queue_async_generate_chunk(const Vector3i p_pos) {

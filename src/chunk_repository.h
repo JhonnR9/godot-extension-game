@@ -1,7 +1,7 @@
 
 #ifndef CHUNK_REPOSITORY_H
 #define CHUNK_REPOSITORY_H
-#include "block.h"
+#include "voxel.h"
 #include "godot_cpp/templates/hash_map.hpp"
 #include "godot_cpp/templates/hash_set.hpp"
 
@@ -9,6 +9,7 @@
 #include <memory>
 namespace godot {
 struct ChunkModel;
+
 
 class ChunkRepository : public RefCounted {
 	GDCLASS(ChunkRepository, RefCounted)
@@ -18,7 +19,12 @@ class ChunkRepository : public RefCounted {
 	std::mutex _dirty_chunks_mutex;
 	HashSet<Vector3i> _dirty_chunks;
 
+	std::mutex _chunk_versions_mutex;
 	HashMap<Vector3i, uint64_t> _chunk_versions;
+
+	std::mutex _edited_blocks_mutex;
+	HashMap<Vector3i, HashMap<Vector3i, voxel::Block>>_edited_chunks;
+
 protected:
 	static void _bind_methods();
 public:
@@ -28,11 +34,14 @@ public:
 	void remove_chunk(const Vector3i &p_pos);
 	Vector<Vector3i> get_keys_snapshot();
 	void clear_all();
-	void set_block(const Vector3i &world_block_pos,block::Block block);
+	void set_block(const Vector3i &world_block_pos,voxel::Block block);
 	HashSet<Vector3i>consume_dirty_chunks();
 	uint64_t get_chunk_version(const Vector3i &p_pos);
 	bool is_chunk_dirty(const Vector3i &p_pos);
 
+private:
+	void _update_dirty_chunks(const Vector3i& p_local_pos,const Vector3i& p_chunk_pos);
+	void _apply_edited_blocks(const Vector3i& p_chunk_pos, const std::shared_ptr<ChunkModel> &p_model);
 };
 
 

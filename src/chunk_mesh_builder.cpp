@@ -8,30 +8,30 @@
 namespace godot {
 bool ChunkMeshBuilder::_is_air(const ChunkNeighbors &n, int x, int y, int z) {
 	if (x >= 0 && x < ChunkModel::SIZE_X && y >= 0 && y < ChunkModel::SIZE_Y && z >= 0 && z < ChunkModel::SIZE_Z) {
-		return block::is_air(n.center->get_block(x, y, z));
+		return voxel::is_air(n.center->get_block(x, y, z));
 	}
 
 	if (x < 0) {
-		return n.left ? block::is_air(n.left->get_block(ChunkModel::SIZE_X - 1, y, z)) : true;
+		return n.left ? voxel::is_air(n.left->get_block(ChunkModel::SIZE_X - 1, y, z)) : true;
 	}
 
 	if (x >= ChunkModel::SIZE_X) {
-		return n.right ? block::is_air(n.right->get_block(0, y, z)) : true;
+		return n.right ? voxel::is_air(n.right->get_block(0, y, z)) : true;
 	}
 
 	if (y < 0) {
-		return n.bottom ? block::is_air(n.bottom->get_block(x, ChunkModel::SIZE_Y - 1, z)) : true;
+		return n.bottom ? voxel::is_air(n.bottom->get_block(x, ChunkModel::SIZE_Y - 1, z)) : true;
 	}
 
 	if (y >= ChunkModel::SIZE_Y) {
-		return n.top ? block::is_air(n.top->get_block(x, 0, z)) : true;
+		return n.top ? voxel::is_air(n.top->get_block(x, 0, z)) : true;
 	}
 
 	if (z < 0) {
-		return n.back ? block::is_air(n.back->get_block(x, y, ChunkModel::SIZE_Z - 1)) : true;
+		return n.back ? voxel::is_air(n.back->get_block(x, y, ChunkModel::SIZE_Z - 1)) : true;
 	}
 
-	return n.front ? block::is_air(n.front->get_block(x, y, 0)) : true;
+	return n.front ? voxel::is_air(n.front->get_block(x, y, 0)) : true;
 }
 
 
@@ -57,8 +57,8 @@ void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
         for (int y = 0; y < SY; y++) {
             for (int z = 0; z < SZ; z++) {
 
-                const block::Block block = center->get_block(x, y, z);
-                if (block::is_air(block)) continue;
+                const voxel::Block block = center->get_block(x, y, z);
+                if (voxel::is_air(block)) continue;
 
                 if (_is_air(neighbors, x + 1, y, z)) {
                     mask[y][z] = true;
@@ -72,8 +72,8 @@ void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
 
                 if (!mask[y][z] || visited[y][z]) continue;
 
-                const block::Block block = center->get_block(x, y, z);
-                const BlockType type = block::type(block);
+                const voxel::Block block = center->get_block(x, y, z);
+                const BlockType type = voxel::type(block);
 
                 int quad_h = 1; // Y
                 int quad_w = 1; // Z
@@ -83,7 +83,7 @@ void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
                     if (!mask[y][z + quad_w] || visited[y][z + quad_w]) break;
 
                     const BlockType other =
-                        block::type(center->get_block(x, y, z + quad_w));
+                        voxel::type(center->get_block(x, y, z + quad_w));
 
                     if (other != type) break;
 
@@ -103,7 +103,7 @@ void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
                         }
 
                         const BlockType other =
-                            block::type(center->get_block(x, y + quad_h, z + k));
+                            voxel::type(center->get_block(x, y + quad_h, z + k));
 
                         if (other != type) {
                             can_expand = false;
@@ -163,8 +163,8 @@ void ChunkMeshBuilder::_add_up_faces(const ChunkNeighbors &neighbors) {
 		for (int x = 0; x < SX; x++) {
 			for (int z = 0; z < SZ; z++) {
 
-				const block::Block block = center->get_block(x, y, z);
-				if (block::is_air(block)) continue;
+				const voxel::Block block = center->get_block(x, y, z);
+				if (voxel::is_air(block)) continue;
 
 				if (_is_air(neighbors, x, y + 1, z)) {
 					mask[x][z] = true;
@@ -178,8 +178,8 @@ void ChunkMeshBuilder::_add_up_faces(const ChunkNeighbors &neighbors) {
 
 				if (!mask[x][z] || visited[x][z]) continue;
 
-				const block::Block block = center->get_block(x, y, z);
-				const BlockType type = block::type(block);
+				const voxel::Block block = center->get_block(x, y, z);
+				const BlockType type = voxel::type(block);
 
 				int quad_w = 1; // Z
 				int quad_h = 1; // X
@@ -189,7 +189,7 @@ void ChunkMeshBuilder::_add_up_faces(const ChunkNeighbors &neighbors) {
 					if (!mask[x][z + quad_w] || visited[x][z + quad_w]) break;
 
 					const BlockType other =
-						block::type(center->get_block(x, y, z + quad_w));
+						voxel::type(center->get_block(x, y, z + quad_w));
 
 					if (other != type) break;
 
@@ -209,7 +209,7 @@ void ChunkMeshBuilder::_add_up_faces(const ChunkNeighbors &neighbors) {
 						}
 
 						const BlockType other =
-							block::type(center->get_block(x + quad_h, y, z + k));
+							voxel::type(center->get_block(x + quad_h, y, z + k));
 
 						if (other != type) {
 							can_expand = false;
@@ -270,8 +270,8 @@ void ChunkMeshBuilder::_add_left_faces(const ChunkNeighbors &neighbors) {
 		for (int y = 0; y < SY; y++) {
 			for (int z = 0; z < SZ; z++) {
 
-				const block::Block block = center->get_block(x, y, z);
-				if (block::is_air(block)) continue;
+				const voxel::Block block = center->get_block(x, y, z);
+				if (voxel::is_air(block)) continue;
 
 				if (_is_air(neighbors, x - 1, y, z)) {
 					mask[y][z] = true;
@@ -285,8 +285,8 @@ void ChunkMeshBuilder::_add_left_faces(const ChunkNeighbors &neighbors) {
 
 				if (!mask[y][z] || visited[y][z]) continue;
 
-				const block::Block block = center->get_block(x, y, z);
-				const BlockType type = block::type(block);
+				const voxel::Block block = center->get_block(x, y, z);
+				const BlockType type = voxel::type(block);
 
 				int quad_w = 1; // Z
 				int quad_h = 1; // Y
@@ -296,7 +296,7 @@ void ChunkMeshBuilder::_add_left_faces(const ChunkNeighbors &neighbors) {
 					if (!mask[y][z + quad_w] || visited[y][z + quad_w]) break;
 
 					const BlockType other =
-						block::type(center->get_block(x, y, z + quad_w));
+						voxel::type(center->get_block(x, y, z + quad_w));
 
 					if (other != type) break;
 
@@ -316,7 +316,7 @@ void ChunkMeshBuilder::_add_left_faces(const ChunkNeighbors &neighbors) {
 						}
 
 						const BlockType other =
-							block::type(center->get_block(x, y + quad_h, z + k));
+							voxel::type(center->get_block(x, y + quad_h, z + k));
 
 						if (other != type) {
 							can_expand = false;
@@ -377,8 +377,8 @@ void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
 		for (int x = 0; x < SX; x++) {
 			for (int z = 0; z < SZ; z++) {
 
-				const block::Block block = center->get_block(x, y, z);
-				if (block::is_air(block)) continue;
+				const voxel::Block block = center->get_block(x, y, z);
+				if (voxel::is_air(block)) continue;
 
 				if (_is_air(neighbors, x, y - 1, z)) {
 					mask[x][z] = true;
@@ -392,8 +392,8 @@ void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
 
 				if (!mask[x][z] || visited[x][z]) continue;
 
-				const block::Block block = center->get_block(x, y, z);
-				const BlockType type = block::type(block);
+				const voxel::Block block = center->get_block(x, y, z);
+				const BlockType type = voxel::type(block);
 
 				int quad_w = 1; // Z
 				int quad_h = 1; // X
@@ -403,7 +403,7 @@ void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
 					if (!mask[x][z + quad_w] || visited[x][z + quad_w]) break;
 
 					const BlockType other =
-						block::type(center->get_block(x, y, z + quad_w));
+						voxel::type(center->get_block(x, y, z + quad_w));
 
 					if (other != type) break;
 
@@ -423,7 +423,7 @@ void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
 						}
 
 						const BlockType other =
-							block::type(center->get_block(x + quad_h, y, z + k));
+							voxel::type(center->get_block(x + quad_h, y, z + k));
 
 						if (other != type) {
 							can_expand = false;
@@ -485,8 +485,8 @@ void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
 		for (int x = 0; x < SX; x++) {
 			for (int y = 0; y < SY; y++) {
 
-				const block::Block block = center->get_block(x, y, z);
-				if (block::is_air(block)) continue;
+				const voxel::Block block = center->get_block(x, y, z);
+				if (voxel::is_air(block)) continue;
 
 				if (_is_air(neighbors, x, y, z + 1)) {
 					mask[x][y] = true;
@@ -500,8 +500,8 @@ void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
 
 				if (!mask[x][y] || visited[x][y]) continue;
 
-				const block::Block block = center->get_block(x, y, z);
-				const BlockType type = block::type(block);
+				const voxel::Block block = center->get_block(x, y, z);
+				const BlockType type = voxel::type(block);
 
 				int quad_w = 1; // X
 				int quad_h = 1; // Y
@@ -511,7 +511,7 @@ void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
 					if (!mask[x + quad_w][y] || visited[x + quad_w][y]) break;
 
 					const BlockType other =
-						block::type(center->get_block(x + quad_w, y, z));
+						voxel::type(center->get_block(x + quad_w, y, z));
 
 					if (other != type) break;
 
@@ -531,7 +531,7 @@ void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
 						}
 
 						const BlockType other =
-							block::type(center->get_block(x + k, y + quad_h, z));
+							voxel::type(center->get_block(x + k, y + quad_h, z));
 
 						if (other != type) {
 							can_expand = false;
@@ -592,8 +592,8 @@ void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
 		for (int x = 0; x < SX; x++) {
 			for (int y = 0; y < SY; y++) {
 
-				const block::Block block = center->get_block(x, y, z);
-				if (block::is_air(block)) continue;
+				const voxel::Block block = center->get_block(x, y, z);
+				if (voxel::is_air(block)) continue;
 
 				if (_is_air(neighbors, x, y, z - 1)) {
 					mask[x][y] = true;
@@ -607,8 +607,8 @@ void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
 
 				if (!mask[x][y] || visited[x][y]) continue;
 
-				const block::Block block = center->get_block(x, y, z);
-				const BlockType type = block::type(block);
+				const voxel::Block block = center->get_block(x, y, z);
+				const BlockType type = voxel::type(block);
 
 				int quad_w = 1; // X
 				int quad_h = 1; // Y
@@ -618,7 +618,7 @@ void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
 					if (!mask[x + quad_w][y] || visited[x + quad_w][y]) break;
 
 					const BlockType other =
-						block::type(center->get_block(x + quad_w, y, z));
+						voxel::type(center->get_block(x + quad_w, y, z));
 
 					if (other != type) break;
 
@@ -638,7 +638,7 @@ void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
 						}
 
 						const BlockType other =
-							block::type(center->get_block(x + k, y + quad_h, z));
+							voxel::type(center->get_block(x + k, y + quad_h, z));
 
 						if (other != type) {
 							can_expand = false;

@@ -3,7 +3,7 @@
 
 #include "voxel_types.h"
 
-namespace block {
+namespace voxel {
 
 using Block = uint32_t;
 

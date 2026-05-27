@@ -1,7 +1,7 @@
 #ifndef CHUNK_MODEL_H
 #define CHUNK_MODEL_H
 
-#include "block.h"
+#include "voxel.h"
 
 namespace godot {
 
@@ -12,16 +12,16 @@ struct ChunkModel {
 
 	static constexpr int VOLUME = SIZE_X * SIZE_Y * SIZE_Z;
 
-	constexpr block::Block get_block(int x, int y, int z) const {
+	constexpr voxel::Block get_block(int x, int y, int z) const {
 		return _blocks[index(x, y, z)];
 	}
 
-	constexpr void set_block(int x, int y, int z, block::Block b) {
+	constexpr void set_block(int x, int y, int z, voxel::Block b) {
 		_blocks[index(x, y, z)] = b;
 	}
 
 private:
-	block::Block _blocks[VOLUME] {};
+	voxel::Block _blocks[VOLUME] {};
 
 	static constexpr int index(int x, int y, int z) {
 		return x + y * SIZE_X + z * SIZE_X * SIZE_Y;
