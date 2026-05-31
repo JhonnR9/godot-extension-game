@@ -1,17 +1,9 @@
 [gd_scene format=3 uid="uid://cuh00hy6q2ig1"]
 
-[ext_resource type="Theme" uid="uid://c2gmwveu1je31" path="res://theme.tres" id="1_kqoyu"]
-[ext_resource type="Script" uid="uid://bpy1ejr80rwyt" path="res://scenes/panel_container_2.gd" id="2_uq0u2"]
-
-[sub_resource type="LabelSettings" id="LabelSettings_kqoyu"]
-font_size = 48
-outline_size = 8
-outline_color = Color(0, 0, 0, 1)
-stacked_outline_count = 2
-stacked_outline_0/size = 1
-stacked_outline_0/color = Color(0.26293245, 0.26293245, 0.26293245, 1)
-stacked_outline_1/size = 1
-stacked_outline_1/color = Color(0.051970966, 0.05197096, 0.05197095, 1)
+[ext_resource type="Theme" uid="uid://c2gmwveu1je31" path="res://resources/theme.tres" id="1_kqoyu"]
+[ext_resource type="Script" uid="uid://cr8ixvp31g6ax" path="res://scripts/world_selector.gd" id="2_6fd6r"]
+[ext_resource type="Script" uid="uid://bpy1ejr80rwyt" path="res://scripts/panel_container_2.gd" id="2_uq0u2"]
+[ext_resource type="LabelSettings" uid="uid://cebi6giswv3v0" path="res://resources/tiltles_label.tres" id="3_5gwla"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uq0u2"]
 bg_color = Color(0.15487596, 0.154876, 0.15487587, 1)
@@ -59,6 +51,7 @@ grow_vertical = 2
 size_flags_horizontal = 6
 size_flags_vertical = 6
 theme = ExtResource("1_kqoyu")
+script = ExtResource("2_6fd6r")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1050422145]
 layout_mode = 1
@@ -81,7 +74,7 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 2
 text = "WORLDS"
-label_settings = SubResource("LabelSettings_kqoyu")
+label_settings = ExtResource("3_5gwla")
 
 [node name="Scrol" type="ScrollContainer" parent="VBoxContainer" unique_id=1953141506]
 custom_minimum_size = Vector2(512, 256)
@@ -315,7 +308,9 @@ size_flags_horizontal = 3
 size_flags_vertical = 4
 text = "delete"
 
-[node name="Button" type="Button" parent="VBoxContainer" unique_id=1623447795]
+[node name="BackButton" type="Button" parent="VBoxContainer" unique_id=1623447795]
 layout_mode = 2
 size_flags_vertical = 4
 text = "back"
+
+[connection signal="pressed" from="VBoxContainer/BackButton" to="." method="_on_back_button_pressed"]

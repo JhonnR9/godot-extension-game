@@ -6,13 +6,14 @@
 #include <godot_cpp/classes/input_event_mouse_motion.hpp>
 
 namespace godot {
-
+class World;
 class Player : public CharacterBody3D {
 	GDCLASS(Player, CharacterBody3D)
 
 private:
 	Camera3D *_camera = nullptr;
 	Node3D *_head = nullptr;
+	World* _world{nullptr};
 
 	float _speed = 10.0f;
 	float _mouse_sensitivity = 0.002f;

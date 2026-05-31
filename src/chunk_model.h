@@ -10,6 +10,14 @@ struct ChunkModel {
 	static constexpr int SIZE_Y = 16;
 	static constexpr int SIZE_Z = 16;
 
+	static constexpr int MAX_X = SIZE_X - 1;
+	static constexpr int MAX_Y = SIZE_Y - 1;
+	static constexpr int MAX_Z = SIZE_Z - 1;
+
+	static constexpr int MIN_X = 0;
+	static constexpr int MIN_Y = 0;
+	static constexpr int MIN_Z = 0;
+
 	static constexpr int VOLUME = SIZE_X * SIZE_Y * SIZE_Z;
 
 	constexpr voxel::Block get_block(int x, int y, int z) const {

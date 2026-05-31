@@ -1,6 +1,6 @@
 [gd_resource type="Theme" format=3 uid="uid://c2gmwveu1je31"]
 
-[ext_resource type="FontFile" uid="uid://dyj0fv3g4ev8t" path="res://rainyhearts.ttf" id="1_e1x85"]
+[ext_resource type="FontFile" uid="uid://dyj0fv3g4ev8t" path="res://fonts/rainyhearts.ttf" id="1_e1x85"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_e1x85"]
 content_margin_left = 8.0
@@ -36,4 +36,8 @@ Button/styles/normal = SubResource("StyleBoxFlat_e1x85")
 Label/font_sizes/font_size = 24
 Label/styles/focus = SubResource("StyleBoxEmpty_e1x85")
 Label/styles/normal = SubResource("StyleBoxEmpty_cjfk0")
+MarginContainer/constants/margin_bottom = 2
+MarginContainer/constants/margin_left = 16
+MarginContainer/constants/margin_right = 16
+MarginContainer/constants/margin_top = 2
 PanelContainer/styles/hover = SubResource("StyleBoxFlat_cjfk0")

@@ -29,6 +29,11 @@ void Player::_ready() {
 			_camera->set_current(true);
 		}
 	}
+
+
+	if ((_world = get_node<World>("../World"))) {
+		_world->set_focus_node(this);
+	}
 }
 
 void Player::_physics_process(double delta) {
@@ -223,10 +228,8 @@ void Player::_unhandled_input(const Ref<InputEvent> &event) {
 
                 position -= normal * 0.01f;
 
-                if (World *world =
-                        get_node<World>("../World")) {
-
-                    world->break_block(position);
+                if (_world) {
+                    _world->break_block(position);
                 }
             }
         }
@@ -243,20 +246,13 @@ void Player::_unhandled_input(const Ref<InputEvent> &event) {
 
                 position += normal * 0.01f;
 
-                if (auto *world =
-                        get_node<World>("../World")) {
+                if (_world) {
 
-                    BlockType selected_type =
-                        static_cast<BlockType>(
-                            _selected_block_id);
+                    BlockType selected_type =static_cast<BlockType>(_selected_block_id);
 
-                    voxel::Block block_to_place =
-                        voxel::make_block(selected_type);
+                    voxel::Block block_to_place =voxel::make_block(selected_type);
 
-                    world->set_block(
-                        position,
-                        block_to_place
-                    );
+                    _world->set_block(position,block_to_place);
                 }
             }
         }

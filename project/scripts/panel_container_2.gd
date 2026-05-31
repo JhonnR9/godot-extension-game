@@ -41,10 +41,6 @@ func _select_this():
 	_update_style() 
 
 
-func _set_selected(value: bool):
-	_update_style()
-
-
 func _on_mouse_entered():
 	is_hovered = true
 	_update_style()

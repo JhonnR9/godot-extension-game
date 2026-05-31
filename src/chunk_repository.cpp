@@ -18,23 +18,18 @@ bool ChunkRepository::is_chunk_dirty(const Vector3i &p_pos) {
 }
 
 void ChunkRepository::_update_dirty_chunks(const Vector3i &p_local_pos, const Vector3i& p_chunk_pos) {
-	{
-		std::lock_guard lock(_dirty_chunks_mutex);
-		_dirty_chunks.insert(p_chunk_pos);
+	std::lock_guard lock(_dirty_chunks_mutex);
 
-		if (p_local_pos.x == 0)
-			_dirty_chunks.insert(p_chunk_pos + Vector3i(-1, 0, 0));
-		if (p_local_pos.x == ChunkModel::SIZE_X - 1)
-			_dirty_chunks.insert(p_chunk_pos + Vector3i(1, 0, 0));
-		if (p_local_pos.y == 0)
-			_dirty_chunks.insert(p_chunk_pos + Vector3i(0, -1, 0));
-		if (p_local_pos.y == ChunkModel::SIZE_Y - 1)
-			_dirty_chunks.insert(p_chunk_pos + Vector3i(0, 1, 0));
-		if (p_local_pos.z == 0)
-			_dirty_chunks.insert(p_chunk_pos + Vector3i(0, 0, -1));
-		if (p_local_pos.z == ChunkModel::SIZE_Z - 1)
-			_dirty_chunks.insert(p_chunk_pos + Vector3i(0, 0, 1));
-	}
+	_dirty_chunks.insert(p_chunk_pos);
+
+	if (p_local_pos.x == ChunkModel::MIN_X) _dirty_chunks.insert(p_chunk_pos + voxel::DIR_LEFT);
+	if (p_local_pos.x == ChunkModel::MAX_X) _dirty_chunks.insert(p_chunk_pos + voxel::DIR_RIGHT);
+
+	if (p_local_pos.y == ChunkModel::MIN_Y) _dirty_chunks.insert(p_chunk_pos + voxel::DIR_DOWN);
+	if (p_local_pos.y == ChunkModel::MAX_Y) _dirty_chunks.insert(p_chunk_pos + voxel::DIR_UP);
+
+	if (p_local_pos.z == ChunkModel::MIN_Z) _dirty_chunks.insert(p_chunk_pos + voxel::DIR_BACK);
+	if (p_local_pos.z == ChunkModel::MAX_Z) _dirty_chunks.insert(p_chunk_pos + voxel::DIR_FRONT);
 }
 
 void ChunkRepository::_apply_edited_blocks(const Vector3i &p_chunk_pos, const std::shared_ptr<ChunkModel> &p_model) {
@@ -136,7 +131,7 @@ void ChunkRepository::clear_all() {
 }
 
 void ChunkRepository::set_block(const Vector3i &world_block_pos, voxel::Block block) {
-	const Vector3i chunk_pos = voxel::world_to_chunk_pos(world_block_pos);
+	const Vector3i chunk_pos = voxel::block_to_chunk_coords(world_block_pos);
 
 	std::shared_ptr<ChunkModel> chunk;
 	{
@@ -148,7 +143,7 @@ void ChunkRepository::set_block(const Vector3i &world_block_pos, voxel::Block bl
 		}
 	}
 
-	const Vector3i local_pos = voxel::world_to_chunk_block_pos(world_block_pos);
+	const Vector3i local_pos = voxel::block_to_chunk_local_block(world_block_pos);
 
 	chunk->set_block(local_pos.x, local_pos.y, local_pos.z, block);
 

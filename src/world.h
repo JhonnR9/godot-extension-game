@@ -17,7 +17,6 @@
 #include <memory>
 
 namespace godot {
-
 class World : public Node3D {
 	GDCLASS(World, Node3D)
 
@@ -26,8 +25,10 @@ public:
 	void _ready() override;
 	void _process(double delta) override;
 
-	void break_block(const Vector3 &world_pos);
-	void set_block(const Vector3& p_world_pos, const voxel::Block& p_block);
+	void break_block(const Vector3 &world_pos) const;
+	void set_block(const Vector3 &p_world_pos, const voxel::Block &p_block) const;
+	void set_focus_node(Node3D *p_node);
+	void set_focus_position(Vector3 p_pos);
 
 protected:
 	static void _bind_methods();
@@ -40,50 +41,53 @@ private:
 	Ref<ChunkMeshAsyncGenerator> _mesh_generator;
 
 	// Optimization
-	int _world_radius = 8;
-	int _cache_radius = _world_radius + (_world_radius  / 2);
+	int _world_radius = 4;
 	int _world_height = 6;
-	int _prewarm_chunk_pool = 8192;
+	int _cache_radius = _world_radius + 2;
+	int _diameter     = (_cache_radius * 2) + 1; //  (2 * R + 1).
+	int _prewarm_chunk_pool = (_diameter * _diameter) * _world_height;
 	int _current_chunks_finalize_in_frame = 100;
 
 	// Terrain settings
-	uint64_t _seed = 999999;
+	uint64_t _seed           = 999999;
 	int _terrain_base_height = 24;
 	float _terrain_amplitude = 8.0f;
-	int _dirt_layer_depth = 20;
-	float _cave_threshold = 0.2f;
+	int _dirt_layer_depth    = 20;
+	float _cave_threshold    = 0.2f;
 
 	Ref<FastNoiseLite> _terrain_noise;
 	Ref<FastNoiseLite> _cave_noise;
 
 	// Player position control
-	Vector3i _last_player_chunk_pos;
-	Node3D *_player_node = nullptr;
+	Vector3i _last_focos_position;
 
 	// World management
-	void _queue_async_generate_chunk(Vector3i p_pos);
-	ChunkNeighbors _get_neighbors_for(Vector3i p_pos);
+	void _queue_async_generate_chunk(Vector3i p_pos) const;
+	ChunkNeighbors _get_neighbors_for(Vector3i p_pos) const;
 	void _setup_noises();
 	void _init_chunks();
-	bool _did_player_change_chunk() const;
 	void _remove_chunk(ChunkNode *p_chunk_node);
 	void _update_visible_chunks();
 	void _cleanup_far_chunks() const;
 	float _get_current_chunks_finalize_amount(float delta);
 
 	void _finalize_chunk(const MeshResult &res);
-	void _try_build_mesh_with_neighbors(Vector3i p_pos);
+	void _try_build_mesh_with_neighbors(Vector3i p_pos) const;
 
-	void _process_models();
+	void _process_models() const;
 	void _process_meshes(const Vector3i &p_pos);
-	void _rebuild_chunk(const Vector3i &pos);
-	bool _is_high_priority(const Vector3i &pos, bool dirty);
+	void _rebuild_chunk(const Vector3i &pos) const;
+	bool _is_high_priority(const Vector3i &pos, bool dirty) const;
+
+	Node3D *_focus_node       = nullptr;
+	Vector3 _focus_manual_pos = Vector3(0, 0, 0);
+	bool _use_manual_pos      = true;
+	Vector3 _get_current_focus_position() const;
 
 	// World state
 	HashMap<Vector3i, ChunkNode *> _rendered_chunks;
 	Vector3i _previous_player_chunk_pos;
 };
-
 } // namespace godot
 
 #endif // WORLD_H

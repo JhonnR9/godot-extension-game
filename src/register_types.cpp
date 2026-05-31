@@ -22,16 +22,16 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 		return;
 	}
 
-	GDREGISTER_RUNTIME_CLASS(ChunkNode);
-	GDREGISTER_RUNTIME_CLASS(World);
-	GDREGISTER_RUNTIME_CLASS(Player);
-	GDREGISTER_RUNTIME_CLASS(ChunkPool);
-	GDREGISTER_RUNTIME_CLASS(ChunkRepository);
-	GDREGISTER_RUNTIME_CLASS(ChunkStreamingManager);
-	GDREGISTER_RUNTIME_CLASS(ChunkMeshAsyncGenerator);
-	GDREGISTER_RUNTIME_CLASS(ChunkModelGenerator);
-	GDREGISTER_RUNTIME_CLASS(Crosshair);
-	GDREGISTER_RUNTIME_CLASS(ChunkDiskRepository);
+	GDREGISTER_CLASS(ChunkNode);
+	GDREGISTER_CLASS(World);
+	GDREGISTER_CLASS(Player);
+	GDREGISTER_CLASS(ChunkPool);
+	GDREGISTER_CLASS(ChunkRepository);
+	GDREGISTER_CLASS(ChunkStreamingManager);
+	GDREGISTER_CLASS(ChunkMeshAsyncGenerator);
+	GDREGISTER_CLASS(ChunkModelGenerator);
+	GDREGISTER_CLASS(Crosshair);
+	GDREGISTER_CLASS(ChunkDiskRepository);
 
 }
 

@@ -65,3 +65,7 @@ godot-cpp
 
 bin/
 build/
+.vs/
+*.ipch
+*.db
+*.vsidx

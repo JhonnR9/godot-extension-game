@@ -1,0 +1,107 @@
+[gd_scene format=3 uid="uid://bvaopicftbebo"]
+
+[ext_resource type="LabelSettings" uid="uid://cebi6giswv3v0" path="res://resources/tiltles_label.tres" id="1_kferw"]
+[ext_resource type="Theme" uid="uid://c2gmwveu1je31" path="res://resources/theme.tres" id="1_wfexp"]
+
+[node name="CreateWorld" type="Control" unique_id=1811426239]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_wfexp")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=870523995]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -149.0
+offset_top = -33.5
+offset_right = 149.0
+offset_bottom = 33.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Tiltte" type="BoxContainer" parent="VBoxContainer" unique_id=1654961518]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Label" type="Label" parent="VBoxContainer/Tiltte" unique_id=650656496]
+layout_mode = 2
+text = "Create  new world"
+label_settings = ExtResource("1_kferw")
+uppercase = true
+
+[node name="Name" type="HBoxContainer" parent="VBoxContainer" unique_id=616193755]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Name" unique_id=53168834]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Name:"
+
+[node name="LineEdit" type="LineEdit" parent="VBoxContainer/Name" unique_id=1591141771]
+custom_minimum_size = Vector2(128, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+placeholder_text = "my-world"
+
+[node name="Seed" type="HBoxContainer" parent="VBoxContainer" unique_id=183997466]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+
+[node name="Label" type="Label" parent="VBoxContainer/Seed" unique_id=693650164]
+layout_mode = 2
+text = "Seed: "
+
+[node name="LineEdit" type="LineEdit" parent="VBoxContainer/Seed" unique_id=2055909270]
+custom_minimum_size = Vector2(128, 0)
+layout_mode = 2
+placeholder_text = "ex: 8475846"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=1443559813]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer" unique_id=456161974]
+layout_mode = 2
+text = "Mode:"
+
+[node name="OptionButton" type="OptionButton" parent="VBoxContainer/HBoxContainer" unique_id=1516251559]
+layout_mode = 2
+item_count = 2
+popup/item_0/text = "Survival"
+popup/item_0/id = 0
+popup/item_1/text = "Creative"
+popup/item_1/id = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer" unique_id=404783]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer" unique_id=1364435788]
+layout_mode = 2
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/HBoxContainer" unique_id=760871796]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Button" type="Button" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer" unique_id=359080341]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Create"
+
+[node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer/MarginContainer/HBoxContainer" unique_id=1555782707]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Button2" type="Button" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer2" unique_id=1196712533]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+text = "Back"

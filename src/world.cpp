@@ -6,7 +6,7 @@
 
 namespace godot {
 void World::_ready() {
-	_last_player_chunk_pos = Vector3i(INT_MAX, INT_MAX, INT_MAX);
+	_last_focos_position = Vector3i(INT_MAX, INT_MAX, INT_MAX);
 
 	_chunk_pool.instantiate();
 	_chunk_repository.instantiate();
@@ -49,31 +49,21 @@ void World::_init_chunks() {
 
 	_chunk_pool->set_prewarm(_prewarm_chunk_pool);
 
-	_player_node = get_node<Node3D>("../Player");
-	if (!_player_node) {
-		_last_player_chunk_pos     = voxel::world_to_chunk_pos(Vector3()); // fallback
-		_chunk_stream_manager->rebuild_all_chunks(_last_player_chunk_pos);
+	if (!_focus_node) {
+		_last_focos_position = voxel::block_to_chunk_coords(Vector3()); // fallback
+		_chunk_stream_manager->rebuild_all_chunks(_last_focos_position);
 		return;
 	}
 
-
-	_last_player_chunk_pos     = voxel::world_to_chunk_pos(_player_node->get_global_position());
-	_previous_player_chunk_pos = _last_player_chunk_pos;
-	_chunk_stream_manager->rebuild_all_chunks(_last_player_chunk_pos);
-}
-
-bool World::_did_player_change_chunk() const {
-	if (!_player_node) {
-		return false;
-	}
-	const Vector3i current_chunk_position = voxel::world_to_chunk_pos(_player_node->get_global_position());
-	return current_chunk_position != _last_player_chunk_pos;
+	_last_focos_position       = voxel::block_to_chunk_coords(_get_current_focus_position());
+	_previous_player_chunk_pos = _last_focos_position;
+	_chunk_stream_manager->rebuild_all_chunks(_last_focos_position);
 }
 
 void World::_remove_chunk(ChunkNode *p_chunk_node) {
 	ERR_FAIL_NULL(p_chunk_node);
 
-	const Vector3i pos = voxel::world_to_chunk_pos(p_chunk_node->get_global_position());
+	const Vector3i pos = voxel::block_to_chunk_coords(p_chunk_node->get_global_position());
 	_rendered_chunks.erase(pos);
 	_chunk_pool->release(p_chunk_node);
 }
@@ -101,9 +91,9 @@ void World::_cleanup_far_chunks() const {
 	std::vector<Vector3i> to_remove;
 
 	for (const auto pos : _chunk_repository->get_keys_snapshot()) {
-		const int dx = ABS(pos.x - _last_player_chunk_pos.x);
-		const int dy = ABS(pos.y - _last_player_chunk_pos.y);
-		const int dz = ABS(pos.z - _last_player_chunk_pos.z);
+		const int dx = ABS(pos.x - _last_focos_position.x);
+		const int dy = ABS(pos.y - _last_focos_position.y);
+		const int dz = ABS(pos.z - _last_focos_position.z);
 
 		if (dx > _cache_radius || dy > _world_height + 2 || dz > _cache_radius) {
 			if (!_mesh_generator->is_queued_mesh(pos) && !_model_generator->is_loading_chunk(pos)) {
@@ -118,23 +108,18 @@ void World::_cleanup_far_chunks() const {
 }
 
 void World::_process(double delta) {
-	Vector3i current_position = Vector3();
-	if (_player_node) {
-		current_position = voxel::world_to_chunk_pos(_player_node->get_global_position());
-		if (_did_player_change_chunk()) {
-			_last_player_chunk_pos     = current_position;
-			_previous_player_chunk_pos = current_position;
+	const Vector3i current_position = voxel::block_to_chunk_coords(_get_current_focus_position());
 
-			_chunk_stream_manager->shift_chunks(current_position);
+	if (current_position != _last_focos_position) {
+		_last_focos_position       = current_position;
+		_previous_player_chunk_pos = current_position;
 
-			_update_visible_chunks();
-		}
+		_chunk_stream_manager->shift_chunks(current_position);
+		_update_visible_chunks();
 	}
 
-
-	float frame_ms = delta * 1000.0f;
+	const float frame_ms   = static_cast<float>(delta) * 1000.0f;
 	size_t mesh_queue_size = _mesh_generator->get_queue_size();
-
 
 	if (mesh_queue_size > 200)
 		_current_chunks_finalize_in_frame = 100;
@@ -161,25 +146,34 @@ void World::_process(double delta) {
 	}
 }
 
-void World::break_block(const Vector3 &world_pos) {
-	Vector3i block_pos = Vector3i(
-		Math::floor(world_pos.x),
-		Math::floor(world_pos.y),
-		Math::floor(world_pos.z)
-	);
+void World::break_block(const Vector3 &world_pos) const {
+	Vector3i block_pos = voxel::world_to_block(world_pos);
 	_chunk_repository->set_block(block_pos, 0);
 }
 
-void World::set_block(const Vector3 &p_world_pos, const voxel::Block &p_block) {
-	Vector3i block_pos = Vector3i(
-		Math::floor(p_world_pos.x),
-		Math::floor(p_world_pos.y),
-		Math::floor(p_world_pos.z)
-	);
+void World::set_block(const Vector3 &p_world_pos, const voxel::Block &p_block) const {
+	Vector3i block_pos = voxel::world_to_block(p_world_pos);
 	_chunk_repository->set_block(block_pos, p_block);
 }
 
-void World::_process_models() {
+void World::set_focus_node(Node3D *p_node) {
+	_focus_node     = p_node;
+	_use_manual_pos = false;
+}
+
+void World::set_focus_position(Vector3 p_pos) {
+	_focus_manual_pos = p_pos;
+	_use_manual_pos   = true;
+}
+
+Vector3 World::_get_current_focus_position() const {
+	if (!_use_manual_pos && _focus_node) {
+		return _focus_node->get_global_position();
+	}
+	return _focus_manual_pos;
+}
+
+void World::_process_models() const {
 	HashMap<Vector3i, std::shared_ptr<ChunkModel>> ready_models = _model_generator->consume_generated_results();
 
 	if (ready_models.is_empty()) {
@@ -190,22 +184,16 @@ void World::_process_models() {
 		_chunk_repository->add_chunk(ready_model.key, ready_model.value);
 	}
 
-	for (auto it = ready_models.begin(); it != ready_models.end(); ++it) {
-		Vector3i pos = it->key;
+	for (const auto &ready_model : ready_models) {
+		Vector3i pos = ready_model.key;
 
 		_try_build_mesh_with_neighbors(pos);
-
-		Vector3i dirs[] = {
-			{ 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 }
-		};
-
-		for (const Vector3i &dir : dirs) {
-			Vector3i neighbor_pos = pos + dir;
-
-			if (_chunk_repository->contains_chunk(neighbor_pos)) {
-				_try_build_mesh_with_neighbors(neighbor_pos);
-			}
-		}
+		_try_build_mesh_with_neighbors(pos + voxel::DIR_LEFT);
+		_try_build_mesh_with_neighbors(pos + voxel::DIR_RIGHT);
+		_try_build_mesh_with_neighbors(pos + voxel::DIR_UP);
+		_try_build_mesh_with_neighbors(pos + voxel::DIR_DOWN);
+		_try_build_mesh_with_neighbors(pos + voxel::DIR_BACK);
+		_try_build_mesh_with_neighbors(pos + voxel::DIR_FRONT);
 	}
 }
 
@@ -225,34 +213,28 @@ void World::_process_meshes(const Vector3i &p_pos) {
 	}
 }
 
-void World::_rebuild_chunk(const Vector3i &pos) {
+void World::_rebuild_chunk(const Vector3i &pos) const {
 	const ChunkNeighbors neighbors = _get_neighbors_for(pos);
 
 	if (!neighbors.center) {
 		return;
 	}
-	uint64_t version = _chunk_repository->get_chunk_version(pos);
 
-	bool dirty = _chunk_repository->is_chunk_dirty(pos);
+	const uint64_t version   = _chunk_repository->get_chunk_version(pos);
+	const bool dirty         = _chunk_repository->is_chunk_dirty(pos);
+	const bool high_priority = _is_high_priority(pos, dirty);
 
-	bool high_priority = _is_high_priority(pos, dirty);
-
-	_mesh_generator->queue_async_generate_mesh(
-		pos,
-		neighbors,
-		version,
-		high_priority
-	);
+	_mesh_generator->queue_async_generate_mesh(pos, neighbors, version, high_priority);
 }
 
-bool World::_is_high_priority(const Vector3i &pos, bool dirty) {
-	const Vector3i player = _last_player_chunk_pos;
+bool World::_is_high_priority(const Vector3i &pos, bool dirty) const {
+	const Vector3i player = _last_focos_position;
 
-	int dx = ABS(pos.x - player.x);
-	int dy = ABS(pos.y - player.y);
-	int dz = ABS(pos.z - player.z);
+	const int dx = ABS(pos.x - player.x);
+	const int dy = ABS(pos.y - player.y);
+	const int dz = ABS(pos.z - player.z);
 
-	int dist = dx + dy + dz;
+	const int dist = dx + dy + dz;
 
 	if (dirty)
 		return true;
@@ -281,17 +263,22 @@ void World::_finalize_chunk(const MeshResult &res) {
 		_remove_chunk(_rendered_chunks[res.pos]);
 	}
 
-	ChunkNode *chunk          = _chunk_pool->acquire();
+	ChunkNode *chunk = _chunk_pool->acquire();
+
+	if (chunk == nullptr) {
+		WARN_PRINT("ChunkPool is overflow! Increase the prewarm size or check the cleanup.");
+		return;
+	}
+
 	_rendered_chunks[res.pos] = chunk;
 
 	chunk->set_mesh(res.mesh);
 	chunk->set_surface_override_material(0, chunk->get_material());
 	chunk->set_collision_faces(res.collision_faces);
-	chunk->set_global_position(Vector3(res.pos.x * ChunkModel::SIZE_X, res.pos.y * ChunkModel::SIZE_Y, res.pos.z * ChunkModel::SIZE_Z));
-	chunk->set_visible(true);
+	chunk->set_global_position(voxel::chunk_coords_to_world(res.pos));
 }
 
-void World::_queue_async_generate_chunk(const Vector3i p_pos) {
+void World::_queue_async_generate_chunk(const Vector3i p_pos) const {
 	TerrainSettings settings;
 	settings.terrain_base_height     = _terrain_base_height;
 	settings.terrain_amplitude       = _terrain_amplitude;
@@ -299,26 +286,25 @@ void World::_queue_async_generate_chunk(const Vector3i p_pos) {
 	settings.noise_set.terrain_noise = _terrain_noise;
 	settings.noise_set.cave_noise    = _cave_noise;
 
-	bool dirty = false;
-
-	bool high_priority = _is_high_priority(p_pos, dirty);
+	constexpr bool dirty     = false;
+	const bool high_priority = _is_high_priority(p_pos, dirty);
 
 	_model_generator->_queue_async_generate_chunk_model(p_pos, settings, high_priority);
 }
 
-ChunkNeighbors World::_get_neighbors_for(const Vector3i p_pos) {
+ChunkNeighbors World::_get_neighbors_for(const Vector3i p_pos) const {
 	ChunkNeighbors n;
 	n.center = _chunk_repository->get_chunk(p_pos);
-	n.right  = _chunk_repository->get_chunk(p_pos + Vector3i(1, 0, 0));
-	n.left   = _chunk_repository->get_chunk(p_pos + Vector3i(-1, 0, 0));
-	n.top    = _chunk_repository->get_chunk(p_pos + Vector3i(0, 1, 0));
-	n.bottom = _chunk_repository->get_chunk(p_pos + Vector3i(0, -1, 0));
-	n.front  = _chunk_repository->get_chunk(p_pos + Vector3i(0, 0, 1));
-	n.back   = _chunk_repository->get_chunk(p_pos + Vector3i(0, 0, -1));
+	n.right  = _chunk_repository->get_chunk(p_pos + voxel::DIR_RIGHT);
+	n.left   = _chunk_repository->get_chunk(p_pos + voxel::DIR_LEFT);
+	n.top    = _chunk_repository->get_chunk(p_pos + voxel::DIR_UP);
+	n.bottom = _chunk_repository->get_chunk(p_pos + voxel::DIR_DOWN);
+	n.front  = _chunk_repository->get_chunk(p_pos + voxel::DIR_FRONT);
+	n.back   = _chunk_repository->get_chunk(p_pos + voxel::DIR_BACK);
 	return n;
 }
 
-void World::_try_build_mesh_with_neighbors(const Vector3i p_pos) {
+void World::_try_build_mesh_with_neighbors(const Vector3i p_pos) const {
 	if (_mesh_generator->is_queued_mesh(p_pos)) {
 		return;
 	}
@@ -329,8 +315,7 @@ void World::_try_build_mesh_with_neighbors(const Vector3i p_pos) {
 		return;
 	}
 
-	if (!neighbors.center || !neighbors.right || !neighbors.left ||
-		!neighbors.top || !neighbors.bottom || !neighbors.front || !neighbors.back) {
+	if (!neighbors.right || !neighbors.left || !neighbors.top || !neighbors.bottom || !neighbors.front || !neighbors.back) {
 		return;
 	}
 
@@ -338,5 +323,9 @@ void World::_try_build_mesh_with_neighbors(const Vector3i p_pos) {
 }
 
 void World::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_focus_node", "node"), &World::set_focus_node);
+	ClassDB::bind_method(D_METHOD("set_focus_position", "pos"), &World::set_focus_position);
+	ClassDB::bind_method(D_METHOD("break_block", "world_pos"), &World::break_block);
+	ClassDB::bind_method(D_METHOD("set_block", "world_pos", "block"), &World::set_block);
 }
 } // namespace godot

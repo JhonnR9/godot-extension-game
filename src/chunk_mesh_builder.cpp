@@ -7,33 +7,32 @@
 
 namespace godot {
 bool ChunkMeshBuilder::_is_air(const ChunkNeighbors &n, int x, int y, int z) {
-	if (x >= 0 && x < ChunkModel::SIZE_X && y >= 0 && y < ChunkModel::SIZE_Y && z >= 0 && z < ChunkModel::SIZE_Z) {
+	if (x >= ChunkModel::MIN_X && x <= ChunkModel::MAX_X &&
+		y >= ChunkModel::MIN_Y && y <= ChunkModel::MAX_Y &&
+		z >= ChunkModel::MIN_Z && z <= ChunkModel::MAX_Z) {
 		return voxel::is_air(n.center->get_block(x, y, z));
+		}
+
+	if (x < ChunkModel::MIN_X) {
+		return n.left ? voxel::is_air(n.left->get_block(ChunkModel::MAX_X, y, z)) : true;
+	}
+	if (x > ChunkModel::MAX_X) {
+		return n.right ? voxel::is_air(n.right->get_block(ChunkModel::MIN_X, y, z)) : true;
 	}
 
-	if (x < 0) {
-		return n.left ? voxel::is_air(n.left->get_block(ChunkModel::SIZE_X - 1, y, z)) : true;
+	if (y < ChunkModel::MIN_Y) {
+		return n.bottom ? voxel::is_air(n.bottom->get_block(x, ChunkModel::MAX_Y, z)) : true;
+	}
+	if (y > ChunkModel::MAX_Y) {
+		return n.top ? voxel::is_air(n.top->get_block(x, ChunkModel::MIN_Y, z)) : true;
 	}
 
-	if (x >= ChunkModel::SIZE_X) {
-		return n.right ? voxel::is_air(n.right->get_block(0, y, z)) : true;
+	if (z < ChunkModel::MIN_Z) {
+		return n.back ? voxel::is_air(n.back->get_block(x, y, ChunkModel::MAX_Z)) : true;
 	}
 
-	if (y < 0) {
-		return n.bottom ? voxel::is_air(n.bottom->get_block(x, ChunkModel::SIZE_Y - 1, z)) : true;
-	}
-
-	if (y >= ChunkModel::SIZE_Y) {
-		return n.top ? voxel::is_air(n.top->get_block(x, 0, z)) : true;
-	}
-
-	if (z < 0) {
-		return n.back ? voxel::is_air(n.back->get_block(x, y, ChunkModel::SIZE_Z - 1)) : true;
-	}
-
-	return n.front ? voxel::is_air(n.front->get_block(x, y, 0)) : true;
+	return n.front ? voxel::is_air(n.front->get_block(x, y, ChunkModel::MIN_Z)) : true;
 }
-
 
 void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
     const ChunkModel *center = neighbors.center.get();
