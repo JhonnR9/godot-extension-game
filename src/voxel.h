@@ -29,6 +29,6 @@ constexpr Block make_block(godot::BlockType type) {
 	return static_cast<Block>(type);
 }
 
-} // namespace block
+} // namespace voxel
 
 #endif

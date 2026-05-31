@@ -1,0 +1,321 @@
+[gd_scene format=3 uid="uid://cuh00hy6q2ig1"]
+
+[ext_resource type="Theme" uid="uid://c2gmwveu1je31" path="res://theme.tres" id="1_kqoyu"]
+[ext_resource type="Script" uid="uid://bpy1ejr80rwyt" path="res://scenes/panel_container_2.gd" id="2_uq0u2"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_kqoyu"]
+font_size = 48
+outline_size = 8
+outline_color = Color(0, 0, 0, 1)
+stacked_outline_count = 2
+stacked_outline_0/size = 1
+stacked_outline_0/color = Color(0.26293245, 0.26293245, 0.26293245, 1)
+stacked_outline_1/size = 1
+stacked_outline_1/color = Color(0.051970966, 0.05197096, 0.05197095, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uq0u2"]
+bg_color = Color(0.15487596, 0.154876, 0.15487587, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6fd6r"]
+bg_color = Color(0.15294118, 0.15294118, 0.15294118, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5gwla"]
+bg_color = Color(0.2592937, 0.2592937, 0.25929365, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_d2gsm"]
+bg_color = Color(0.15294118, 0.15294118, 0.15294118, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.88148695, 0.47008818, 0.22769445, 1)
+expand_margin_left = 1.0
+expand_margin_top = 1.0
+expand_margin_right = 1.0
+expand_margin_bottom = 1.0
+
+[sub_resource type="LabelSettings" id="LabelSettings_uq0u2"]
+font_size = 11
+
+[node name="WorldSelector" type="Control" unique_id=1433372942]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -57.0
+offset_top = 6.0
+offset_right = -57.0
+offset_bottom = 6.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 6
+size_flags_vertical = 6
+theme = ExtResource("1_kqoyu")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1050422145]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -95.0
+offset_top = -59.5
+offset_right = 95.0
+offset_bottom = 59.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Container" type="BoxContainer" parent="VBoxContainer" unique_id=1471933343]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/Container" unique_id=1708540079]
+layout_mode = 2
+size_flags_horizontal = 2
+text = "WORLDS"
+label_settings = SubResource("LabelSettings_kqoyu")
+
+[node name="Scrol" type="ScrollContainer" parent="VBoxContainer" unique_id=1953141506]
+custom_minimum_size = Vector2(512, 256)
+layout_mode = 2
+size_flags_vertical = 3
+metadata/_edit_use_anchors_ = true
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol" unique_id=1666961961]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="PanelContainer2" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=1236602285]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 8
+script = ExtResource("2_uq0u2")
+style_normal = SubResource("StyleBoxFlat_uq0u2")
+style_hover = SubResource("StyleBoxFlat_6fd6r")
+style_focus = SubResource("StyleBoxFlat_5gwla")
+style_selected = SubResource("StyleBoxFlat_d2gsm")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer2" unique_id=314714323]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer2/VBoxContainer" unique_id=1975180621]
+layout_mode = 2
+text = "My world"
+
+[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer2/VBoxContainer" unique_id=987543382]
+layout_mode = 2
+text = "16/08/2016 07:45"
+label_settings = SubResource("LabelSettings_uq0u2")
+
+[node name="PanelContainer3" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=1794945247]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 8
+script = ExtResource("2_uq0u2")
+style_normal = SubResource("StyleBoxFlat_uq0u2")
+style_hover = SubResource("StyleBoxFlat_6fd6r")
+style_focus = SubResource("StyleBoxFlat_5gwla")
+style_selected = SubResource("StyleBoxFlat_d2gsm")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer3" unique_id=2087352280]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer3/VBoxContainer" unique_id=1168313057]
+layout_mode = 2
+text = "My world"
+
+[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer3/VBoxContainer" unique_id=1575620173]
+layout_mode = 2
+text = "16/08/2016 07:45"
+label_settings = SubResource("LabelSettings_uq0u2")
+
+[node name="PanelContainer4" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=251074193]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 8
+script = ExtResource("2_uq0u2")
+style_normal = SubResource("StyleBoxFlat_uq0u2")
+style_hover = SubResource("StyleBoxFlat_6fd6r")
+style_focus = SubResource("StyleBoxFlat_5gwla")
+style_selected = SubResource("StyleBoxFlat_d2gsm")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer4" unique_id=2024000148]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer4/VBoxContainer" unique_id=303518785]
+layout_mode = 2
+text = "My world"
+
+[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer4/VBoxContainer" unique_id=631082111]
+layout_mode = 2
+text = "16/08/2016 07:45"
+label_settings = SubResource("LabelSettings_uq0u2")
+
+[node name="PanelContainer5" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=299794820]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 8
+script = ExtResource("2_uq0u2")
+style_normal = SubResource("StyleBoxFlat_uq0u2")
+style_hover = SubResource("StyleBoxFlat_6fd6r")
+style_focus = SubResource("StyleBoxFlat_5gwla")
+style_selected = SubResource("StyleBoxFlat_d2gsm")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer5" unique_id=1093097757]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer5/VBoxContainer" unique_id=974157537]
+layout_mode = 2
+text = "My world"
+
+[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer5/VBoxContainer" unique_id=573885364]
+layout_mode = 2
+text = "16/08/2016 07:45"
+label_settings = SubResource("LabelSettings_uq0u2")
+
+[node name="PanelContainer6" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=1004331682]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 8
+script = ExtResource("2_uq0u2")
+style_normal = SubResource("StyleBoxFlat_uq0u2")
+style_hover = SubResource("StyleBoxFlat_6fd6r")
+style_focus = SubResource("StyleBoxFlat_5gwla")
+style_selected = SubResource("StyleBoxFlat_d2gsm")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer6" unique_id=480507932]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer6/VBoxContainer" unique_id=1201980159]
+layout_mode = 2
+text = "My world"
+
+[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer6/VBoxContainer" unique_id=2041754063]
+layout_mode = 2
+text = "16/08/2016 07:45"
+label_settings = SubResource("LabelSettings_uq0u2")
+
+[node name="PanelContainer7" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=2028352300]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 8
+script = ExtResource("2_uq0u2")
+style_normal = SubResource("StyleBoxFlat_uq0u2")
+style_hover = SubResource("StyleBoxFlat_6fd6r")
+style_focus = SubResource("StyleBoxFlat_5gwla")
+style_selected = SubResource("StyleBoxFlat_d2gsm")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer7" unique_id=1960715910]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer7/VBoxContainer" unique_id=1532946601]
+layout_mode = 2
+text = "My world"
+
+[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer7/VBoxContainer" unique_id=1724953679]
+layout_mode = 2
+text = "16/08/2016 07:45"
+label_settings = SubResource("LabelSettings_uq0u2")
+
+[node name="PanelContainer8" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=1092938210]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 8
+script = ExtResource("2_uq0u2")
+style_normal = SubResource("StyleBoxFlat_uq0u2")
+style_hover = SubResource("StyleBoxFlat_6fd6r")
+style_focus = SubResource("StyleBoxFlat_5gwla")
+style_selected = SubResource("StyleBoxFlat_d2gsm")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer8" unique_id=149583102]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer8/VBoxContainer" unique_id=1942593758]
+layout_mode = 2
+text = "My world"
+
+[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer8/VBoxContainer" unique_id=1743888268]
+layout_mode = 2
+text = "16/08/2016 07:45"
+label_settings = SubResource("LabelSettings_uq0u2")
+
+[node name="PanelContainer9" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=1421376073]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 8
+script = ExtResource("2_uq0u2")
+style_normal = SubResource("StyleBoxFlat_uq0u2")
+style_hover = SubResource("StyleBoxFlat_6fd6r")
+style_focus = SubResource("StyleBoxFlat_5gwla")
+style_selected = SubResource("StyleBoxFlat_d2gsm")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer9" unique_id=1950362558]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer9/VBoxContainer" unique_id=2018740155]
+layout_mode = 2
+text = "My world"
+
+[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer9/VBoxContainer" unique_id=448095994]
+layout_mode = 2
+text = "16/08/2016 07:45"
+label_settings = SubResource("LabelSettings_uq0u2")
+
+[node name="PanelContainer10" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=1086088092]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 8
+script = ExtResource("2_uq0u2")
+style_normal = SubResource("StyleBoxFlat_uq0u2")
+style_hover = SubResource("StyleBoxFlat_6fd6r")
+style_focus = SubResource("StyleBoxFlat_5gwla")
+style_selected = SubResource("StyleBoxFlat_d2gsm")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer10" unique_id=991728205]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer10/VBoxContainer" unique_id=1231872087]
+layout_mode = 2
+text = "My world"
+
+[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer10/VBoxContainer" unique_id=1533518173]
+layout_mode = 2
+text = "16/08/2016 07:45"
+label_settings = SubResource("LabelSettings_uq0u2")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=723781987]
+layout_mode = 2
+size_flags_vertical = 6
+alignment = 1
+
+[node name="Button" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=1158452713]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+text = "load"
+
+[node name="Button2" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=1931710178]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+text = "create new"
+
+[node name="Button3" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=1520567151]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+text = "delete"
+
+[node name="Button" type="Button" parent="VBoxContainer" unique_id=1623447795]
+layout_mode = 2
+size_flags_vertical = 4
+text = "back"

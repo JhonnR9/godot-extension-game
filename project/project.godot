@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="godot cpp template"
-run/main_scene="uid://bx7k6wka5el6q"
+run/main_scene="uid://cvanbewcp0wwt"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -23,10 +23,9 @@ config/icon="res://icon.svg"
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
-window/size/mode=3
 window/size/window_width_override=1280
 window/size/window_height_override=720
-window/stretch/mode="viewport"
+window/stretch/mode="canvas_items"
 window/vsync/vsync_mode=0
 
 [input]

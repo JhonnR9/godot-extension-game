@@ -1,5 +1,6 @@
 #include "world.h"
 
+#include "ChunkDiskRepository.h"
 #include "chunk_pool.h"
 #include "utils.h"
 
@@ -25,6 +26,11 @@ void World::_ready() {
 	_setup_noises();
 
 	_init_chunks();
+
+	Ref<ChunkDiskRepository> chunk_disk;
+	chunk_disk.instantiate();
+
+	chunk_disk->save_test();
 }
 
 void World::_setup_noises() {

@@ -1,0 +1,68 @@
+[gd_scene format=3 uid="uid://bx7k6wka5el6q"]
+
+[ext_resource type="Script" uid="uid://darldrg0or1ui" path="res://control.gd" id="2_noarx"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_4xowi"]
+radius = 0.4
+height = 1.2
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_a202f"]
+
+[sub_resource type="Sky" id="Sky_a202f"]
+sky_material = SubResource("ProceduralSkyMaterial_a202f")
+
+[sub_resource type="Environment" id="Environment_a202f"]
+sky = SubResource("Sky_a202f")
+ambient_light_source = 3
+ambient_light_color = Color(1, 1, 1, 1)
+adjustment_enabled = true
+adjustment_brightness = 0.9
+adjustment_contrast = 1.065
+adjustment_saturation = 0.88
+
+[node name="Node3D" type="Node3D" unique_id=1977859618]
+
+[node name="World" type="World" parent="." unique_id=538717011]
+
+[node name="Player" type="Player" parent="." unique_id=2104374341]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.071924, 58.24952, 20.266096)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=62282504]
+shape = SubResource("CapsuleShape3D_4xowi")
+debug_color = Color(0.94598395, 8.95232e-06, 0.59221935, 0.41960785)
+
+[node name="Head" type="Node3D" parent="Player" unique_id=130019232]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Player/Head" unique_id=224897343]
+current = true
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=655011314]
+
+[node name="Control" type="Control" parent="CanvasLayer" unique_id=476137383]
+layout_mode = 3
+anchor_right = 0.9791667
+anchor_bottom = 0.96481484
+offset_right = 40.0
+offset_bottom = 40.0
+size_flags_horizontal = 10
+size_flags_vertical = 3
+script = ExtResource("2_noarx")
+metadata/_edit_use_anchors_ = true
+
+[node name="Crosshair" type="Crosshair" parent="CanvasLayer/Control" unique_id=2106287389]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=7603342]
+environment = SubResource("Environment_a202f")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=747512165]
+transform = Transform3D(0.63993454, 0.735131, -0.22375515, -0.3552526, 0.54122716, 0.76214755, 0.6813807, -0.40823495, 0.60750705, 0, 15.588827, 0)
+shadow_enabled = true

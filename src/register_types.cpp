@@ -1,5 +1,6 @@
 #include "register_types.h"
 
+#include "ChunkDiskRepository.h"
 #include "chunk_mesh_async_generator.h"
 #include "chunk_model_generator.h"
 #include "chunk_node.h"
@@ -30,6 +31,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	GDREGISTER_RUNTIME_CLASS(ChunkMeshAsyncGenerator);
 	GDREGISTER_RUNTIME_CLASS(ChunkModelGenerator);
 	GDREGISTER_RUNTIME_CLASS(Crosshair);
+	GDREGISTER_RUNTIME_CLASS(ChunkDiskRepository);
 
 }
 
