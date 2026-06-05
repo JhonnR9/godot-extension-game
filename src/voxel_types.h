@@ -18,6 +18,7 @@ enum class BlockType : uint16_t {
 	GRASS,
 	DIRT,
 	STONE,
+	WOOD,
 	DEEPSLATE,
 	IRON_ORE,
 	DIAMOND_ORE,
@@ -32,6 +33,12 @@ enum class CubeFace : uint8_t {
 	R,
 	U,
 	D
+};
+
+struct WorldModel {
+	int32_t seed;
+	String name;
+	int64_t id;
 };
 
 } //namespace godot

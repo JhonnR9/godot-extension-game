@@ -737,6 +737,9 @@ godot::BlockType godot::ChunkMeshBuilder::map_string_to_type(const godot::String
 	if (name.begins_with("stone")) {
 		return BlockType::STONE;
 	}
+	if (name.begins_with("wood")) {
+		return BlockType::WOOD;
+	}
 
 	// Fallback
 	return BlockType::STONE;

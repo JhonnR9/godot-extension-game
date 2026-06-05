@@ -1,12 +1,12 @@
 #include "world.h"
-
+#include <godot_cpp/classes/resource_uid.hpp>
 #include "ChunkDiskRepository.h"
 #include "chunk_pool.h"
 #include "utils.h"
 
 namespace godot {
 void World::_ready() {
-	_last_focos_position = Vector3i(INT_MAX, INT_MAX, INT_MAX);
+	_last_focos_position = Vector3i();
 
 	_chunk_pool.instantiate();
 	_chunk_repository.instantiate();
@@ -90,12 +90,17 @@ void World::_update_visible_chunks() {
 void World::_cleanup_far_chunks() const {
 	std::vector<Vector3i> to_remove;
 
+	const int cache_radius_sq = _cache_radius * _cache_radius;
+
 	for (const auto pos : _chunk_repository->get_keys_snapshot()) {
 		const int dx = ABS(pos.x - _last_focos_position.x);
 		const int dy = ABS(pos.y - _last_focos_position.y);
 		const int dz = ABS(pos.z - _last_focos_position.z);
 
-		if (dx > _cache_radius || dy > _world_height + 2 || dz > _cache_radius) {
+		bool out_of_vertical_bounds = dy > (_world_height + 2);
+		bool out_of_horizontal_bounds = (dx * dx + dz * dz) > cache_radius_sq;
+
+		if (out_of_vertical_bounds || out_of_horizontal_bounds) {
 			if (!_mesh_generator->is_queued_mesh(pos) && !_model_generator->is_loading_chunk(pos)) {
 				to_remove.push_back(pos);
 			}
@@ -166,6 +171,41 @@ void World::set_focus_position(Vector3 p_pos) {
 	_use_manual_pos   = true;
 }
 
+void World::create_new_world(int32_t p_seed, const String &p_name) {
+	_chunk_repository->clear_all();
+	_chunk_pool->clear();
+	_rendered_chunks.clear();
+
+	const WorldModel world_model{
+		.id =  ResourceUID::get_singleton()->create_id(),
+		.name = p_name,
+		.seed = p_seed
+
+	};
+
+	_terrain_noise->set_seed(world_model.seed);
+	_cave_noise->set_seed(world_model.seed + 1);
+
+	_init_chunks();
+}
+
+void World::load_world(uint64_t p_id) {
+	_chunk_repository->clear_all();
+	_chunk_pool->clear();
+	_rendered_chunks.clear();
+
+	const WorldModel world_model = _chunk_repository->get_world_model(p_id);
+
+	_terrain_noise->set_seed(world_model.seed);
+	_cave_noise->set_seed(world_model.seed + 1);
+
+	_init_chunks();
+}
+
+HashSet<int64_t> World::get_saved_worlds() const {
+	return  _chunk_repository->get_saved_worlds();
+}
+
 Vector3 World::_get_current_focus_position() const {
 	if (!_use_manual_pos && _focus_node) {
 		return _focus_node->get_global_position();
@@ -182,18 +222,6 @@ void World::_process_models() const {
 
 	for (auto &ready_model : ready_models) {
 		_chunk_repository->add_chunk(ready_model.key, ready_model.value);
-	}
-
-	for (const auto &ready_model : ready_models) {
-		Vector3i pos = ready_model.key;
-
-		_try_build_mesh_with_neighbors(pos);
-		_try_build_mesh_with_neighbors(pos + voxel::DIR_LEFT);
-		_try_build_mesh_with_neighbors(pos + voxel::DIR_RIGHT);
-		_try_build_mesh_with_neighbors(pos + voxel::DIR_UP);
-		_try_build_mesh_with_neighbors(pos + voxel::DIR_DOWN);
-		_try_build_mesh_with_neighbors(pos + voxel::DIR_BACK);
-		_try_build_mesh_with_neighbors(pos + voxel::DIR_FRONT);
 	}
 }
 

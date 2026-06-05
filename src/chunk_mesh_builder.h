@@ -16,7 +16,6 @@
 #include <godot_cpp/classes/texture2d_array.hpp>
 
 namespace godot {
-
 struct ChunkNeighbors {
 	std::shared_ptr<ChunkModel> center;
 
@@ -38,24 +37,28 @@ struct TextureKey {
 		return type == p_other.type && face == p_other.face;
 	}
 };
+
 struct TextureKeyHasher {
 	static uint32_t hash(const TextureKey &p_key) {
 		uint32_t h = hash_murmur3_buffer(&p_key.type, sizeof(BlockType));
-		h = hash_murmur3_buffer(&p_key.face, sizeof(CubeFace), h);
+		h          = hash_murmur3_buffer(&p_key.face, sizeof(CubeFace), h);
 		return h;
 	}
 };
 
 class ChunkMeshBuilder {
 	VoxelMesher mesher;
-	void _add_right_faces(const ChunkNeighbors& neighbors);
-	void _add_up_faces(const ChunkNeighbors& neighbors);
-	void _add_left_faces(const ChunkNeighbors& neighbors);
-	void _add_down_faces(const ChunkNeighbors& neighbors);
+	void _add_right_faces(const ChunkNeighbors &neighbors);
+	void _add_up_faces(const ChunkNeighbors &neighbors);
+	void _add_left_faces(const ChunkNeighbors &neighbors);
+	void _add_down_faces(const ChunkNeighbors &neighbors);
+	void _clear_mask( std::vector<std::vector<bool>> &mask,  std::vector<std::vector<bool>> &visited, const Size2i& size);
+	void _build_mask(const int& slice, std::vector<std::vector<bool>> &mask, const ChunkNeighbors &neighbors, const Size2i& size);
+	void _greedy_mask(const int& slice, std::vector<std::vector<bool>> &mask,  std::vector<std::vector<bool>> &visited, const Size2i& size, const ChunkModel* center, Vector3i dir);
 
-	void _add_front_faces(const ChunkNeighbors& neighbors);
-	void _add_back_faces(const ChunkNeighbors& neighbors);
-	int _get_tex_layer(const CubeFace& face,const BlockType& type);
+	void _add_front_faces(const ChunkNeighbors &neighbors);
+	void _add_back_faces(const ChunkNeighbors &neighbors);
+	int _get_tex_layer(const CubeFace &face, const BlockType &type);
 
 	Ref<Texture2DArray> block_texture_array;
 	void _load_textures();
@@ -63,17 +66,17 @@ class ChunkMeshBuilder {
 	static BlockType map_string_to_type(const String &name);
 
 	HashMap<TextureKey, int, TextureKeyHasher> texture_map;
+
 public:
 	ChunkMeshBuilder();
-	Ref<ArrayMesh> build(const ChunkNeighbors& neighbors);
+	Ref<ArrayMesh> build(const ChunkNeighbors &neighbors);
 
-	static bool _is_air(const ChunkNeighbors& n, int x, int y, int z);
+	static bool _is_air(const ChunkNeighbors &n, int x, int y, int z);
 
 	PackedVector3Array get_last_collision_faces() const {
 		return mesher.get_collision_faces();
 	}
 };
-
 } // namespace godot
 
 #endif

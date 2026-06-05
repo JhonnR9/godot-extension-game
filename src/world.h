@@ -29,6 +29,9 @@ public:
 	void set_block(const Vector3 &p_world_pos, const voxel::Block &p_block) const;
 	void set_focus_node(Node3D *p_node);
 	void set_focus_position(Vector3 p_pos);
+	void create_new_world(int32_t p_seed, const String &p_name);
+	void load_world(uint64_t p_id);
+	HashSet<int64_t> get_saved_worlds() const;
 
 protected:
 	static void _bind_methods();
@@ -41,15 +44,14 @@ private:
 	Ref<ChunkMeshAsyncGenerator> _mesh_generator;
 
 	// Optimization
-	int _world_radius = 4;
-	int _world_height = 6;
+	int _world_radius = 12;
+	int _world_height = 4;
 	int _cache_radius = _world_radius + 2;
 	int _diameter     = (_cache_radius * 2) + 1; //  (2 * R + 1).
 	int _prewarm_chunk_pool = (_diameter * _diameter) * _world_height;
 	int _current_chunks_finalize_in_frame = 100;
 
 	// Terrain settings
-	uint64_t _seed           = 999999;
 	int _terrain_base_height = 24;
 	float _terrain_amplitude = 8.0f;
 	int _dirt_layer_depth    = 20;

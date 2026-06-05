@@ -1,7 +1,10 @@
 [gd_scene format=3 uid="uid://bx7k6wka5el6q"]
 
 [ext_resource type="Script" uid="uid://c6aquvx643cuq" path="res://scripts/world.gd" id="1_rwgxs"]
+[ext_resource type="Theme" uid="uid://c2gmwveu1je31" path="res://resources/theme.tres" id="2_k0juu"]
 [ext_resource type="Script" uid="uid://darldrg0or1ui" path="res://control.gd" id="2_noarx"]
+[ext_resource type="Script" uid="uid://xfhdrgxgewkx" path="res://scenes/label.gd" id="3_4wyf3"]
+[ext_resource type="Script" uid="uid://c7ijudkbm4v3f" path="res://scenes/label_2.gd" id="5_71j4m"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_4xowi"]
 radius = 0.4
@@ -49,6 +52,7 @@ offset_right = 40.0
 offset_bottom = 40.0
 size_flags_horizontal = 10
 size_flags_vertical = 3
+theme = ExtResource("2_k0juu")
 script = ExtResource("2_noarx")
 metadata/_edit_use_anchors_ = true
 
@@ -61,6 +65,21 @@ anchor_right = 0.5
 anchor_bottom = 0.5
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="HBoxContainer" type="VBoxContainer" parent="CanvasLayer/Control" unique_id=2118040622]
+layout_mode = 0
+offset_right = 133.0
+offset_bottom = 50.0
+
+[node name="Label" type="Label" parent="CanvasLayer/Control/HBoxContainer" unique_id=1151970196]
+layout_mode = 2
+text = "FPS_: 60"
+script = ExtResource("3_4wyf3")
+
+[node name="Label2" type="Label" parent="CanvasLayer/Control/HBoxContainer" unique_id=1036816886]
+layout_mode = 2
+text = "vsync: on"
+script = ExtResource("5_71j4m")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=7603342]
 environment = SubResource("Environment_a202f")

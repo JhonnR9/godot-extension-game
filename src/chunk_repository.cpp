@@ -17,19 +17,36 @@ bool ChunkRepository::is_chunk_dirty(const Vector3i &p_pos) {
 	return _dirty_chunks.has(p_pos);
 }
 
-void ChunkRepository::_update_dirty_chunks(const Vector3i &p_local_pos, const Vector3i& p_chunk_pos) {
+void ChunkRepository::set_world_model(const WorldModel &p_world) {
+	this->world_model_ = p_world;
+}
+
+WorldModel ChunkRepository::get_world_model(uint64_t p_id) {
+}
+
+HashSet<int64_t> ChunkRepository::get_saved_worlds() const {
+}
+
+
+void ChunkRepository::_update_dirty_chunks(const Vector3i &p_local_pos, const Vector3i &p_chunk_pos) {
 	std::lock_guard lock(_dirty_chunks_mutex);
 
 	_dirty_chunks.insert(p_chunk_pos);
 
-	if (p_local_pos.x == ChunkModel::MIN_X) _dirty_chunks.insert(p_chunk_pos + voxel::DIR_LEFT);
-	if (p_local_pos.x == ChunkModel::MAX_X) _dirty_chunks.insert(p_chunk_pos + voxel::DIR_RIGHT);
+	if (p_local_pos.x == ChunkModel::MIN_X)
+		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_LEFT);
+	if (p_local_pos.x == ChunkModel::MAX_X)
+		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_RIGHT);
 
-	if (p_local_pos.y == ChunkModel::MIN_Y) _dirty_chunks.insert(p_chunk_pos + voxel::DIR_DOWN);
-	if (p_local_pos.y == ChunkModel::MAX_Y) _dirty_chunks.insert(p_chunk_pos + voxel::DIR_UP);
+	if (p_local_pos.y == ChunkModel::MIN_Y)
+		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_DOWN);
+	if (p_local_pos.y == ChunkModel::MAX_Y)
+		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_UP);
 
-	if (p_local_pos.z == ChunkModel::MIN_Z) _dirty_chunks.insert(p_chunk_pos + voxel::DIR_BACK);
-	if (p_local_pos.z == ChunkModel::MAX_Z) _dirty_chunks.insert(p_chunk_pos + voxel::DIR_FRONT);
+	if (p_local_pos.z == ChunkModel::MIN_Z)
+		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_BACK);
+	if (p_local_pos.z == ChunkModel::MAX_Z)
+		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_FRONT);
 }
 
 void ChunkRepository::_apply_edited_blocks(const Vector3i &p_chunk_pos, const std::shared_ptr<ChunkModel> &p_model) {
@@ -65,7 +82,6 @@ void ChunkRepository::add_chunk(const Vector3i &p_pos, const std::shared_ptr<Chu
 			_chunk_versions[p_pos] = 1;
 		}
 	}
-
 }
 
 std::shared_ptr<ChunkModel> ChunkRepository::get_chunk(const Vector3i &p_pos) {
@@ -87,7 +103,6 @@ void ChunkRepository::remove_chunk(const Vector3i &p_pos) {
 		std::lock_guard lock(_mutex);
 		if (_chunks.has(p_pos))
 			_chunks.erase(p_pos);
-
 	}
 	{
 		std::lock_guard lock(_chunk_versions_mutex);
@@ -138,7 +153,7 @@ void ChunkRepository::set_block(const Vector3i &world_block_pos, voxel::Block bl
 		std::lock_guard lock(_mutex);
 		if (_chunks.has(chunk_pos)) {
 			chunk = _chunks[chunk_pos];
-		}else {
+		} else {
 			return;
 		}
 	}
@@ -162,7 +177,7 @@ void ChunkRepository::set_block(const Vector3i &world_block_pos, voxel::Block bl
 
 HashSet<Vector3i> ChunkRepository::consume_dirty_chunks() {
 	std::lock_guard lock(_dirty_chunks_mutex);
-	HashSet<Vector3i> dirty =_dirty_chunks;
+	HashSet<Vector3i> dirty = _dirty_chunks;
 
 	_dirty_chunks.clear();
 

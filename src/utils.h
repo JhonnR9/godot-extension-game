@@ -70,6 +70,14 @@ inline Vector3i world_to_chunk(const Vector3 &p) {
 	return block_to_chunk_coords(world_to_block(p));
 }
 
+inline bool is_position_in_cylinder(const Vector3i &pos, const Vector3i &center, int radius_xz, int radius_y) {
+	int dx = pos.x - center.x;
+	int dz = pos.z - center.z;
+	int dy = ABS(pos.y - center.y);
+
+	return (dx * dx + dz * dz <= radius_xz * radius_xz) && (dy <= radius_y);
+}
+
 const auto DIR_RIGHT = Vector3i(1, 0, 0);
 const auto DIR_LEFT  = Vector3i(-1, 0, 0);
 const auto DIR_UP    = Vector3i(0, 1, 0);

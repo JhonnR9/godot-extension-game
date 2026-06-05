@@ -10,5 +10,8 @@
 	"leaves_top": 8,
 	"stone_bottom": 9,
 	"stone_side": 10,
-	"stone_top": 11
+	"stone_top": 11,
+	"wood_bottom": 12,
+	"wood_side": 13,
+	"wood_top": 14
 }
