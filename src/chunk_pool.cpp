@@ -15,7 +15,11 @@ ChunkNode *ChunkPool::acquire() {
 	if (!_owner_node) return nullptr;
 
 	if (_pool.empty()) {
-		return nullptr;
+		WARN_PRINT("ChunkPool empty, allocating an extra chunk node.");
+		ChunkNode *chunk = memnew(ChunkNode);
+		_owner_node->add_child(chunk);
+		chunk->enable();
+		return chunk;
 	}
 	ChunkNode *chunk = _pool.back();
 	_pool.pop_back();
@@ -34,6 +38,7 @@ void ChunkPool::set_prewarm(const int count) {
 	for (int i = 0; i < count; i++) {
 		auto *chunk = memnew(ChunkNode);
 		_owner_node->add_child(chunk);
+		chunk->disable();
 		_pool.push_back(chunk);
 	}
 }

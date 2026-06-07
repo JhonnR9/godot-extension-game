@@ -15,11 +15,3 @@ void fragment() {
     ALBEDO = tex.rgb;
 	
 }
-
-void light() {
-    float ndotl = max(dot(NORMAL, LIGHT), 0.0);
-
-    ndotl = step(0.5, ndotl);
-
-    DIFFUSE_LIGHT += ndotl * ATTENUATION;
-}

@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://bx7k6wka5el6q"]
 
+[ext_resource type="Script" uid="uid://c7e85o1yh0gym" path="res://scenes/world.gd" id="1_qfnet"]
 [ext_resource type="Script" uid="uid://c6aquvx643cuq" path="res://scripts/world.gd" id="1_rwgxs"]
 [ext_resource type="Theme" uid="uid://c2gmwveu1je31" path="res://resources/theme.tres" id="2_k0juu"]
 [ext_resource type="Script" uid="uid://darldrg0or1ui" path="res://control.gd" id="2_noarx"]
@@ -25,6 +26,7 @@ adjustment_contrast = 1.065
 adjustment_saturation = 0.88
 
 [node name="Node3D" type="Node3D" unique_id=1977859618]
+script = ExtResource("1_qfnet")
 
 [node name="World" type="World" parent="." unique_id=538717011]
 script = ExtResource("1_rwgxs")

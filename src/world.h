@@ -1,11 +1,12 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include "chunk_generator.h"
+#include "tess/chunk_generator.h"
 #include "chunk_mesh_async_generator.h"
 #include "chunk_model_generator.h"
 #include "chunk_node.h"
 #include "chunk_pool.h"
+#include "chunk_region_async_loader.h"
 #include "chunk_repository.h"
 #include "chunk_streaming_manager.h"
 
@@ -24,15 +25,17 @@ public:
 	// Godot lifecycle
 	void _ready() override;
 	void _process(double delta) override;
+	void _exit_tree() override;
 
-	void break_block(const Vector3 &world_pos) const;
+	void break_block(const Vector3 &world_pos);
 	void set_block(const Vector3 &p_world_pos, const voxel::Block &p_block) const;
 	void set_focus_node(Node3D *p_node);
 	void set_focus_position(Vector3 p_pos);
 	void create_new_world(int32_t p_seed, const String &p_name);
 	void load_world(uint64_t p_id);
-	HashSet<int64_t> get_saved_worlds() const;
-
+	PackedInt64Array get_saved_worlds() const;
+	void save_world();
+	void delete_world(uint64_t p_id);
 protected:
 	static void _bind_methods();
 
@@ -42,9 +45,11 @@ private:
 	Ref<ChunkStreamingManager> _chunk_stream_manager;
 	Ref<ChunkModelGenerator> _model_generator;
 	Ref<ChunkMeshAsyncGenerator> _mesh_generator;
+	Ref<ChunkDiskRepository> _disk_repository;
+	Ref<ChunkRegionAsyncLoader> _region_loader;
 
 	// Optimization
-	int _world_radius = 12;
+	int _world_radius = 6;
 	int _world_height = 4;
 	int _cache_radius = _world_radius + 2;
 	int _diameter     = (_cache_radius * 2) + 1; //  (2 * R + 1).
@@ -70,16 +75,17 @@ private:
 	void _init_chunks();
 	void _remove_chunk(ChunkNode *p_chunk_node);
 	void _update_visible_chunks();
-	void _cleanup_far_chunks() const;
+	void _cleanup_far_chunks();
 	float _get_current_chunks_finalize_amount(float delta);
 
 	void _finalize_chunk(const MeshResult &res);
 	void _try_build_mesh_with_neighbors(Vector3i p_pos) const;
 
-	void _process_models() const;
+	void _process_models();
 	void _process_meshes(const Vector3i &p_pos);
 	void _rebuild_chunk(const Vector3i &pos) const;
 	bool _is_high_priority(const Vector3i &pos, bool dirty) const;
+	void _ensure_region_loaded_for_chunk(const Vector3i &chunk_pos);
 
 	Node3D *_focus_node       = nullptr;
 	Vector3 _focus_manual_pos = Vector3(0, 0, 0);
@@ -88,6 +94,7 @@ private:
 
 	// World state
 	HashMap<Vector3i, ChunkNode *> _rendered_chunks;
+	HashSet<Vector3i> _loaded_regions;
 	Vector3i _previous_player_chunk_pos;
 };
 } // namespace godot

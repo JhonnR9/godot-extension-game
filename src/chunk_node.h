@@ -6,8 +6,10 @@
 #include <godot_cpp/classes/collision_shape3d.hpp>
 #include <godot_cpp/classes/concave_polygon_shape3d.hpp>
 #include <godot_cpp/classes/mesh_instance3d.hpp>
+#include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/classes/standard_material3d.hpp>
 #include <godot_cpp/classes/static_body3d.hpp>
+#include <godot_cpp/variant/packed_vector3_array.hpp>
 
 namespace godot {
 class World;
@@ -27,13 +29,13 @@ private:
 	CollisionShape3D *_collision_shape = nullptr;
 
 	Ref<ConcavePolygonShape3D> _shape;
-	Ref<StandardMaterial3D> _material;
+	Ref<Material> _material;
 
 	void _setup();
 
 public:
 	void set_collision_faces(const PackedVector3Array&collision_faces);
-	Ref<StandardMaterial3D> get_material() {
+	Ref<Material> get_material() {
 		return _material;
 	}
 	void disable();

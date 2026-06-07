@@ -54,8 +54,8 @@ add_library(${LIBNAME} SHARED
         src/player.h
         src/chunk_model.cpp
         src/chunk_model.h
-        src/chunk_generator.cpp
-        src/chunk_generator.h
+        src/tess/chunk_generator.cpp
+        src/tess/chunk_generator.h
         src/chunk_mesh_builder.cpp
         src/chunk_mesh_builder.h
         src/chunk_pool.cpp
@@ -72,7 +72,9 @@ add_library(${LIBNAME} SHARED
         src/crosshair.h
         src/utils.h
         src/ChunkDiskRepository.cpp
-        src/ChunkDiskRepository.h)
+        src/ChunkDiskRepository.h
+        src/chunk_region_async_loader.cpp
+        src/chunk_region_async_loader.h)
 
 target_sources(${LIBNAME}
     PRIVATE

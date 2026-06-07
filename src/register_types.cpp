@@ -32,6 +32,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	GDREGISTER_CLASS(ChunkModelGenerator);
 	GDREGISTER_CLASS(Crosshair);
 	GDREGISTER_CLASS(ChunkDiskRepository);
+	GDREGISTER_CLASS(ChunkRegionAsyncLoader);
 
 }
 

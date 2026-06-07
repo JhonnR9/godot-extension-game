@@ -2,6 +2,7 @@
 #include "world.h"
 
 #include <godot_cpp/classes/resource_loader.hpp>
+#include <godot_cpp/classes/standard_material3d.hpp>
 #include <godot_cpp/classes/texture2d.hpp>
 #include <godot_cpp/classes/texture2d_array.hpp>
 #include <godot_cpp/classes/shader_material.hpp>
@@ -33,27 +34,37 @@ void ChunkNode::_setup() {
         "res://shaders/chunk.gdshader"
     );
 
-    if (!shader.is_valid()) {
-        ERR_PRINT("Erro: shader principal não encontrado");
-        return;
-    }
+    Ref<Material> override_material;
 
-    Ref<ShaderMaterial> mat;
-    mat.instantiate();
+    if (shader.is_valid()) {
+        Ref<ShaderMaterial> mat;
+        mat.instantiate();
+        mat->set_shader(shader);
 
-    mat->set_shader(shader);
+        Ref<Texture2DArray> tex_array = ResourceLoader::get_singleton()->load(
+            "res://textures/block_array.tres"
+        );
 
-
-    Ref<Texture2DArray> tex_array = ResourceLoader::get_singleton()->load(
-        "res://textures/block_array.tres"
-    );
-
-    if (tex_array.is_valid()) {
-        mat->set_shader_parameter("albedo_array", tex_array);
+        if (tex_array.is_valid()) {
+            mat->set_shader_parameter("albedo_array", tex_array);
+            override_material = mat;
+        } else {
+            ERR_PRINT("Erro: atlas array não encontrado ou inválido em res://textures/block_array.tres");
+            Ref<StandardMaterial3D> fallback_mat;
+            fallback_mat.instantiate();
+            fallback_mat->set_albedo(Color(0.5f, 0.75f, 1.0f));
+            override_material = fallback_mat;
+        }
     } else {
-        ERR_PRINT("Erro: atlas array não encontrado em res://sprites/atlas_array.tres");
+        ERR_PRINT("Erro: shader principal não encontrado");
+        Ref<StandardMaterial3D> fallback_mat;
+        fallback_mat.instantiate();
+        fallback_mat->set_albedo(Color(0.5f, 0.75f, 1.0f));
+        override_material = fallback_mat;
     }
 
+    set_material_override(override_material);
+    _material = override_material;
 
    /* Ref<Shader> outline_shader = ResourceLoader::get_singleton()->load(
         "res://shaders/outline.gdshader"
@@ -83,7 +94,7 @@ void ChunkNode::_setup() {
     }*/
 
 
-    set_material_override(mat);
+    set_material_override(override_material);
 }
 
 void ChunkNode::set_collision_faces(

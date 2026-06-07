@@ -30,7 +30,7 @@ struct ChunkNeighbors {
 };
 
 struct TextureKey {
-	BlockType type;
+	voxel::BlockType type;
 	CubeFace face;
 
 	bool operator==(const TextureKey &p_other) const {
@@ -40,7 +40,7 @@ struct TextureKey {
 
 struct TextureKeyHasher {
 	static uint32_t hash(const TextureKey &p_key) {
-		uint32_t h = hash_murmur3_buffer(&p_key.type, sizeof(BlockType));
+		uint32_t h = hash_murmur3_buffer(&p_key.type, sizeof(voxel::BlockType));
 		h          = hash_murmur3_buffer(&p_key.face, sizeof(CubeFace), h);
 		return h;
 	}
@@ -58,12 +58,12 @@ class ChunkMeshBuilder {
 
 	void _add_front_faces(const ChunkNeighbors &neighbors);
 	void _add_back_faces(const ChunkNeighbors &neighbors);
-	int _get_tex_layer(const CubeFace &face, const BlockType &type);
+	int _get_tex_layer(const CubeFace &face, const voxel::BlockType &type);
 
 	Ref<Texture2DArray> block_texture_array;
 	void _load_textures();
 	void _initialize_texture_map();
-	static BlockType map_string_to_type(const String &name);
+	static voxel::BlockType map_string_to_type(const String &name);
 
 	HashMap<TextureKey, int, TextureKeyHasher> texture_map;
 

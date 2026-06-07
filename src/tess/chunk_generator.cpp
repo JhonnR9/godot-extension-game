@@ -31,13 +31,13 @@ ChunkModel ChunkGenerator::generate(const Vector3i chunk_pos,const TerrainSettin
 
 						if (cave <= adjusted_threshold) {
 							if (depth == 0) {
-								block = static_cast<uint32_t>(BlockType::GRASS);
+								block = static_cast<uint32_t>(voxel::BlockType::GRASS);
 
 							} else if (depth <= 15) {
-								block = static_cast<uint32_t>(BlockType::DIRT);
+								block = static_cast<uint32_t>(voxel::BlockType::DIRT);
 
 							} else {
-								block = static_cast<uint32_t>(world_y < -32 ? BlockType::DEEPSLATE : BlockType::STONE);
+								block = static_cast<uint32_t>(world_y < -32 ? voxel::BlockType::DEEPSLATE : voxel::BlockType::STONE);
 							}
 						}
 				}

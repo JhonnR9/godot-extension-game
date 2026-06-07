@@ -16,18 +16,6 @@ bool ChunkRepository::is_chunk_dirty(const Vector3i &p_pos) {
 	std::lock_guard lock(_dirty_chunks_mutex);
 	return _dirty_chunks.has(p_pos);
 }
-
-void ChunkRepository::set_world_model(const WorldModel &p_world) {
-	this->world_model_ = p_world;
-}
-
-WorldModel ChunkRepository::get_world_model(uint64_t p_id) {
-}
-
-HashSet<int64_t> ChunkRepository::get_saved_worlds() const {
-}
-
-
 void ChunkRepository::_update_dirty_chunks(const Vector3i &p_local_pos, const Vector3i &p_chunk_pos) {
 	std::lock_guard lock(_dirty_chunks_mutex);
 
@@ -65,6 +53,7 @@ void ChunkRepository::_apply_edited_blocks(const Vector3i &p_chunk_pos, const st
 }
 
 
+
 void ChunkRepository::_bind_methods() {
 }
 
@@ -78,9 +67,7 @@ void ChunkRepository::add_chunk(const Vector3i &p_pos, const std::shared_ptr<Chu
 
 	{
 		std::lock_guard lock(_chunk_versions_mutex);
-		if (!_chunk_versions.has(p_pos)) {
-			_chunk_versions[p_pos] = 1;
-		}
+		_chunk_versions[p_pos] = 1;
 	}
 }
 
@@ -182,5 +169,81 @@ HashSet<Vector3i> ChunkRepository::consume_dirty_chunks() {
 	_dirty_chunks.clear();
 
 	return dirty;
+}
+
+void ChunkRepository::set_world_model(const WorldModel &p_world) {
+	world_model_ = p_world;
+}
+
+WorldModel ChunkRepository::get_world_model(uint64_t p_id) {
+	return world_model_;
+}
+
+HashMap<Vector3i, HashMap<Vector3i, voxel::Block>> ChunkRepository::get_edited_chunks() const {
+	std::lock_guard lock(_edited_blocks_mutex);
+	return _edited_chunks;
+}
+
+void ChunkRepository::merge_region_edits(const voxel::Region &region) {
+
+	{
+
+		std::lock_guard edits_lock(_edited_blocks_mutex);
+
+
+		for (const auto &chunk_entry : region.edited_chunks) {
+
+			const Vector3i &chunk_pos = chunk_entry.key;
+
+			for (const auto &block_entry : chunk_entry.value.delta) {
+
+				_edited_chunks[chunk_pos][block_entry.key] = block_entry.value;
+
+			}
+
+		}
+
+	}
+
+
+	std::lock_guard chunks_lock(_mutex);
+
+	for (const auto &chunk_entry : region.edited_chunks) {
+
+		const Vector3i &chunk_pos = chunk_entry.key;
+
+		if (_chunks.has(chunk_pos)) {
+
+			_apply_edited_blocks(chunk_pos, _chunks[chunk_pos]);
+
+		}
+
+	}
+
+}
+
+void ChunkRepository::save_edited_chunks_to_disk(Ref<ChunkDiskRepository> disk_repo) {
+	if (disk_repo.is_null()) return;
+
+	std::lock_guard lock(_edited_blocks_mutex);
+
+	HashMap<Vector3i, voxel::Region> regions_to_save;
+
+	for (const auto &E : _edited_chunks) {
+		Vector3i chunk_pos = E.key;
+		Vector3i region_pos = voxel::chunk_to_region_coords(chunk_pos);
+
+		if (!regions_to_save.has(region_pos)) {
+			regions_to_save[region_pos] = voxel::Region();
+		}
+
+		voxel::ChunkDelta delta;
+		delta.delta = E.value;
+		regions_to_save[region_pos].edited_chunks[chunk_pos] = delta;
+	}
+
+	for (const auto &E : regions_to_save) {
+		disk_repo->save_region(E.key, E.value);
+	}
 }
 } //namespace godot

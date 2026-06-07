@@ -17,15 +17,15 @@ constexpr uint16_t block_id(Block b) {
 	return b & BLOCK_ID_MASK;
 }
 
-constexpr godot::BlockType type(Block b) {
-	return static_cast<godot::BlockType>(block_id(b));
+constexpr BlockType type(Block b) {
+	return static_cast<BlockType>(block_id(b));
 }
 
 constexpr bool is_air(Block b) {
 	return block_id(b) == 0;
 }
 
-constexpr Block make_block(godot::BlockType type) {
+constexpr Block make_block(BlockType type) {
 	return static_cast<Block>(type);
 }
 

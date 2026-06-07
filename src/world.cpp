@@ -3,6 +3,7 @@
 #include "ChunkDiskRepository.h"
 #include "chunk_pool.h"
 #include "utils.h"
+#include <vector>
 
 namespace godot {
 void World::_ready() {
@@ -13,6 +14,10 @@ void World::_ready() {
 	_chunk_stream_manager.instantiate();
 	_model_generator.instantiate();
 	_mesh_generator.instantiate();
+	_disk_repository.instantiate();
+	_region_loader.instantiate();
+
+	_region_loader->set_repository(_disk_repository);
 
 	StreamSettings stream_settings{};
 	stream_settings.cache_radius = _cache_radius;
@@ -21,16 +26,10 @@ void World::_ready() {
 
 	_chunk_stream_manager->set_stream_settings(stream_settings);
 	_chunk_pool->set_owner(this);
+	_chunk_pool->set_prewarm(_prewarm_chunk_pool);
 
 	set_process(true);
 	_setup_noises();
-
-	_init_chunks();
-
-	Ref<ChunkDiskRepository> chunk_disk;
-	chunk_disk.instantiate();
-
-	chunk_disk->save_test();
 }
 
 void World::_setup_noises() {
@@ -52,12 +51,14 @@ void World::_init_chunks() {
 	if (!_focus_node) {
 		_last_focos_position = voxel::block_to_chunk_coords(Vector3()); // fallback
 		_chunk_stream_manager->rebuild_all_chunks(_last_focos_position);
+		_update_visible_chunks();
 		return;
 	}
 
 	_last_focos_position       = voxel::block_to_chunk_coords(_get_current_focus_position());
 	_previous_player_chunk_pos = _last_focos_position;
 	_chunk_stream_manager->rebuild_all_chunks(_last_focos_position);
+	_update_visible_chunks();
 }
 
 void World::_remove_chunk(ChunkNode *p_chunk_node) {
@@ -87,7 +88,7 @@ void World::_update_visible_chunks() {
 	}
 }
 
-void World::_cleanup_far_chunks() const {
+void World::_cleanup_far_chunks() {
 	std::vector<Vector3i> to_remove;
 
 	const int cache_radius_sq = _cache_radius * _cache_radius;
@@ -97,7 +98,7 @@ void World::_cleanup_far_chunks() const {
 		const int dy = ABS(pos.y - _last_focos_position.y);
 		const int dz = ABS(pos.z - _last_focos_position.z);
 
-		bool out_of_vertical_bounds = dy > (_world_height + 2);
+		bool out_of_vertical_bounds   = dy > (_world_height + 2);
 		bool out_of_horizontal_bounds = (dx * dx + dz * dz) > cache_radius_sq;
 
 		if (out_of_vertical_bounds || out_of_horizontal_bounds) {
@@ -109,6 +110,24 @@ void World::_cleanup_far_chunks() const {
 
 	for (const Vector3i &pos : to_remove) {
 		_chunk_repository->remove_chunk(pos);
+	}
+
+	std::vector<Vector3i> regions_to_unload;
+
+	const float region_unload_dist_sq = (_cache_radius + 32) * (_cache_radius + 32);
+
+	for (const auto &region_pos : _loaded_regions) {
+		Vector3i region_center_chunk = region_pos * voxel::CHUNKS_PER_REGION;
+
+		float dist_sq = region_center_chunk.distance_squared_to(_last_focos_position);
+
+		if (dist_sq > region_unload_dist_sq) {
+			regions_to_unload.push_back(region_pos);
+		}
+	}
+
+	for (const auto &pos : regions_to_unload) {
+		_loaded_regions.erase(pos);
 	}
 }
 
@@ -151,7 +170,11 @@ void World::_process(double delta) {
 	}
 }
 
-void World::break_block(const Vector3 &world_pos) const {
+void World::_exit_tree() {
+	save_world();
+}
+
+void World::break_block(const Vector3 &world_pos) {
 	Vector3i block_pos = voxel::world_to_block(world_pos);
 	_chunk_repository->set_block(block_pos, 0);
 }
@@ -175,13 +198,18 @@ void World::create_new_world(int32_t p_seed, const String &p_name) {
 	_chunk_repository->clear_all();
 	_chunk_pool->clear();
 	_rendered_chunks.clear();
+	_loaded_regions.clear();
 
-	const WorldModel world_model{
-		.id =  ResourceUID::get_singleton()->create_id(),
+	const voxel::WorldModel world_model{
+		.seed = p_seed,
 		.name = p_name,
-		.seed = p_seed
-
+		.id = ResourceUID::get_singleton()->create_id()
 	};
+
+	_chunk_repository->set_world_model(world_model);
+
+	_disk_repository->set_current_world(world_model.id);
+	_disk_repository->save_world_model(world_model);
 
 	_terrain_noise->set_seed(world_model.seed);
 	_cave_noise->set_seed(world_model.seed + 1);
@@ -193,8 +221,12 @@ void World::load_world(uint64_t p_id) {
 	_chunk_repository->clear_all();
 	_chunk_pool->clear();
 	_rendered_chunks.clear();
+	_loaded_regions.clear();
 
-	const WorldModel world_model = _chunk_repository->get_world_model(p_id);
+	_disk_repository->set_current_world(p_id);
+	const voxel::WorldModel world_model = _disk_repository->load_world_model(p_id);
+
+	_chunk_repository->set_world_model(world_model);
 
 	_terrain_noise->set_seed(world_model.seed);
 	_cave_noise->set_seed(world_model.seed + 1);
@@ -202,8 +234,29 @@ void World::load_world(uint64_t p_id) {
 	_init_chunks();
 }
 
-HashSet<int64_t> World::get_saved_worlds() const {
-	return  _chunk_repository->get_saved_worlds();
+void World::save_world() {
+	if (_disk_repository.is_valid() && _disk_repository->get_current_world_id() != 0) {
+		_chunk_repository->save_edited_chunks_to_disk(_disk_repository);
+	}
+}
+
+void World::delete_world(uint64_t p_id) {
+	if (_disk_repository.is_valid()) {
+		_disk_repository->delete_world(p_id);
+	}
+}
+
+PackedInt64Array World::get_saved_worlds() const {
+	PackedInt64Array result;
+
+	if (_disk_repository.is_valid()) {
+		HashSet<int64_t> worlds = _disk_repository->get_saved_worlds();
+		for (const int64_t &id : worlds) {
+			result.append(id);
+		}
+	}
+
+	return result;
 }
 
 Vector3 World::_get_current_focus_position() const {
@@ -213,7 +266,7 @@ Vector3 World::_get_current_focus_position() const {
 	return _focus_manual_pos;
 }
 
-void World::_process_models() const {
+void World::_process_models() {
 	HashMap<Vector3i, std::shared_ptr<ChunkModel>> ready_models = _model_generator->consume_generated_results();
 
 	if (ready_models.is_empty()) {
@@ -221,8 +274,29 @@ void World::_process_models() const {
 	}
 
 	for (auto &ready_model : ready_models) {
+		_ensure_region_loaded_for_chunk(ready_model.key);
 		_chunk_repository->add_chunk(ready_model.key, ready_model.value);
 	}
+}
+
+void World::_ensure_region_loaded_for_chunk(const Vector3i &chunk_pos) {
+	if (_disk_repository.is_null()) {
+		return;
+	}
+
+	Vector3i region_pos = voxel::chunk_to_region_coords(chunk_pos);
+	if (_loaded_regions.has(region_pos)) {
+		return;
+	}
+
+	voxel::Region region = _disk_repository->load_region(region_pos);
+	_loaded_regions.insert(region_pos);
+
+	if (region.edited_chunks.is_empty()) {
+		return;
+	}
+
+	_chunk_repository->merge_region_edits(region);
 }
 
 void World::_process_meshes(const Vector3i &p_pos) {
@@ -355,5 +429,11 @@ void World::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_focus_position", "pos"), &World::set_focus_position);
 	ClassDB::bind_method(D_METHOD("break_block", "world_pos"), &World::break_block);
 	ClassDB::bind_method(D_METHOD("set_block", "world_pos", "block"), &World::set_block);
+
+	ClassDB::bind_method(D_METHOD("create_new_world", "seed", "name"), &World::create_new_world);
+	ClassDB::bind_method(D_METHOD("load_world", "id"), &World::load_world);
+	ClassDB::bind_method(D_METHOD("save_world"), &World::save_world);
+	ClassDB::bind_method(D_METHOD("delete_world", "id"), &World::delete_world);
+	ClassDB::bind_method(D_METHOD("get_saved_worlds"), &World::get_saved_worlds);
 }
 } // namespace godot

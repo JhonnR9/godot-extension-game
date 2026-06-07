@@ -1,11 +1,13 @@
 #ifndef CHUNK_REPOSITORY_H
 #define CHUNK_REPOSITORY_H
+#include "ChunkDiskRepository.h"
 #include "voxel.h"
 #include "godot_cpp/templates/hash_map.hpp"
 #include "godot_cpp/templates/hash_set.hpp"
 
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <memory>
+#include <mutex>
 
 namespace godot {
 struct ChunkModel;
@@ -13,15 +15,15 @@ struct ChunkModel;
 
 class ChunkRepository : public RefCounted {
 	GDCLASS(ChunkRepository, RefCounted)
-	std::mutex _mutex;
+	mutable std::mutex _mutex;
 	HashMap<Vector3i, std::shared_ptr<ChunkModel>> _chunks;
-	std::mutex _dirty_chunks_mutex;
+	mutable std::mutex _dirty_chunks_mutex;
 	HashSet<Vector3i> _dirty_chunks;
 
-	std::mutex _chunk_versions_mutex;
+	mutable std::mutex _chunk_versions_mutex;
 	HashMap<Vector3i, uint64_t> _chunk_versions;
 
-	std::mutex _edited_blocks_mutex;
+	mutable std::mutex _edited_blocks_mutex;
 	HashMap<Vector3i, HashMap<Vector3i, voxel::Block>> _edited_chunks;
 
 	WorldModel world_model_;
@@ -43,7 +45,10 @@ public:
 
 	void set_world_model(const WorldModel &p_world);
 	WorldModel get_world_model(uint64_t p_id);
-	HashSet<int64_t> get_saved_worlds() const;
+
+	void save_edited_chunks_to_disk(Ref<ChunkDiskRepository> disk_repo);
+	HashMap<Vector3i, HashMap<Vector3i, voxel::Block>> get_edited_chunks() const;
+	void merge_region_edits(const voxel::Region &region);
 
 private:
 	void _update_dirty_chunks(const Vector3i &p_local_pos, const Vector3i &p_chunk_pos);

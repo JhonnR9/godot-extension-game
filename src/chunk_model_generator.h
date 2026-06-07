@@ -3,7 +3,7 @@
 #ifndef CHUNK_MODEL_GENERATOR_H
 #define CHUNK_MODEL_GENERATOR_H
 
-#include "chunk_generator.h"
+#include "tess/chunk_generator.h"
 #include "chunk_model.h"
 #include "godot_cpp/classes/wrapped.hpp"
 #include "godot_cpp/templates/hash_set.hpp"

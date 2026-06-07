@@ -1,8 +1,9 @@
 #ifndef UTILS_H
 #define UTILS_H
+#include <cstdint>
 #include "chunk_model.h"
 #include "godot_cpp/variant/vector3i.hpp"
-
+#include "godot_cpp/templates/hash_map.hpp"
 
 namespace voxel {
 using namespace godot;
@@ -26,8 +27,8 @@ inline int32_t posmod(int32_t a, int32_t b) {
 	return m;
 }
 
-inline int32_t floor_int(float f) {
-	int32_t i = static_cast<int32_t>(f);
+inline int32_t floor_int(const float f) {
+	const auto i = static_cast<int32_t>(f);
 	if (f < 0 && f != static_cast<float>(i)) {
 		return i - 1;
 	}
@@ -78,11 +79,37 @@ inline bool is_position_in_cylinder(const Vector3i &pos, const Vector3i &center,
 	return (dx * dx + dz * dz <= radius_xz * radius_xz) && (dy <= radius_y);
 }
 
+struct ChunkDelta {
+	HashMap<Vector3i, Block> delta;
+};
+
+struct Region {
+	HashMap<Vector3i, ChunkDelta> edited_chunks;
+};
+
+constexpr int CHUNKS_PER_REGION = 32;
+
+inline Vector3i chunk_to_region_coords(const Vector3i &chunk_pos) {
+	return {
+		floor_div(chunk_pos.x, CHUNKS_PER_REGION),
+		floor_div(chunk_pos.y, CHUNKS_PER_REGION),
+		floor_div(chunk_pos.z, CHUNKS_PER_REGION)
+	};
+}
+
+inline Vector3i chunk_to_region_local_chunk(const Vector3i &chunk_pos) {
+	return {
+		posmod(chunk_pos.x, CHUNKS_PER_REGION),
+		posmod(chunk_pos.y, CHUNKS_PER_REGION),
+		posmod(chunk_pos.z, CHUNKS_PER_REGION)
+	};
+}
+
 const auto DIR_RIGHT = Vector3i(1, 0, 0);
 const auto DIR_LEFT  = Vector3i(-1, 0, 0);
 const auto DIR_UP    = Vector3i(0, 1, 0);
 const auto DIR_DOWN  = Vector3i(0, -1, 0);
 const auto DIR_FRONT = Vector3i(0, 0, 1);
 const auto DIR_BACK  = Vector3i(0, 0, -1);
-}
+} // namespace voxel
 #endif //UTILS_H

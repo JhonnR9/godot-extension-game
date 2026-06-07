@@ -248,7 +248,7 @@ void Player::_unhandled_input(const Ref<InputEvent> &event) {
 
                 if (_world) {
 
-                    BlockType selected_type =static_cast<BlockType>(_selected_block_id);
+                    auto selected_type =static_cast<voxel::BlockType>(_selected_block_id);
 
                     voxel::Block block_to_place =voxel::make_block(selected_type);
 

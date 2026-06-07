@@ -1,79 +1,109 @@
-
 #include "ChunkDiskRepository.h"
-
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
-#include <godot_cpp/classes/json.hpp>
-#include <godot_cpp/classes/project_settings.hpp>
 
 namespace godot {
+void ChunkDiskRepository::_bind_methods() {}
 
-void ChunkDiskRepository::_bind_methods() {
-
+void ChunkDiskRepository::set_current_world(uint64_t p_id) {
+    current_world_id = p_id;
+    String dir = get_world_dir(p_id) + "/regions";
+    if (!DirAccess::dir_exists_absolute(dir)) {
+        DirAccess::make_dir_recursive_absolute(dir);
+    }
 }
 
-void ChunkDiskRepository::save_test() {
-	HashMap<Vector3i, HashMap<Vector3i, voxel::Block>>edited_chunks;
+String ChunkDiskRepository::get_world_dir(uint64_t p_id) const {
+    return "user://voxelcraft/worlds/" + String::num_uint64(p_id);
+}
 
-	HashMap<Vector3i, voxel::Block> list_test_1;
-	list_test_1.insert(Vector3i(1,2,3), 12);
-	list_test_1.insert(Vector3i(1,2,4), 13);
-	list_test_1.insert(Vector3i(1,2,5), 14);
-	list_test_1.insert(Vector3i(1,2,6), 15);
-	list_test_1.insert(Vector3i(1,2,7), 16);
+String ChunkDiskRepository::get_region_path(Vector3i region_pos) const {
+    return get_world_dir(current_world_id) + "/regions/region_" + itos(region_pos.x) + "_" + itos(region_pos.y) + "_" + itos(region_pos.z) + ".dat";
+}
 
-	HashMap<Vector3i, voxel::Block> list_test_2;
-	list_test_2.insert(Vector3i(1,2,3), 17);
-	list_test_2.insert(Vector3i(1,2,3), 18);
-	list_test_2.insert(Vector3i(1,2,3), 19);
-	list_test_2.insert(Vector3i(1,2,3), 20);
-	list_test_2.insert(Vector3i(1,2,3), 21);
+void ChunkDiskRepository::save_world_model(const WorldModel &model) {
+    String path = get_world_dir(model.id) + "/level.dat";
+    Ref<FileAccess> file = FileAccess::open(path, FileAccess::WRITE);
+    if (file.is_valid()) {
+        file->store_64(model.id);
+        file->store_32(model.seed);
+        file->store_pascal_string(model.name);
+    }
+}
 
-	edited_chunks.insert(Vector3i(1,2,3), list_test_1);
-	edited_chunks.insert(Vector3i(1,5,3), list_test_2);
+WorldModel ChunkDiskRepository::load_world_model(uint64_t p_id) {
+    WorldModel model;
+    String path = get_world_dir(p_id) + "/level.dat";
+    if (FileAccess::file_exists(path)) {
+        Ref<FileAccess> file = FileAccess::open(path, FileAccess::READ);
+        model.id = file->get_64();
+        model.seed = file->get_32();
+        model.name = file->get_pascal_string();
+    }
+    return model;
+}
 
-	String dir_path = "user://voxelcraft/746367/";
-	if (!DirAccess::dir_exists_absolute(dir_path)) {
-		DirAccess::make_dir_recursive_absolute(dir_path);
-	}
+HashSet<int64_t> ChunkDiskRepository::get_saved_worlds() const {
+    HashSet<int64_t> worlds;
+    Ref<DirAccess> dir = DirAccess::open("user://voxelcraft/worlds");
+    if (dir.is_valid()) {
+        dir->list_dir_begin();
+        String file_name = dir->get_next();
+        while (!file_name.is_empty()) {
+            if (dir->current_is_dir() && file_name != "." && file_name != "..") {
+                worlds.insert(file_name.to_int());
+            }
+            file_name = dir->get_next();
+        }
+    }
+    return worlds;
+}
 
-	String path = "user://voxelcraft/746367/region000.data";
-	String absolute_path = ProjectSettings::get_singleton()->globalize_path(path);
+void ChunkDiskRepository::delete_world(uint64_t p_id) {
+    String dir_path = get_world_dir(p_id);
+    if (DirAccess::dir_exists_absolute(dir_path)) {
+        Ref<DirAccess> dir = DirAccess::open(dir_path);
+        if (dir.is_valid()) {
+            DirAccess::remove_absolute(dir_path);
+        }
+    }
+}
 
-	UtilityFunctions::print("Salvando em: ", absolute_path);
+void ChunkDiskRepository::save_region(Vector3i region_pos, const voxel::Region &region) {
+    String path = get_region_path(region_pos);
+    Ref<FileAccess> file = FileAccess::open(path, FileAccess::WRITE);
+    if (file.is_null()) return;
 
-	Ref<FileAccess> file = FileAccess::open(path, FileAccess::WRITE);
+    file->store_32(region.edited_chunks.size());
+    for (const auto &E : region.edited_chunks) {
+        file->store_32(E.key.x); file->store_32(E.key.y); file->store_32(E.key.z);
+        file->store_32(E.value.delta.size());
+        for (const auto &F : E.value.delta) {
+            file->store_32(F.key.x); file->store_32(F.key.y); file->store_32(F.key.z);
+            file->store_32(F.value);
+        }
+    }
 
-	if (file.is_null()) {
-		ERR_PRINT("Falha ao abrir arquivo para escrita: " + path);
-		return;
-	}
-
-	file->store_32(edited_chunks.size());
-
-	for (const KeyValue<Vector3i, HashMap<Vector3i, voxel::Block>> &E : edited_chunks) {
-		Vector3i chunk_pos = E.key;
-		const HashMap<Vector3i, voxel::Block> &blocks = E.value;
-
-		file->store_32(chunk_pos.x);
-		file->store_32(chunk_pos.y);
-		file->store_32(chunk_pos.z);
-
-		file->store_32(blocks.size());
-
-
-		for (const KeyValue<Vector3i, voxel::Block> &F : blocks) {
-			Vector3i block_pos = F.key;
-			voxel::Block block_val = F.value;
-
-			file->store_32(block_pos.x);
-			file->store_32(block_pos.y);
-			file->store_32(block_pos.z);
-
-			file->store_32(block_val);
-		}
-	}
-
+	file->flush();
 	file->close();
 }
-} // godot
+
+voxel::Region ChunkDiskRepository::load_region(Vector3i region_pos) {
+    voxel::Region region;
+    String path = get_region_path(region_pos);
+    if (!FileAccess::file_exists(path)) return region;
+
+    Ref<FileAccess> file = FileAccess::open(path, FileAccess::READ);
+    uint32_t chunk_count = file->get_32();
+    for (uint32_t i = 0; i < chunk_count; ++i) {
+        Vector3i c_pos(file->get_32(), file->get_32(), file->get_32());
+        uint32_t block_count = file->get_32();
+        voxel::ChunkDelta delta;
+        for (uint32_t j = 0; j < block_count; ++j) {
+            delta.delta.insert(Vector3i(file->get_32(), file->get_32(), file->get_32()), file->get_32());
+        }
+        region.edited_chunks.insert(c_pos, delta);
+    }
+    return region;
+}
+}
