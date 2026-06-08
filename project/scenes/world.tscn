@@ -1,11 +1,14 @@
 [gd_scene format=3 uid="uid://bx7k6wka5el6q"]
 
-[ext_resource type="Script" uid="uid://c7e85o1yh0gym" path="res://scenes/world.gd" id="1_qfnet"]
-[ext_resource type="Script" uid="uid://c6aquvx643cuq" path="res://scripts/world.gd" id="1_rwgxs"]
+[ext_resource type="Script" uid="uid://c7e85o1yh0gym" path="res://scripts/world.gd" id="1_qfnet"]
 [ext_resource type="Theme" uid="uid://c2gmwveu1je31" path="res://resources/theme.tres" id="2_k0juu"]
 [ext_resource type="Script" uid="uid://darldrg0or1ui" path="res://control.gd" id="2_noarx"]
 [ext_resource type="Script" uid="uid://xfhdrgxgewkx" path="res://scenes/label.gd" id="3_4wyf3"]
 [ext_resource type="Script" uid="uid://c7ijudkbm4v3f" path="res://scenes/label_2.gd" id="5_71j4m"]
+
+[sub_resource type="GDScript" id="GDScript_71j4m"]
+script/source = "extends World
+"
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_4xowi"]
 radius = 0.4
@@ -29,10 +32,10 @@ adjustment_saturation = 0.88
 script = ExtResource("1_qfnet")
 
 [node name="World" type="World" parent="." unique_id=538717011]
-script = ExtResource("1_rwgxs")
+script = SubResource("GDScript_71j4m")
 
 [node name="Player" type="Player" parent="." unique_id=2104374341]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.071924, 58.24952, 20.266096)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.071924, 25.089806, 20.266096)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=62282504]
 shape = SubResource("CapsuleShape3D_4xowi")

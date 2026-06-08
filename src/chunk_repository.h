@@ -28,6 +28,9 @@ class ChunkRepository : public RefCounted {
 
 	WorldModel world_model_;
 
+	mutable std::mutex _dirty_regions_mutex;
+	HashSet<Vector3i> _dirty_regions;
+
 protected:
 	static void _bind_methods();
 
@@ -48,8 +51,11 @@ public:
 
 	void save_edited_chunks_to_disk(Ref<ChunkDiskRepository> disk_repo);
 	HashMap<Vector3i, HashMap<Vector3i, voxel::Block>> get_edited_chunks() const;
+	voxel::Region take_region_edits(const Vector3i &region_pos);
 	void merge_region_edits(const voxel::Region &region);
-
+	voxel::Region get_edited_region(const Vector3i &p_region_pos) const;
+	HashSet<Vector3i> get_dirty_regions();
+	HashMap<Vector3i, voxel::Region> get_all_edited_regions() const;
 private:
 	void _update_dirty_chunks(const Vector3i &p_local_pos, const Vector3i &p_chunk_pos);
 	void _apply_edited_blocks(const Vector3i &p_chunk_pos, const std::shared_ptr<ChunkModel> &p_model);

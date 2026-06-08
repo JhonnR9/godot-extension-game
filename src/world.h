@@ -47,6 +47,7 @@ private:
 	Ref<ChunkMeshAsyncGenerator> _mesh_generator;
 	Ref<ChunkDiskRepository> _disk_repository;
 	Ref<ChunkRegionAsyncLoader> _region_loader;
+	void save_world_final();
 
 	// Optimization
 	int _world_radius = 6;
@@ -94,8 +95,16 @@ private:
 
 	// World state
 	HashMap<Vector3i, ChunkNode *> _rendered_chunks;
-	HashSet<Vector3i> _loaded_regions;
+	HashMap<Vector3i, voxel::Region> _region_cache;
+	HashSet<Vector3i> _pending_region_loads;
 	Vector3i _previous_player_chunk_pos;
+
+	void _queue_region_load(const Vector3i &region_pos);
+	void _update_region_streaming(const Vector3i &current_chunk_pos, const Vector3i &previous_chunk_pos);
+	void _process_loaded_regions();
+	void _unload_region(const Vector3i &region_pos);
+
+	bool _is_initializing{false};
 };
 } // namespace godot
 

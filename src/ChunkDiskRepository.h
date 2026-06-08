@@ -24,7 +24,9 @@ public:
 	void delete_world(uint64_t p_id);
 
 	void save_region(Vector3i region_pos, const voxel::Region &region);
+	void save_region_async(Vector3i region_pos, const voxel::Region &region);
 	voxel::Region load_region(Vector3i region_pos);
+	Vector<Vector3i> get_all_saved_regions() const;
 
 private:
 	uint64_t current_world_id = 0;

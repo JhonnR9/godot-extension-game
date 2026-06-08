@@ -46,21 +46,32 @@ void World::_setup_noises() {
 void World::_init_chunks() {
 	ERR_FAIL_COND(_chunk_pool.is_null());
 
+	_is_initializing = true;
+
 	_chunk_pool->set_prewarm(_prewarm_chunk_pool);
 
 	if (!_focus_node) {
-		_last_focos_position = voxel::block_to_chunk_coords(Vector3()); // fallback
-		_chunk_stream_manager->rebuild_all_chunks(_last_focos_position);
-		_update_visible_chunks();
-		return;
+		_last_focos_position = voxel::block_to_chunk_coords(Vector3());
+	} else {
+		_last_focos_position = voxel::block_to_chunk_coords(_get_current_focus_position());
 	}
 
-	_last_focos_position       = voxel::block_to_chunk_coords(_get_current_focus_position());
 	_previous_player_chunk_pos = _last_focos_position;
 	_chunk_stream_manager->rebuild_all_chunks(_last_focos_position);
-	_update_visible_chunks();
-}
 
+	Vector3i current_region = voxel::chunk_to_region_coords(_last_focos_position);
+	for (int x = -1; x <= 1; ++x) {
+		for (int z = -1; z <= 1; ++z) {
+			_queue_region_load(current_region + Vector3i(x, 0, z));
+		}
+	}
+
+	Vector<Vector3i> saved_regions = _disk_repository->get_all_saved_regions();
+	for (const Vector3i &region_pos : saved_regions) {
+		_queue_region_load(region_pos);
+	}
+
+}
 void World::_remove_chunk(ChunkNode *p_chunk_node) {
 	ERR_FAIL_NULL(p_chunk_node);
 
@@ -70,6 +81,14 @@ void World::_remove_chunk(ChunkNode *p_chunk_node) {
 }
 
 void World::_update_visible_chunks() {
+	if (_is_initializing) {
+
+		if (_pending_region_loads.is_empty()) {
+			_is_initializing = false;
+		} else {
+			return;
+		}
+	}
 	for (const Vector3i &pos : _chunk_stream_manager->pop_queue_free_chunks()) {
 		if (_rendered_chunks.has(pos)) {
 			_remove_chunk(_rendered_chunks[pos]);
@@ -112,35 +131,20 @@ void World::_cleanup_far_chunks() {
 		_chunk_repository->remove_chunk(pos);
 	}
 
-	std::vector<Vector3i> regions_to_unload;
-
-	const float region_unload_dist_sq = (_cache_radius + 32) * (_cache_radius + 32);
-
-	for (const auto &region_pos : _loaded_regions) {
-		Vector3i region_center_chunk = region_pos * voxel::CHUNKS_PER_REGION;
-
-		float dist_sq = region_center_chunk.distance_squared_to(_last_focos_position);
-
-		if (dist_sq > region_unload_dist_sq) {
-			regions_to_unload.push_back(region_pos);
-		}
-	}
-
-	for (const auto &pos : regions_to_unload) {
-		_loaded_regions.erase(pos);
-	}
 }
 
 void World::_process(double delta) {
 	const Vector3i current_position = voxel::block_to_chunk_coords(_get_current_focus_position());
 
 	if (current_position != _last_focos_position) {
-		_last_focos_position       = current_position;
-		_previous_player_chunk_pos = current_position;
-
 		_chunk_stream_manager->shift_chunks(current_position);
-		_update_visible_chunks();
+		_update_region_streaming(current_position, _last_focos_position);
+		_previous_player_chunk_pos = _last_focos_position;
+		_last_focos_position = current_position;
 	}
+
+	_process_loaded_regions();
+	_update_visible_chunks();
 
 	const float frame_ms   = static_cast<float>(delta) * 1000.0f;
 	size_t mesh_queue_size = _mesh_generator->get_queue_size();
@@ -171,7 +175,7 @@ void World::_process(double delta) {
 }
 
 void World::_exit_tree() {
-	save_world();
+	save_world_final();
 }
 
 void World::break_block(const Vector3 &world_pos) {
@@ -198,7 +202,8 @@ void World::create_new_world(int32_t p_seed, const String &p_name) {
 	_chunk_repository->clear_all();
 	_chunk_pool->clear();
 	_rendered_chunks.clear();
-	_loaded_regions.clear();
+	_region_cache.clear();
+	_pending_region_loads.clear();
 
 	const voxel::WorldModel world_model{
 		.seed = p_seed,
@@ -221,7 +226,8 @@ void World::load_world(uint64_t p_id) {
 	_chunk_repository->clear_all();
 	_chunk_pool->clear();
 	_rendered_chunks.clear();
-	_loaded_regions.clear();
+	_region_cache.clear();
+	_pending_region_loads.clear();
 
 	_disk_repository->set_current_world(p_id);
 	const voxel::WorldModel world_model = _disk_repository->load_world_model(p_id);
@@ -274,7 +280,7 @@ void World::_process_models() {
 	}
 
 	for (auto &ready_model : ready_models) {
-		_ensure_region_loaded_for_chunk(ready_model.key);
+		_queue_region_load(voxel::chunk_to_region_coords(ready_model.key));
 		_chunk_repository->add_chunk(ready_model.key, ready_model.value);
 	}
 }
@@ -285,18 +291,90 @@ void World::_ensure_region_loaded_for_chunk(const Vector3i &chunk_pos) {
 	}
 
 	Vector3i region_pos = voxel::chunk_to_region_coords(chunk_pos);
-	if (_loaded_regions.has(region_pos)) {
+	_queue_region_load(region_pos);
+}
+
+void World::_queue_region_load(const Vector3i &region_pos) {
+	if (_region_cache.has(region_pos) || _pending_region_loads.has(region_pos)) {
 		return;
 	}
 
-	voxel::Region region = _disk_repository->load_region(region_pos);
-	_loaded_regions.insert(region_pos);
+	_pending_region_loads.insert(region_pos);
+	_region_loader->queue_async_load_region(region_pos);
+}
 
-	if (region.edited_chunks.is_empty()) {
+void World::_process_loaded_regions() {
+	Vector<Vector3i> ready_regions;
+
+	for (const Vector3i &region_pos : _pending_region_loads) {
+		if (_region_loader->has_loaded_region(region_pos)) {
+			ready_regions.push_back(region_pos);
+		}
+	}
+
+	for (const Vector3i &region_pos : ready_regions) {
+		voxel::Region region = _region_loader->consume_loaded_region(region_pos);
+		_pending_region_loads.erase(region_pos);
+		_region_cache.insert(region_pos, region);
+		if (!region.edited_chunks.is_empty()) {
+			_chunk_repository->merge_region_edits(region);
+
+		}
+	}
+}
+
+void World::_update_region_streaming(const Vector3i &current_chunk_pos, const Vector3i &previous_chunk_pos) {
+	Vector3i current_region = voxel::chunk_to_region_coords(current_chunk_pos);
+	Vector3i previous_region = voxel::chunk_to_region_coords(previous_chunk_pos);
+	Vector3i region_delta = current_region - previous_region;
+	auto sign = [](int32_t value) {
+		return value > 0 ? 1 : (value < 0 ? -1 : 0);
+	};
+
+	Vector3i primary{sign(region_delta.x), sign(region_delta.y), sign(region_delta.z)};
+	if (primary == Vector3i()) {
+		primary = Vector3i(1, 0, 0);
+	}
+
+	Vector3i secondary;
+	if (ABS(region_delta.x) >= ABS(region_delta.z)) {
+		secondary = Vector3i(0, 0, 1);
+	} else {
+		secondary = Vector3i(1, 0, 0);
+	}
+
+	HashSet<Vector3i> desired_regions;
+	desired_regions.insert(current_region);
+	desired_regions.insert(current_region + primary);
+	desired_regions.insert(current_region + secondary);
+
+	for (const Vector3i &region_pos : desired_regions) {
+		_queue_region_load(region_pos);
+	}
+
+	Vector<Vector3i> to_unload;
+	for (const auto &entry : _region_cache) {
+		if (!desired_regions.has(entry.key)) {
+			to_unload.push_back(entry.key);
+		}
+	}
+
+	for (const Vector3i &region_pos : to_unload) {
+		_unload_region(region_pos);
+	}
+}
+
+void World::_unload_region(const Vector3i &region_pos) {
+	if (!_region_cache.has(region_pos)) {
 		return;
 	}
 
-	_chunk_repository->merge_region_edits(region);
+	voxel::Region edits = _chunk_repository->take_region_edits(region_pos);
+	if (!edits.edited_chunks.is_empty()) {
+		_disk_repository->save_region_async(region_pos, edits);
+	}
+
+	_region_cache.erase(region_pos);
 }
 
 void World::_process_meshes(const Vector3i &p_pos) {
@@ -392,6 +470,16 @@ void World::_queue_async_generate_chunk(const Vector3i p_pos) const {
 	const bool high_priority = _is_high_priority(p_pos, dirty);
 
 	_model_generator->_queue_async_generate_chunk_model(p_pos, settings, high_priority);
+}
+
+void World::save_world_final() {
+	if (_disk_repository.is_null()) return;
+
+	HashMap<Vector3i, voxel::Region> all_edits = _chunk_repository->get_all_edited_regions();
+
+	for (const auto &E : all_edits) {
+		_disk_repository->save_region(E.key, E.value);
+	}
 }
 
 ChunkNeighbors World::_get_neighbors_for(const Vector3i p_pos) const {
