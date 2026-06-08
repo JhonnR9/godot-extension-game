@@ -1,7 +1,7 @@
 #ifndef CHUNK_GENERATOR_H
 #define CHUNK_GENERATOR_H
 
-#include "../chunk_model.h"
+#include "chunk_model.h"
 #include "godot_cpp/classes/ref.hpp"
 #include "godot_cpp/classes/fast_noise_lite.hpp"
 

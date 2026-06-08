@@ -156,6 +156,10 @@ void ChunkRepository::clear_all() {
 		std::lock_guard lock(_edited_blocks_mutex);
 		_edited_chunks.clear();
 	}
+	{
+		std::lock_guard lock(_dirty_regions_mutex);
+		_dirty_regions.clear();
+	}
 }
 
 void ChunkRepository::set_block(const Vector3i &world_block_pos, voxel::Block block) {

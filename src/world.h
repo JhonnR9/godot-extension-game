@@ -1,7 +1,7 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include "tess/chunk_generator.h"
+#include "chunk_generator.h"
 #include "chunk_mesh_async_generator.h"
 #include "chunk_model_generator.h"
 #include "chunk_node.h"

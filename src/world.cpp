@@ -57,7 +57,8 @@ void World::_init_chunks() {
 	}
 
 	_previous_player_chunk_pos = _last_focos_position;
-	_chunk_stream_manager->rebuild_all_chunks(_last_focos_position);
+	const Vector3i current_position = voxel::block_to_chunk_coords(_get_current_focus_position());
+	_chunk_stream_manager->shift_chunks(current_position);
 
 	Vector3i current_region = voxel::chunk_to_region_coords(_last_focos_position);
 	for (int x = -1; x <= 1; ++x) {
@@ -70,6 +71,7 @@ void World::_init_chunks() {
 	for (const Vector3i &region_pos : saved_regions) {
 		_queue_region_load(region_pos);
 	}
+	_chunk_stream_manager->rebuild_all_chunks(_last_focos_position);
 
 }
 void World::_remove_chunk(ChunkNode *p_chunk_node) {
