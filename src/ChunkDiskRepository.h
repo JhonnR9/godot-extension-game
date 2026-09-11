@@ -1,12 +1,12 @@
 #ifndef CHUNKDISKREPOSITORY_H
 #define CHUNKDISKREPOSITORY_H
 
+#include "godot_cpp/templates/hash_set.hpp"
 #include "utils.h"
 #include "voxel.h"
-#include "godot_cpp/templates/hash_set.hpp"
 
-#include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
+#include <godot_cpp/classes/ref_counted.hpp>
 #include <mutex>
 
 namespace godot {
@@ -14,12 +14,13 @@ class ChunkDiskRepository : public RefCounted {
 	GDCLASS(ChunkDiskRepository, RefCounted)
 protected:
 	static void _bind_methods();
+
 public:
 	void set_current_world(uint64_t p_id);
 	uint64_t get_current_world_id() const { return current_world_id; }
 
 	void save_world_model(const WorldModel &model);
-	WorldModel load_world_model(uint64_t p_id);
+	WorldModel load_world_model(uint64_t p_id) const;
 	HashSet<int64_t> get_saved_worlds() const;
 	void delete_world(uint64_t p_id);
 
@@ -36,5 +37,5 @@ private:
 	std::mutex regions_mutex;
 	HashMap<Vector3i, voxel::Region> regions;
 };
-}
+} //namespace godot
 #endif // CHUNKDISKREPOSITORY_H
