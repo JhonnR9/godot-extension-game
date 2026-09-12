@@ -1,4 +1,7 @@
 #include "ChunkDiskRepository.h"
+
+#include "save_service.h"
+
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/json.hpp>
@@ -8,132 +11,19 @@
 
 namespace godot {
 
-static constexpr int WORLD_MODEL_VERSION = 1;
 static constexpr int REGION_FILE_VERSION = 1;
 
 void ChunkDiskRepository::_bind_methods() {}
 
-void ChunkDiskRepository::set_current_world(uint64_t p_id) {
+void ChunkDiskRepository::set_current_world(int64_t p_id) {
 	current_world_id = p_id;
-	String dir		 = get_world_dir(p_id) + "/regions";
-	if (!DirAccess::dir_exists_absolute(dir)) {
+	if (const String dir = SaveService::get_world_dir(p_id) + "/regions"; !DirAccess::dir_exists_absolute(dir)) {
 		DirAccess::make_dir_recursive_absolute(dir);
 	}
 }
 
-String ChunkDiskRepository::get_world_dir(uint64_t p_id) const {
-	return "user://voxelcraft/worlds/" + String::num_uint64(p_id);
-}
-
-String ChunkDiskRepository::get_region_path(Vector3i region_pos) const {
-	return get_world_dir(current_world_id) + "/regions/region_" + itos(region_pos.x) + "_" + itos(region_pos.y) + "_" + itos(region_pos.z) + ".json";
-}
-
-void ChunkDiskRepository::save_world_model(const WorldModel &model) {
-	String path = get_world_dir(model.id) + "/level.json";
-
-	Dictionary root;
-	root["version"] = WORLD_MODEL_VERSION;
-	root["id"]		= (int64_t)model.id;
-	root["seed"]	= (int64_t)model.seed;
-	root["name"]	= model.name;
-
-	String text = JSON::stringify(root, "\t");
-
-	Ref<FileAccess> file = FileAccess::open(path, FileAccess::WRITE);
-	if (file.is_null())
-		return;
-
-	file->store_string(text);
-	file->flush();
-	file->close();
-}
-
-WorldModel ChunkDiskRepository::load_world_model(const uint64_t p_id) const {
-	WorldModel model{};
-
-	const String path = get_world_dir(p_id) + "/level.json";
-
-	if (!FileAccess::file_exists(path))
-		return model;
-
-	const Ref<FileAccess> file = FileAccess::open(path, FileAccess::READ);
-	if (file.is_null()) {
-		return model;
-	}
-
-
-	const String text = file->get_as_text();
-	file->close();
-
-	const Variant parsed = JSON::parse_string(text);
-
-	if (parsed.get_type() != Variant::DICTIONARY)
-		return model;
-
-	const Dictionary root = parsed;
-
-	if (!root.has("version") ||
-		!root.has("id") ||
-		!root.has("seed") ||
-		!root.has("name"))
-	{
-		return model;
-	}
-
-	if (root["version"].get_type() != Variant::INT ||
-		root["id"].get_type() != Variant::INT ||
-		root["seed"].get_type() != Variant::INT ||
-		root["name"].get_type() != Variant::STRING)
-	{
-		return model;
-	}
-
-	const int64_t version = root["version"];
-	const int64_t id = root["id"];
-	const int64_t seed = root["seed"];
-	const String name = root["name"];
-
-	if (version != WORLD_MODEL_VERSION)
-		return model;
-
-	if (id < 0)
-		return model;
-
-	if (seed < 0 || seed > UINT32_MAX)
-		return model;
-
-	model.id = static_cast<uint64_t>(id);
-	model.seed = static_cast<uint32_t>(seed);
-	model.name = name;
-
-	return model;
-}
-
-HashSet<int64_t> ChunkDiskRepository::get_saved_worlds() const {
-	HashSet<int64_t> worlds;
-	Ref<DirAccess> dir = DirAccess::open("user://voxelcraft/worlds");
-	if (dir.is_valid()) {
-		dir->list_dir_begin();
-		String file_name = dir->get_next();
-		while (!file_name.is_empty()) {
-			if (dir->current_is_dir() && file_name != "." && file_name != "..") {
-				worlds.insert(file_name.to_int());
-			}
-			file_name = dir->get_next();
-		}
-	}
-	return worlds;
-}
-
-void ChunkDiskRepository::delete_world(uint64_t p_id) {
-	String dir_path = get_world_dir(p_id);
-	if (DirAccess::dir_exists_absolute(dir_path)) {
-		Ref<DirAccess> dir = DirAccess::open(dir_path);
-		if (dir.is_valid()) {
-			DirAccess::remove_absolute(dir_path);
-		}
-	}
+String ChunkDiskRepository::get_region_path(const Vector3i region_pos) const {
+	return SaveService::get_world_dir(current_world_id) + "/regions/region_" + itos(region_pos.x) + "_" + itos(region_pos.y) + "_" + itos(region_pos.z) + ".json";
 }
 
 void ChunkDiskRepository::save_region(Vector3i region_pos, const voxel::Region &region) {
@@ -271,11 +161,10 @@ voxel::Region ChunkDiskRepository::load_region(Vector3i region_pos) {
 }
 
 Vector<Vector3i> ChunkDiskRepository::get_all_saved_regions() const {
-	Vector<Vector3i> regions;
-	String dir_path	   = get_world_dir(current_world_id) + "/regions";
-	Ref<DirAccess> dir = DirAccess::open(dir_path);
+	Vector<Vector3i> regions_loaded;
+	const String dir_path = SaveService::get_world_dir(current_world_id) + "/regions";
 
-	if (dir.is_valid()) {
+	if (const Ref<DirAccess> dir = DirAccess::open(dir_path); dir.is_valid()) {
 		dir->list_dir_begin();
 
 		String file_name = dir->get_next();
@@ -287,7 +176,7 @@ Vector<Vector3i> ChunkDiskRepository::get_all_saved_regions() const {
 												  .split("_");
 
 				if (parts.size() == 3) {
-					regions.push_back(
+					regions_loaded.push_back(
 							Vector3i(
 									parts[0].to_int(),
 									parts[1].to_int(),
@@ -301,6 +190,6 @@ Vector<Vector3i> ChunkDiskRepository::get_all_saved_regions() const {
 		dir->list_dir_end();
 	}
 
-	return regions;
+	return regions_loaded;
 }
 } //namespace godot

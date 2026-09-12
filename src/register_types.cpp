@@ -7,8 +7,11 @@
 #include "chunk_repository.h"
 #include "chunk_streaming_manager.h"
 #include "crosshair.h"
+#include "godot_cpp/classes/engine.hpp"
 #include "player.h"
+#include "save_service.h"
 #include "world.h"
+
 #include <gdextension_interface.h>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/defs.hpp>
@@ -16,11 +19,18 @@
 
 using namespace godot;
 
+static SaveService *save_service_singleton;
+
 void initialize_gdextension_types(ModuleInitializationLevel p_level)
 {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
+
+	GDREGISTER_CLASS(ChunkDiskRepository);
+	GDREGISTER_CLASS(SaveService);
+	save_service_singleton = memnew(SaveService);
+	Engine::get_singleton()->register_singleton("SaveService", SaveService::get_singleton());
 
 	GDREGISTER_CLASS(ChunkNode);
 	GDREGISTER_CLASS(World);
@@ -31,7 +41,6 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	GDREGISTER_CLASS(ChunkMeshAsyncGenerator);
 	GDREGISTER_CLASS(ChunkModelGenerator);
 	GDREGISTER_CLASS(Crosshair);
-	GDREGISTER_CLASS(ChunkDiskRepository);
 	GDREGISTER_CLASS(ChunkRegionAsyncLoader);
 
 }
@@ -40,6 +49,9 @@ void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
+
+	Engine::get_singleton()->unregister_singleton("SaveService");
+	memdelete(save_service_singleton);
 }
 
 extern "C"

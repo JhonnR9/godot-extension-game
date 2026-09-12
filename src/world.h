@@ -32,10 +32,8 @@ public:
 	void set_focus_node(Node3D *p_node);
 	void set_focus_position(Vector3 p_pos);
 	void create_new_world(int32_t p_seed, const String &p_name);
-	void load_world(uint64_t p_id);
-	PackedInt64Array get_saved_worlds() const;
-	void save_world();
-	void delete_world(uint64_t p_id);
+	void start_world(int64_t p_id);
+
 protected:
 	static void _bind_methods();
 
@@ -70,6 +68,7 @@ private:
 	Vector3i _last_focos_position;
 
 	// World management
+	void save_world();
 	void _queue_async_generate_chunk(Vector3i p_pos) const;
 	ChunkNeighbors _get_neighbors_for(Vector3i p_pos) const;
 	void _setup_noises();
