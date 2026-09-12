@@ -74,7 +74,9 @@ add_library(${LIBNAME} SHARED
         src/ChunkDiskRepository.cpp
         src/ChunkDiskRepository.h
         src/chunk_region_async_loader.cpp
-        src/chunk_region_async_loader.h)
+        src/chunk_region_async_loader.h
+        src/save_service.cpp
+)
 
 target_sources(${LIBNAME}
     PRIVATE
