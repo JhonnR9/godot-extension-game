@@ -2,40 +2,23 @@
 
 [ext_resource type="Theme" uid="uid://c2gmwveu1je31" path="res://resources/theme.tres" id="1_kqoyu"]
 [ext_resource type="Script" uid="uid://cr8ixvp31g6ax" path="res://scripts/world_selector.gd" id="2_6fd6r"]
-[ext_resource type="Script" uid="uid://bpy1ejr80rwyt" path="res://scripts/panel_container_2.gd" id="2_uq0u2"]
 [ext_resource type="LabelSettings" uid="uid://cebi6giswv3v0" path="res://resources/tiltles_label.tres" id="3_5gwla"]
+[ext_resource type="PackedScene" uid="uid://1jy5kybxafh4" path="res://scenes/empty_worlds_placeholder.tscn" id="5_d2gsm"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uq0u2"]
-bg_color = Color(0.15487596, 0.154876, 0.15487587, 1)
+[sub_resource type="GDScript" id="GDScript_5gwla"]
+script/source = "extends ScrollContainer
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6fd6r"]
-bg_color = Color(0.15294118, 0.15294118, 0.15294118, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
+@export var empty_placeholder: PanelContainer
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5gwla"]
-bg_color = Color(0.2592937, 0.2592937, 0.25929365, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
+func _ready() -> void:
+	# Verify if exist persistent data and remove placeholder
+	pass
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_d2gsm"]
-bg_color = Color(0.15294118, 0.15294118, 0.15294118, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.88148695, 0.47008818, 0.22769445, 1)
-expand_margin_left = 1.0
-expand_margin_top = 1.0
-expand_margin_right = 1.0
-expand_margin_bottom = 1.0
 
-[sub_resource type="LabelSettings" id="LabelSettings_uq0u2"]
-font_size = 11
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta: float) -> void:
+	pass
+"
 
 [node name="WorldSelector" type="Control" unique_id=1433372942]
 layout_mode = 3
@@ -74,233 +57,38 @@ size_flags_horizontal = 2
 text = "WORLDS"
 label_settings = ExtResource("3_5gwla")
 
-[node name="Scrol" type="ScrollContainer" parent="VBoxContainer" unique_id=1953141506]
+[node name="WorldsList" type="ScrollContainer" parent="VBoxContainer" unique_id=1953141506]
 custom_minimum_size = Vector2(512, 256)
 layout_mode = 2
 size_flags_vertical = 3
+script = SubResource("GDScript_5gwla")
 metadata/_edit_use_anchors_ = true
 
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol" unique_id=1666961961]
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/WorldsList" unique_id=1318331867]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 0
 
-[node name="PanelContainer2" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=1236602285]
-clip_contents = true
-layout_mode = 2
-size_flags_vertical = 8
-script = ExtResource("2_uq0u2")
-style_normal = SubResource("StyleBoxFlat_uq0u2")
-style_hover = SubResource("StyleBoxFlat_6fd6r")
-style_focus = SubResource("StyleBoxFlat_5gwla")
-style_selected = SubResource("StyleBoxFlat_d2gsm")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer2" unique_id=314714323]
+[node name="Placeholder" parent="VBoxContainer/WorldsList/VBoxContainer" unique_id=144687001 instance=ExtResource("5_d2gsm")]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer2/VBoxContainer" unique_id=1975180621]
-layout_mode = 2
-text = "My world"
-
-[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer2/VBoxContainer" unique_id=987543382]
-layout_mode = 2
-text = "16/08/2016 07:45"
-label_settings = SubResource("LabelSettings_uq0u2")
-
-[node name="PanelContainer3" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=1794945247]
-clip_contents = true
-layout_mode = 2
-size_flags_vertical = 8
-script = ExtResource("2_uq0u2")
-style_normal = SubResource("StyleBoxFlat_uq0u2")
-style_hover = SubResource("StyleBoxFlat_6fd6r")
-style_focus = SubResource("StyleBoxFlat_5gwla")
-style_selected = SubResource("StyleBoxFlat_d2gsm")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer3" unique_id=2087352280]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer3/VBoxContainer" unique_id=1168313057]
-layout_mode = 2
-text = "My world"
-
-[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer3/VBoxContainer" unique_id=1575620173]
-layout_mode = 2
-text = "16/08/2016 07:45"
-label_settings = SubResource("LabelSettings_uq0u2")
-
-[node name="PanelContainer4" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=251074193]
-clip_contents = true
-layout_mode = 2
-size_flags_vertical = 8
-script = ExtResource("2_uq0u2")
-style_normal = SubResource("StyleBoxFlat_uq0u2")
-style_hover = SubResource("StyleBoxFlat_6fd6r")
-style_focus = SubResource("StyleBoxFlat_5gwla")
-style_selected = SubResource("StyleBoxFlat_d2gsm")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer4" unique_id=2024000148]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer4/VBoxContainer" unique_id=303518785]
-layout_mode = 2
-text = "My world"
-
-[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer4/VBoxContainer" unique_id=631082111]
-layout_mode = 2
-text = "16/08/2016 07:45"
-label_settings = SubResource("LabelSettings_uq0u2")
-
-[node name="PanelContainer5" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=299794820]
-clip_contents = true
-layout_mode = 2
-size_flags_vertical = 8
-script = ExtResource("2_uq0u2")
-style_normal = SubResource("StyleBoxFlat_uq0u2")
-style_hover = SubResource("StyleBoxFlat_6fd6r")
-style_focus = SubResource("StyleBoxFlat_5gwla")
-style_selected = SubResource("StyleBoxFlat_d2gsm")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer5" unique_id=1093097757]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer5/VBoxContainer" unique_id=974157537]
-layout_mode = 2
-text = "My world"
-
-[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer5/VBoxContainer" unique_id=573885364]
-layout_mode = 2
-text = "16/08/2016 07:45"
-label_settings = SubResource("LabelSettings_uq0u2")
-
-[node name="PanelContainer6" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=1004331682]
-clip_contents = true
-layout_mode = 2
-size_flags_vertical = 8
-script = ExtResource("2_uq0u2")
-style_normal = SubResource("StyleBoxFlat_uq0u2")
-style_hover = SubResource("StyleBoxFlat_6fd6r")
-style_focus = SubResource("StyleBoxFlat_5gwla")
-style_selected = SubResource("StyleBoxFlat_d2gsm")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer6" unique_id=480507932]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer6/VBoxContainer" unique_id=1201980159]
-layout_mode = 2
-text = "My world"
-
-[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer6/VBoxContainer" unique_id=2041754063]
-layout_mode = 2
-text = "16/08/2016 07:45"
-label_settings = SubResource("LabelSettings_uq0u2")
-
-[node name="PanelContainer7" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=2028352300]
-clip_contents = true
-layout_mode = 2
-size_flags_vertical = 8
-script = ExtResource("2_uq0u2")
-style_normal = SubResource("StyleBoxFlat_uq0u2")
-style_hover = SubResource("StyleBoxFlat_6fd6r")
-style_focus = SubResource("StyleBoxFlat_5gwla")
-style_selected = SubResource("StyleBoxFlat_d2gsm")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer7" unique_id=1960715910]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer7/VBoxContainer" unique_id=1532946601]
-layout_mode = 2
-text = "My world"
-
-[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer7/VBoxContainer" unique_id=1724953679]
-layout_mode = 2
-text = "16/08/2016 07:45"
-label_settings = SubResource("LabelSettings_uq0u2")
-
-[node name="PanelContainer8" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=1092938210]
-clip_contents = true
-layout_mode = 2
-size_flags_vertical = 8
-script = ExtResource("2_uq0u2")
-style_normal = SubResource("StyleBoxFlat_uq0u2")
-style_hover = SubResource("StyleBoxFlat_6fd6r")
-style_focus = SubResource("StyleBoxFlat_5gwla")
-style_selected = SubResource("StyleBoxFlat_d2gsm")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer8" unique_id=149583102]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer8/VBoxContainer" unique_id=1942593758]
-layout_mode = 2
-text = "My world"
-
-[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer8/VBoxContainer" unique_id=1743888268]
-layout_mode = 2
-text = "16/08/2016 07:45"
-label_settings = SubResource("LabelSettings_uq0u2")
-
-[node name="PanelContainer9" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=1421376073]
-clip_contents = true
-layout_mode = 2
-size_flags_vertical = 8
-script = ExtResource("2_uq0u2")
-style_normal = SubResource("StyleBoxFlat_uq0u2")
-style_hover = SubResource("StyleBoxFlat_6fd6r")
-style_focus = SubResource("StyleBoxFlat_5gwla")
-style_selected = SubResource("StyleBoxFlat_d2gsm")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer9" unique_id=1950362558]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer9/VBoxContainer" unique_id=2018740155]
-layout_mode = 2
-text = "My world"
-
-[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer9/VBoxContainer" unique_id=448095994]
-layout_mode = 2
-text = "16/08/2016 07:45"
-label_settings = SubResource("LabelSettings_uq0u2")
-
-[node name="PanelContainer10" type="PanelContainer" parent="VBoxContainer/Scrol/VBoxContainer" unique_id=1086088092]
-clip_contents = true
-layout_mode = 2
-size_flags_vertical = 8
-script = ExtResource("2_uq0u2")
-style_normal = SubResource("StyleBoxFlat_uq0u2")
-style_hover = SubResource("StyleBoxFlat_6fd6r")
-style_focus = SubResource("StyleBoxFlat_5gwla")
-style_selected = SubResource("StyleBoxFlat_d2gsm")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer10" unique_id=991728205]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer10/VBoxContainer" unique_id=1231872087]
-layout_mode = 2
-text = "My world"
-
-[node name="Label2" type="Label" parent="VBoxContainer/Scrol/VBoxContainer/PanelContainer10/VBoxContainer" unique_id=1533518173]
-layout_mode = 2
-text = "16/08/2016 07:45"
-label_settings = SubResource("LabelSettings_uq0u2")
-
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=723781987]
+[node name="ModificationsButtons" type="HBoxContainer" parent="VBoxContainer" unique_id=723781987]
 layout_mode = 2
 size_flags_vertical = 6
 alignment = 1
 
-[node name="Button" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=1158452713]
+[node name="Load" type="Button" parent="VBoxContainer/ModificationsButtons" unique_id=1158452713]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 text = "load"
 
-[node name="Button2" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=1931710178]
+[node name="Create" type="Button" parent="VBoxContainer/ModificationsButtons" unique_id=1931710178]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 text = "create new"
 
-[node name="Button3" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=1520567151]
+[node name="Delete" type="Button" parent="VBoxContainer/ModificationsButtons" unique_id=1520567151]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4

@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://1jy5kybxafh4"]
+
+[node name="Placeholder" type="PanelContainer" unique_id=144687001]
+offset_right = 204.0
+offset_bottom = 23.0
+size_flags_horizontal = 3
+size_flags_vertical = 4
+
+[node name="Label" type="Label" parent="." unique_id=970501559]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Start creating a new world"

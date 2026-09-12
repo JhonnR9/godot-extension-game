@@ -3,8 +3,8 @@
 [ext_resource type="Script" uid="uid://c7e85o1yh0gym" path="res://scripts/world.gd" id="1_qfnet"]
 [ext_resource type="Theme" uid="uid://c2gmwveu1je31" path="res://resources/theme.tres" id="2_k0juu"]
 [ext_resource type="Script" uid="uid://darldrg0or1ui" path="res://control.gd" id="2_noarx"]
-[ext_resource type="Script" uid="uid://xfhdrgxgewkx" path="res://scenes/label.gd" id="3_4wyf3"]
-[ext_resource type="Script" uid="uid://c7ijudkbm4v3f" path="res://scenes/label_2.gd" id="5_71j4m"]
+[ext_resource type="Script" uid="uid://xfhdrgxgewkx" path="res://scripts/fps_counter.gd" id="3_4wyf3"]
+[ext_resource type="Script" uid="uid://c7ijudkbm4v3f" path="res://scripts/debug.gd" id="5_71j4m"]
 
 [sub_resource type="GDScript" id="GDScript_71j4m"]
 script/source = "extends World

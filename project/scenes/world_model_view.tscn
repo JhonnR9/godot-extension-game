@@ -1,0 +1,61 @@
+[gd_scene format=3 uid="uid://bjiqsrs3kckfu"]
+
+[ext_resource type="Script" uid="uid://bpy1ejr80rwyt" path="res://scripts/world_model_view.gd" id="1_0ud1i"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uq0u2"]
+bg_color = Color(0.15487596, 0.154876, 0.15487587, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6fd6r"]
+bg_color = Color(0.15294118, 0.15294118, 0.15294118, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5gwla"]
+bg_color = Color(0.2592937, 0.2592937, 0.25929365, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_d2gsm"]
+bg_color = Color(0.15294118, 0.15294118, 0.15294118, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.88148695, 0.47008818, 0.22769445, 1)
+expand_margin_left = 1.0
+expand_margin_top = 1.0
+expand_margin_right = 1.0
+expand_margin_bottom = 1.0
+
+[sub_resource type="LabelSettings" id="LabelSettings_uq0u2"]
+font_size = 11
+
+[node name="WorldModelView" type="VBoxContainer" unique_id=114795009]
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=25610164]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 8
+script = ExtResource("1_0ud1i")
+style_normal = SubResource("StyleBoxFlat_uq0u2")
+style_hover = SubResource("StyleBoxFlat_6fd6r")
+style_focus = SubResource("StyleBoxFlat_5gwla")
+style_selected = SubResource("StyleBoxFlat_d2gsm")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer" unique_id=797527494]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="PanelContainer/VBoxContainer" unique_id=432505000]
+layout_mode = 2
+text = "My world"
+
+[node name="LastUpdated" type="Label" parent="PanelContainer/VBoxContainer" unique_id=1449646021]
+layout_mode = 2
+text = "16/08/2016 07:45"
+label_settings = SubResource("LabelSettings_uq0u2")
