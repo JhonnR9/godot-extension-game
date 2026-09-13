@@ -2,6 +2,7 @@
 
 [ext_resource type="LabelSettings" uid="uid://cebi6giswv3v0" path="res://resources/tiltles_label.tres" id="1_kferw"]
 [ext_resource type="Theme" uid="uid://c2gmwveu1je31" path="res://resources/theme.tres" id="1_wfexp"]
+[ext_resource type="Script" uid="uid://da4376bi3x0wa" path="res://scenes/create_world.gd" id="2_8t6he"]
 
 [node name="CreateWorld" type="Control" unique_id=1811426239]
 layout_mode = 3
@@ -11,6 +12,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_wfexp")
+script = ExtResource("2_8t6he")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=870523995]
 layout_mode = 1
@@ -45,7 +47,7 @@ layout_mode = 2
 size_flags_horizontal = 0
 text = "Name:"
 
-[node name="LineEdit" type="LineEdit" parent="VBoxContainer/Name" unique_id=1591141771]
+[node name="NameLineEdit" type="LineEdit" parent="VBoxContainer/Name" unique_id=1591141771]
 custom_minimum_size = Vector2(128, 0)
 layout_mode = 2
 size_flags_horizontal = 8
@@ -60,10 +62,10 @@ size_flags_vertical = 4
 layout_mode = 2
 text = "Seed: "
 
-[node name="LineEdit" type="LineEdit" parent="VBoxContainer/Seed" unique_id=2055909270]
+[node name="SeedLineEdit" type="LineEdit" parent="VBoxContainer/Seed" unique_id=2055909270]
 custom_minimum_size = Vector2(128, 0)
 layout_mode = 2
-placeholder_text = "ex: 8475846"
+placeholder_text = "random"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=1443559813]
 layout_mode = 2
@@ -91,7 +93,7 @@ alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Button" type="Button" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer" unique_id=359080341]
+[node name="Create" type="Button" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer" unique_id=359080341]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Create"
@@ -100,8 +102,14 @@ text = "Create"
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Button2" type="Button" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer2" unique_id=1196712533]
+[node name="Back" type="Button" parent="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer2" unique_id=1196712533]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 text = "Back"
+
+[connection signal="text_changed" from="VBoxContainer/Name/NameLineEdit" to="." method="_on_name_line_edit_text_changed"]
+[connection signal="text_submitted" from="VBoxContainer/Name/NameLineEdit" to="." method="_on_name_line_edit_text_submitted"]
+[connection signal="text_submitted" from="VBoxContainer/Seed/SeedLineEdit" to="." method="_on_seed_line_edit_text_submitted"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer/Create" to="." method="_on_create_pressed"]
+[connection signal="pressed" from="VBoxContainer/MarginContainer/HBoxContainer/MarginContainer2/Back" to="." method="_on_back_pressed"]

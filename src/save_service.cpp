@@ -91,10 +91,68 @@ WorldModel SaveService::load_world_model(int64_t p_id) {
 	return model;
 }
 void SaveService::delete_world(int64_t p_id) {
-	if (const String dir_path = get_world_dir(p_id); DirAccess::dir_exists_absolute(dir_path)) {
-		if (const Ref<DirAccess> dir = DirAccess::open(dir_path); dir.is_valid()) {
-			DirAccess::remove_absolute(dir_path);
+	const String world_dir = get_world_dir(p_id);
+
+	if (!DirAccess::dir_exists_absolute(world_dir)) {
+		world_cache.clear();
+		return;
+	}
+
+	const Ref<DirAccess> dir = DirAccess::open(world_dir);
+
+	if (dir.is_null()) {
+		ERR_PRINT("Failed to open world directory: " + world_dir);
+		return;
+	}
+
+	dir->list_dir_begin();
+
+	String file_name = dir->get_next();
+
+	while (!file_name.is_empty()) {
+		if (file_name != "." && file_name != "..") {
+			const String path = world_dir.path_join(file_name);
+
+			if (dir->current_is_dir()) {
+				const Ref<DirAccess> subdir = DirAccess::open(path);
+
+				if (subdir.is_valid()) {
+					subdir->list_dir_begin();
+
+					String sub_file = subdir->get_next();
+
+					while (!sub_file.is_empty()) {
+						if (sub_file != "." && sub_file != "..") {
+							const String sub_path = path.path_join(sub_file);
+							DirAccess::remove_absolute(sub_path);
+						}
+
+						sub_file = subdir->get_next();
+					}
+
+					subdir->list_dir_end();
+				}
+
+				DirAccess::remove_absolute(path);
+			} else {
+				DirAccess::remove_absolute(path);
+			}
 		}
+
+		file_name = dir->get_next();
+	}
+
+	dir->list_dir_end();
+
+	const Error err = DirAccess::remove_absolute(world_dir);
+
+	if (err != OK) {
+		ERR_PRINT(
+			"Failed to delete world directory: " +
+			world_dir +
+			" error=" +
+			itos(err)
+		);
 	}
 
 	world_cache.clear();
@@ -132,18 +190,24 @@ WorldModel SaveService::load_world_model_from_disk(const int64_t p_id) {
 		!root.has("seed") ||
 		!root.has("name")) {
 		return model;
-	}
+		}
 
-	if (root["version"].get_type() != Variant::INT ||
-		root["id"].get_type() != Variant::INT ||
-		root["seed"].get_type() != Variant::INT ||
+	if (root["version"].get_type() != Variant::FLOAT ||
+		root["id"].get_type() != Variant::STRING ||
+		root["seed"].get_type() != Variant::FLOAT ||
 		root["name"].get_type() != Variant::STRING) {
 		return model;
-	}
+		}
 
-	const int64_t version = root["version"];
-	const int64_t id = root["id"];
-	const int64_t seed = root["seed"];
+	const int64_t version =
+		static_cast<int64_t>(double(root["version"]));
+
+	const int64_t id =
+		String(root["id"]).to_int();
+
+	const int64_t seed =
+		static_cast<int64_t>(double(root["seed"]));
+
 	const String name = root["name"];
 
 	if (version != WORLD_MODEL_VERSION) {
@@ -154,11 +218,11 @@ WorldModel SaveService::load_world_model_from_disk(const int64_t p_id) {
 		return model;
 	}
 
-	if (seed < 0 || seed > UINT32_MAX) {
+	if (seed < INT32_MIN || seed > INT32_MAX) {
 		return model;
 	}
 
-	model.id = static_cast<int64_t>(id);
+	model.id = id;
 	model.seed = static_cast<int32_t>(seed);
 	model.name = name;
 
@@ -176,22 +240,29 @@ int64_t SaveService::create_world(const int32_t p_seed, const String &p_name) {
 		.id = ResourceUID::get_singleton()->create_id()
 	};
 
-	const String path = get_world_dir(world_model.id) + "/level.json";
+	String world_dir = get_world_dir(world_model.id);
+
+	if (DirAccess::make_dir_recursive_absolute(world_dir) != OK) {
+		return 0;
+	}
+
+	const String path = world_dir + "/level.json";
 
 	Dictionary root;
 	root["version"] = WORLD_MODEL_VERSION;
-	root["id"]		= world_model.id;
-	root["seed"]	= world_model.seed;
-	root["name"]	= world_model.name;
+	root["id"] = String::num_int64(world_model.id);
+	root["seed"] = world_model.seed;
+	root["name"] = world_model.name;
 
 	const String text = JSON::stringify(root, "\t");
 
 	const Ref<FileAccess> file = FileAccess::open(path, FileAccess::WRITE);
-	if (file.is_null())
+
+	if (file.is_null()) {
 		return 0;
+	}
 
 	file->store_string(text);
-	file->flush();
 	file->close();
 
 	world_cache.clear();

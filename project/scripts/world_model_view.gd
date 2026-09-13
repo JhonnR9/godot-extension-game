@@ -1,71 +1,18 @@
-extends PanelContainer
+extends VBoxContainer
+class_name WorldModelView
 
-@export var style_normal: StyleBox
-@export var style_hover: StyleBox
-@export var style_focus: StyleBox
-@export var style_selected: StyleBox
+@export var world_name: Label
+@export var last_update: Label
 
-static var selected_item: PanelContainer = null
+@onready var panel_container: PanelContainer = $PanelContainer
 
-var is_hovered: bool = false
-
-
-func _ready():
-	mouse_filter = Control.MOUSE_FILTER_STOP
-
-	mouse_entered.connect(_on_mouse_entered)
-	mouse_exited.connect(_on_mouse_exited)
-
-	focus_entered.connect(_on_focus_entered)
-	focus_exited.connect(_on_focus_exited)
-	
-
-	_update_style()
-
-func _gui_input(event):
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			_select_this()
+var id: int
 
 
-func _select_this():
-	if selected_item == self:
-		return
-
-	if selected_item != null:
-		var old_item = selected_item
-		selected_item = null 
-		old_item._update_style()
-
-	selected_item = self
-	_update_style() 
+func _ready() -> void:
+	panel_container.selected.connect(_on_panel_selected)
 
 
-func _on_mouse_entered():
-	is_hovered = true
-	_update_style()
-
-
-func _on_mouse_exited():
-	is_hovered = false
-	_update_style()
-
-
-func _on_focus_entered():
-	_update_style()
-
-
-func _on_focus_exited():
-	_update_style()
-
-func _update_style():
-	var sb: StyleBox = style_normal
-
-	if selected_item == self and style_selected:
-		sb = style_selected
-	elif has_focus() and style_focus:
-		sb = style_focus
-	elif is_hovered and style_hover:
-		sb = style_hover
-
-	add_theme_stylebox_override("panel", sb)
+func _on_panel_selected() -> void:
+	GameSession.selected_world_id = id
+	print("Mundo selecionado: ", id)

@@ -3,30 +3,18 @@
 [ext_resource type="Theme" uid="uid://c2gmwveu1je31" path="res://resources/theme.tres" id="1_kqoyu"]
 [ext_resource type="Script" uid="uid://cr8ixvp31g6ax" path="res://scripts/world_selector.gd" id="2_6fd6r"]
 [ext_resource type="LabelSettings" uid="uid://cebi6giswv3v0" path="res://resources/tiltles_label.tres" id="3_5gwla"]
+[ext_resource type="PackedScene" uid="uid://bjiqsrs3kckfu" path="res://scenes/world_model_view.tscn" id="3_iqcrk"]
 [ext_resource type="PackedScene" uid="uid://1jy5kybxafh4" path="res://scenes/empty_worlds_placeholder.tscn" id="5_d2gsm"]
-
-[sub_resource type="GDScript" id="GDScript_5gwla"]
-script/source = "extends ScrollContainer
-
-@export var empty_placeholder: PanelContainer
-
-func _ready() -> void:
-	# Verify if exist persistent data and remove placeholder
-	pass
-
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
-"
+[ext_resource type="Script" uid="uid://b36b3jksxf0mv" path="res://scripts/empty_worlds_placeholder.gd" id="5_iqcrk"]
+[ext_resource type="Script" uid="uid://bxwrpbbvjkxu2" path="res://scenes/world_list_container.gd" id="5_rqb7q"]
 
 [node name="WorldSelector" type="Control" unique_id=1433372942]
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 6.0
-offset_right = 6.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 6
@@ -61,15 +49,17 @@ label_settings = ExtResource("3_5gwla")
 custom_minimum_size = Vector2(512, 256)
 layout_mode = 2
 size_flags_vertical = 3
-script = SubResource("GDScript_5gwla")
 metadata/_edit_use_anchors_ = true
 
 [node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/WorldsList" unique_id=1318331867]
 layout_mode = 2
 size_flags_horizontal = 3
+script = ExtResource("5_rqb7q")
+world_model_view_scene = ExtResource("3_iqcrk")
 
 [node name="Placeholder" parent="VBoxContainer/WorldsList/VBoxContainer" unique_id=144687001 instance=ExtResource("5_d2gsm")]
 layout_mode = 2
+script = ExtResource("5_iqcrk")
 
 [node name="ModificationsButtons" type="HBoxContainer" parent="VBoxContainer" unique_id=723781987]
 layout_mode = 2
@@ -99,4 +89,10 @@ layout_mode = 2
 size_flags_vertical = 4
 text = "back"
 
+[connection signal="no_save_detected" from="." to="VBoxContainer/WorldsList/VBoxContainer/Placeholder" method="_on_world_selector_no_save_detected"]
+[connection signal="save_detected" from="." to="VBoxContainer/WorldsList/VBoxContainer" method="_on_world_selector_save_detected"]
+[connection signal="save_detected" from="." to="VBoxContainer/WorldsList/VBoxContainer/Placeholder" method="_on_world_selector_save_detected"]
+[connection signal="pressed" from="VBoxContainer/ModificationsButtons/Load" to="VBoxContainer/WorldsList/VBoxContainer" method="_on_load_pressed"]
+[connection signal="pressed" from="VBoxContainer/ModificationsButtons/Create" to="." method="_on_create_pressed"]
+[connection signal="pressed" from="VBoxContainer/ModificationsButtons/Delete" to="." method="_on_delete_pressed"]
 [connection signal="pressed" from="VBoxContainer/BackButton" to="." method="_on_back_button_pressed"]
