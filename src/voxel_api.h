@@ -18,8 +18,8 @@
 #include <memory>
 
 namespace godot {
-class World : public Node3D {
-	GDCLASS(World, Node3D)
+class VoxelAPI : public Node3D {
+	GDCLASS(VoxelAPI, Node3D)
 
 public:
 	// Godot lifecycle
@@ -48,16 +48,16 @@ private:
 	void save_world_final();
 
 	// Optimization
-	int _world_radius = 6;
-	int _world_height = 4;
-	int _cache_radius = _world_radius + 2;
+	int _world_radius = 4;
+	int _world_height = 3;
+	int _cache_radius = _world_radius + 3;
 	int _diameter     = (_cache_radius * 2) + 1; //  (2 * R + 1).
 	int _prewarm_chunk_pool = (_diameter * _diameter) * _world_height;
 	int _current_chunks_finalize_in_frame = 100;
 
 	// Terrain settings
 	int _terrain_base_height = 24;
-	float _terrain_amplitude = 8.0f;
+	float _terrain_amplitude = 9.0f;
 	int _dirt_layer_depth    = 20;
 	float _cave_threshold    = 0.2f;
 

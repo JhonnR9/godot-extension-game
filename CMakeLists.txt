@@ -48,33 +48,19 @@ project(godot-cpp-template
 add_library(${LIBNAME} SHARED
         src/voxel_mesher.cpp
         src/chunk_node.cpp
-        src/world.cpp
-        src/world.h
+        src/voxel_api.cpp
         src/player.cpp
-        src/player.h
         src/chunk_model.cpp
-        src/chunk_model.h
         src/chunk_generator.cpp
-        src/chunk_generator.h
         src/chunk_mesh_builder.cpp
-        src/chunk_mesh_builder.h
         src/chunk_pool.cpp
-        src/chunk_pool.h
         src/chunk_repository.cpp
-        src/chunk_repository.h
         src/chunk_streaming_manager.cpp
-        src/chunk_streaming_manager.h
         src/chunk_model_generator.cpp
-        src/chunk_model_generator.h
         src/chunk_mesh_async_generator.cpp
-        src/chunk_mesh_async_generator.h
         src/crosshair.cpp
-        src/crosshair.h
-        src/utils.h
         src/ChunkDiskRepository.cpp
-        src/ChunkDiskRepository.h
         src/chunk_region_async_loader.cpp
-        src/chunk_region_async_loader.h
         src/save_service.cpp
 )
 

@@ -2,7 +2,7 @@
 
 [ext_resource type="LabelSettings" uid="uid://cebi6giswv3v0" path="res://resources/tiltles_label.tres" id="1_kferw"]
 [ext_resource type="Theme" uid="uid://c2gmwveu1je31" path="res://resources/theme.tres" id="1_wfexp"]
-[ext_resource type="Script" uid="uid://da4376bi3x0wa" path="res://scenes/create_world.gd" id="2_8t6he"]
+[ext_resource type="Script" uid="uid://da4376bi3x0wa" path="res://scripts/create_world.gd" id="2_8t6he"]
 
 [node name="CreateWorld" type="Control" unique_id=1811426239]
 layout_mode = 3

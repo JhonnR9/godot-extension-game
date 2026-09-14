@@ -1,4 +1,4 @@
-#include "world.h"
+#include "voxel_api.h"
 #include "ChunkDiskRepository.h"
 #include "chunk_pool.h"
 #include "save_service.h"
@@ -7,7 +7,7 @@
 #include <vector>
 
 namespace godot {
-void World::_ready() {
+void VoxelAPI::_ready() {
 	_last_focos_position = Vector3i();
 
 	_chunk_pool.instantiate();
@@ -33,7 +33,7 @@ void World::_ready() {
 	_setup_noises();
 }
 
-void World::_setup_noises() {
+void VoxelAPI::_setup_noises() {
 	_terrain_noise.instantiate();
 	_terrain_noise->set_noise_type(FastNoiseLite::TYPE_PERLIN);
 	_terrain_noise->set_frequency(0.035);
@@ -44,18 +44,14 @@ void World::_setup_noises() {
 	_cave_noise->set_frequency(0.02);
 }
 
-void World::_init_chunks() {
+void VoxelAPI::_init_chunks() {
 	ERR_FAIL_COND(_chunk_pool.is_null());
 
 	_is_initializing = true;
 
 	_chunk_pool->set_prewarm(_prewarm_chunk_pool);
+	_last_focos_position = voxel::block_to_chunk_coords(_get_current_focus_position());
 
-	if (!_focus_node) {
-		_last_focos_position = voxel::block_to_chunk_coords(Vector3());
-	} else {
-		_last_focos_position = voxel::block_to_chunk_coords(_get_current_focus_position());
-	}
 
 	_previous_player_chunk_pos		= _last_focos_position;
 	const Vector3i current_position = voxel::block_to_chunk_coords(_get_current_focus_position());
@@ -74,7 +70,7 @@ void World::_init_chunks() {
 	}
 	_chunk_stream_manager->rebuild_all_chunks(_last_focos_position);
 }
-void World::_remove_chunk(ChunkNode *p_chunk_node) {
+void VoxelAPI::_remove_chunk(ChunkNode *p_chunk_node) {
 	ERR_FAIL_NULL(p_chunk_node);
 
 	const Vector3i pos = voxel::block_to_chunk_coords(p_chunk_node->get_global_position());
@@ -82,7 +78,7 @@ void World::_remove_chunk(ChunkNode *p_chunk_node) {
 	_chunk_pool->release(p_chunk_node);
 }
 
-void World::_update_visible_chunks() {
+void VoxelAPI::_update_visible_chunks() {
 	if (_is_initializing) {
 		if (_pending_region_loads.is_empty()) {
 			_is_initializing = false;
@@ -108,7 +104,7 @@ void World::_update_visible_chunks() {
 	}
 }
 
-void World::_cleanup_far_chunks() {
+void VoxelAPI::_cleanup_far_chunks() {
 	std::vector<Vector3i> to_remove;
 
 	const int cache_radius_sq = _cache_radius * _cache_radius;
@@ -133,7 +129,7 @@ void World::_cleanup_far_chunks() {
 	}
 }
 
-void World::_process(double delta) {
+void VoxelAPI::_process(double delta) {
 	const Vector3i current_position = voxel::block_to_chunk_coords(_get_current_focus_position());
 
 	if (current_position != _last_focos_position) {
@@ -174,31 +170,31 @@ void World::_process(double delta) {
 	}
 }
 
-void World::_exit_tree() {
+void VoxelAPI::_exit_tree() {
 	save_world_final();
 }
 
-void World::break_block(const Vector3 &world_pos) {
+void VoxelAPI::break_block(const Vector3 &world_pos) {
 	Vector3i block_pos = voxel::world_to_block(world_pos);
 	_chunk_repository->set_block(block_pos, 0);
 }
 
-void World::set_block(const Vector3 &p_world_pos, const voxel::Block &p_block) const {
+void VoxelAPI::set_block(const Vector3 &p_world_pos, const voxel::Block &p_block) const {
 	Vector3i block_pos = voxel::world_to_block(p_world_pos);
 	_chunk_repository->set_block(block_pos, p_block);
 }
 
-void World::set_focus_node(Node3D *p_node) {
+void VoxelAPI::set_focus_node(Node3D *p_node) {
 	_focus_node		= p_node;
 	_use_manual_pos = false;
 }
 
-void World::set_focus_position(Vector3 p_pos) {
+void VoxelAPI::set_focus_position(Vector3 p_pos) {
 	_focus_manual_pos = p_pos;
 	_use_manual_pos	  = true;
 }
 
-void World::create_new_world(int32_t p_seed, const String &p_name) {
+void VoxelAPI::create_new_world(int32_t p_seed, const String &p_name) {
 	_chunk_repository->clear_all();
 	_chunk_pool->clear();
 	_rendered_chunks.clear();
@@ -217,7 +213,7 @@ void World::create_new_world(int32_t p_seed, const String &p_name) {
 	_init_chunks();
 }
 
-void World::start_world(int64_t p_id) {
+void VoxelAPI::start_world(int64_t p_id) {
 	_chunk_repository->clear_all();
 	_chunk_pool->clear();
 	_rendered_chunks.clear();
@@ -233,16 +229,17 @@ void World::start_world(int64_t p_id) {
 	_cave_noise->set_seed(world_model.seed + 1);
 
 	_init_chunks();
+	print_line("alguem chamou o start world nativo");
 }
 
-Vector3 World::_get_current_focus_position() const {
+Vector3 VoxelAPI::_get_current_focus_position() const {
 	if (!_use_manual_pos && _focus_node) {
 		return _focus_node->get_global_position();
 	}
 	return _focus_manual_pos;
 }
 
-void World::_process_models() {
+void VoxelAPI::_process_models() {
 	HashMap<Vector3i, std::shared_ptr<ChunkModel>> ready_models = _model_generator->consume_generated_results();
 
 	if (ready_models.is_empty()) {
@@ -255,7 +252,7 @@ void World::_process_models() {
 	}
 }
 
-void World::_ensure_region_loaded_for_chunk(const Vector3i &chunk_pos) {
+void VoxelAPI::_ensure_region_loaded_for_chunk(const Vector3i &chunk_pos) {
 	if (_disk_repository.is_null()) {
 		return;
 	}
@@ -264,7 +261,7 @@ void World::_ensure_region_loaded_for_chunk(const Vector3i &chunk_pos) {
 	_queue_region_load(region_pos);
 }
 
-void World::_queue_region_load(const Vector3i &region_pos) {
+void VoxelAPI::_queue_region_load(const Vector3i &region_pos) {
 	if (_region_cache.has(region_pos) || _pending_region_loads.has(region_pos)) {
 		return;
 	}
@@ -273,7 +270,7 @@ void World::_queue_region_load(const Vector3i &region_pos) {
 	_region_loader->queue_async_load_region(region_pos);
 }
 
-void World::_process_loaded_regions() {
+void VoxelAPI::_process_loaded_regions() {
 	Vector<Vector3i> ready_regions;
 
 	for (const Vector3i &region_pos : _pending_region_loads) {
@@ -292,7 +289,7 @@ void World::_process_loaded_regions() {
 	}
 }
 
-void World::_update_region_streaming(const Vector3i &current_chunk_pos, const Vector3i &previous_chunk_pos) {
+void VoxelAPI::_update_region_streaming(const Vector3i &current_chunk_pos, const Vector3i &previous_chunk_pos) {
 	Vector3i current_region	 = voxel::chunk_to_region_coords(current_chunk_pos);
 	Vector3i previous_region = voxel::chunk_to_region_coords(previous_chunk_pos);
 	Vector3i region_delta	 = current_region - previous_region;
@@ -333,7 +330,7 @@ void World::_update_region_streaming(const Vector3i &current_chunk_pos, const Ve
 	}
 }
 
-void World::_unload_region(const Vector3i &region_pos) {
+void VoxelAPI::_unload_region(const Vector3i &region_pos) {
 	if (!_region_cache.has(region_pos)) {
 		return;
 	}
@@ -346,7 +343,7 @@ void World::_unload_region(const Vector3i &region_pos) {
 	_region_cache.erase(region_pos);
 }
 
-void World::_process_meshes(const Vector3i &p_pos) {
+void VoxelAPI::_process_meshes(const Vector3i &p_pos) {
 	const MeshResultHashSet ready_meshes = _mesh_generator->consume_generated_meshes(_current_chunks_finalize_in_frame);
 
 	for (const MeshResult &result : ready_meshes) {
@@ -362,7 +359,7 @@ void World::_process_meshes(const Vector3i &p_pos) {
 	}
 }
 
-void World::_rebuild_chunk(const Vector3i &pos) const {
+void VoxelAPI::_rebuild_chunk(const Vector3i &pos) const {
 	const ChunkNeighbors neighbors = _get_neighbors_for(pos);
 
 	if (!neighbors.center) {
@@ -376,7 +373,7 @@ void World::_rebuild_chunk(const Vector3i &pos) const {
 	_mesh_generator->queue_async_generate_mesh(pos, neighbors, version, high_priority);
 }
 
-bool World::_is_high_priority(const Vector3i &pos, bool dirty) const {
+bool VoxelAPI::_is_high_priority(const Vector3i &pos, bool dirty) const {
 	const Vector3i player = _last_focos_position;
 
 	const int dx = ABS(pos.x - player.x);
@@ -393,7 +390,7 @@ bool World::_is_high_priority(const Vector3i &pos, bool dirty) const {
 	return false;
 }
 
-void World::_finalize_chunk(const MeshResult &res) {
+void VoxelAPI::_finalize_chunk(const MeshResult &res) {
 	if (res.mesh.is_null()) {
 		return;
 	}
@@ -427,7 +424,7 @@ void World::_finalize_chunk(const MeshResult &res) {
 	chunk->set_global_position(voxel::chunk_coords_to_world(res.pos));
 }
 
-void World::_queue_async_generate_chunk(const Vector3i p_pos) const {
+void VoxelAPI::_queue_async_generate_chunk(const Vector3i p_pos) const {
 	TerrainSettings settings;
 	settings.terrain_base_height	 = _terrain_base_height;
 	settings.terrain_amplitude		 = _terrain_amplitude;
@@ -441,7 +438,7 @@ void World::_queue_async_generate_chunk(const Vector3i p_pos) const {
 	_model_generator->_queue_async_generate_chunk_model(p_pos, settings, high_priority);
 }
 
-void World::save_world_final() {
+void VoxelAPI::save_world_final() {
 	if (_disk_repository.is_null())
 		return;
 
@@ -452,7 +449,7 @@ void World::save_world_final() {
 	}
 }
 
-ChunkNeighbors World::_get_neighbors_for(const Vector3i p_pos) const {
+ChunkNeighbors VoxelAPI::_get_neighbors_for(const Vector3i p_pos) const {
 	ChunkNeighbors n;
 	n.center = _chunk_repository->get_chunk(p_pos);
 	n.right	 = _chunk_repository->get_chunk(p_pos + voxel::DIR_RIGHT);
@@ -464,7 +461,7 @@ ChunkNeighbors World::_get_neighbors_for(const Vector3i p_pos) const {
 	return n;
 }
 
-void World::_try_build_mesh_with_neighbors(const Vector3i p_pos) const {
+void VoxelAPI::_try_build_mesh_with_neighbors(const Vector3i p_pos) const {
 	if (_mesh_generator->is_queued_mesh(p_pos)) {
 		return;
 	}
@@ -482,18 +479,18 @@ void World::_try_build_mesh_with_neighbors(const Vector3i p_pos) const {
 	_mesh_generator->queue_async_generate_mesh(p_pos, neighbors, _chunk_repository->get_chunk_version(p_pos));
 }
 
-void World::save_world() {
+void VoxelAPI::save_world() {
 	if (_disk_repository.is_valid() && _disk_repository->get_current_world_id() != 0) {
 		_chunk_repository->save_edited_chunks_to_disk(_disk_repository);
 	}
 }
 
-void World::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_focus_node", "node"), &World::set_focus_node);
-	ClassDB::bind_method(D_METHOD("set_focus_position", "pos"), &World::set_focus_position);
-	ClassDB::bind_method(D_METHOD("break_block", "world_pos"), &World::break_block);
-	ClassDB::bind_method(D_METHOD("set_block", "world_pos", "block"), &World::set_block);
-	ClassDB::bind_method(D_METHOD("save_world"), &World::save_world);
-	ClassDB::bind_method(D_METHOD("start_world", "id"), &World::start_world);
+void VoxelAPI::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_focus_node", "node"), &VoxelAPI::set_focus_node);
+	ClassDB::bind_method(D_METHOD("set_focus_position", "pos"), &VoxelAPI::set_focus_position);
+	ClassDB::bind_method(D_METHOD("break_block", "world_pos"), &VoxelAPI::break_block);
+	ClassDB::bind_method(D_METHOD("set_block", "world_pos", "block"), &VoxelAPI::set_block);
+	ClassDB::bind_method(D_METHOD("save_world"), &VoxelAPI::save_world);
+	ClassDB::bind_method(D_METHOD("start_world", "id"), &VoxelAPI::start_world);
 }
 } // namespace godot

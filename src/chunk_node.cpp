@@ -1,5 +1,4 @@
 #include "chunk_node.h"
-#include "world.h"
 
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/standard_material3d.hpp>
@@ -11,7 +10,6 @@
 namespace godot {
 
 void ChunkNode::_setup() {
-
     if (_shape.is_null()) {
         _shape.instantiate();
     }
@@ -30,9 +28,7 @@ void ChunkNode::_setup() {
     }
 
 
-    Ref<Shader> shader = ResourceLoader::get_singleton()->load(
-        "res://shaders/chunk.gdshader"
-    );
+    Ref<Shader> shader = ResourceLoader::get_singleton()->load("res://shaders/chunk.gdshader");
 
     Ref<Material> override_material;
 
@@ -49,14 +45,15 @@ void ChunkNode::_setup() {
             mat->set_shader_parameter("albedo_array", tex_array);
             override_material = mat;
         } else {
-            ERR_PRINT("Erro: atlas array não encontrado ou inválido em res://textures/block_array.tres");
+            ERR_PRINT("Error: mismatched or invalid atlas array in res://textures/block_array.tres");
+
             Ref<StandardMaterial3D> fallback_mat;
             fallback_mat.instantiate();
             fallback_mat->set_albedo(Color(0.5f, 0.75f, 1.0f));
             override_material = fallback_mat;
         }
     } else {
-        ERR_PRINT("Erro: shader principal não encontrado");
+        ERR_PRINT("Error: main shader not found");
         Ref<StandardMaterial3D> fallback_mat;
         fallback_mat.instantiate();
         fallback_mat->set_albedo(Color(0.5f, 0.75f, 1.0f));
@@ -66,42 +63,11 @@ void ChunkNode::_setup() {
     set_material_override(override_material);
     _material = override_material;
 
-   /* Ref<Shader> outline_shader = ResourceLoader::get_singleton()->load(
-        "res://shaders/outline.gdshader"
-    );
-
-    if (outline_shader.is_valid()) {
-
-        Ref<ShaderMaterial> outline_mat;
-        outline_mat.instantiate();
-
-        outline_mat->set_shader(outline_shader);
-
-        outline_mat->set_shader_parameter(
-            "outline_size",
-            0.01f
-        );
-
-        outline_mat->set_shader_parameter(
-            "outline_color",
-            Vector3(1.0, 1.0, 1.0)
-        );
-
-      //  mat->set_next_pass(outline_mat);
-    }
-    else {
-        ERR_PRINT("Erro: outline shader não encontrado");
-    }*/
-
-
     set_material_override(override_material);
 }
 
-void ChunkNode::set_collision_faces(
-    const PackedVector3Array &collision_faces
-) {
+void ChunkNode::set_collision_faces( const PackedVector3Array &collision_faces) {
     _setup();
-
     _shape->set_faces(collision_faces);
 
     if (_collision_shape->get_shape() != _shape) {
@@ -110,7 +76,6 @@ void ChunkNode::set_collision_faces(
 }
 
 void ChunkNode::disable() {
-
     set_mesh(Ref<Mesh>());
 
     if (_shape.is_valid()) {
@@ -119,20 +84,16 @@ void ChunkNode::disable() {
 
     set_visible(false);
     set_process(false);
-
     set_global_position(Vector3());
 }
 
 void ChunkNode::enable() {
-
     set_visible(true);
     set_process(true);
 }
 
 void ChunkNode::_enter_tree() {
-
     MeshInstance3D::_enter_tree();
-
     _setup();
 }
 

@@ -25,7 +25,6 @@ func refresh_world_list() -> void:
 		var world = SaveService.load_world_model(id)
 
 		if world.is_empty():
-			print("Não foi possível carregar o mundo: ", id)
 			continue
 
 		emit_signal("save_detected", id)
@@ -41,10 +40,13 @@ func _on_delete_pressed() -> void:
 	if GameSession.selected_world_id == 0:
 		return
 
-
-	print("tentando deletar")
-
 	SaveService.delete_world(GameSession.selected_world_id)
 
-	# Recarrega a lista usando o estado atual do SaveService.
 	refresh_world_list()
+
+
+func _on_load_pressed() -> void:
+	if GameSession.selected_world_id == 0:
+		return
+
+	get_tree().change_scene_to_file("res://scenes/VoxelAPI.tscn")

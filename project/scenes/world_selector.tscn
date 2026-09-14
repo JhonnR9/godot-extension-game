@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://bjiqsrs3kckfu" path="res://scenes/world_model_view.tscn" id="3_iqcrk"]
 [ext_resource type="PackedScene" uid="uid://1jy5kybxafh4" path="res://scenes/empty_worlds_placeholder.tscn" id="5_d2gsm"]
 [ext_resource type="Script" uid="uid://b36b3jksxf0mv" path="res://scripts/empty_worlds_placeholder.gd" id="5_iqcrk"]
-[ext_resource type="Script" uid="uid://bxwrpbbvjkxu2" path="res://scenes/world_list_container.gd" id="5_rqb7q"]
+[ext_resource type="Script" uid="uid://bxwrpbbvjkxu2" path="res://scripts/world_list_container.gd" id="5_rqb7q"]
 
 [node name="WorldSelector" type="Control" unique_id=1433372942]
 layout_mode = 3
@@ -92,7 +92,7 @@ text = "back"
 [connection signal="no_save_detected" from="." to="VBoxContainer/WorldsList/VBoxContainer/Placeholder" method="_on_world_selector_no_save_detected"]
 [connection signal="save_detected" from="." to="VBoxContainer/WorldsList/VBoxContainer" method="_on_world_selector_save_detected"]
 [connection signal="save_detected" from="." to="VBoxContainer/WorldsList/VBoxContainer/Placeholder" method="_on_world_selector_save_detected"]
-[connection signal="pressed" from="VBoxContainer/ModificationsButtons/Load" to="VBoxContainer/WorldsList/VBoxContainer" method="_on_load_pressed"]
+[connection signal="pressed" from="VBoxContainer/ModificationsButtons/Load" to="." method="_on_load_pressed"]
 [connection signal="pressed" from="VBoxContainer/ModificationsButtons/Create" to="." method="_on_create_pressed"]
 [connection signal="pressed" from="VBoxContainer/ModificationsButtons/Delete" to="." method="_on_delete_pressed"]
 [connection signal="pressed" from="VBoxContainer/BackButton" to="." method="_on_back_button_pressed"]

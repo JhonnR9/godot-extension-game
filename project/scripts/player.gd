@@ -1,0 +1,148 @@
+extends CharacterBody3D
+
+enum Mode { WALK, FLY, NOCLIP }
+
+@export var speed := 5.0
+@export var fly_speed := 8.0
+@export var noclip_speed := 12.0
+@export var jump_force := 8.0
+@export var mouse_sensitivity := 0.003
+
+@export var head: Node3D
+@export var camera: Camera3D
+@export var collision_shape: CollisionShape3D
+@export var world: VoxelAPI
+
+var current_mode := Mode.WALK
+var double_tap_timer := 0.0
+const DOUBLE_TAP_TIME := 0.3
+
+var yaw := 0.0
+var pitch := 0.0
+var selected_block_id := 1
+
+func _ready() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	camera.current = true
+	if world:
+		world.set_focus_node(self)
+		call_deferred("_start_world")
+
+func _start_world() -> void:
+	world.start_world(GameSession.selected_world_id)
+
+func _physics_process(delta: float) -> void:
+	var current_velocity := velocity
+
+	if double_tap_timer > 0:
+		double_tap_timer -= delta
+
+	if Input.is_action_just_pressed("jump"):
+		if double_tap_timer > 0:
+			current_mode = Mode.FLY if current_mode == Mode.WALK else Mode.WALK
+			double_tap_timer = 0
+		else:
+			double_tap_timer = DOUBLE_TAP_TIME
+
+	if Input.is_action_just_pressed("toggle_mode"):
+		current_mode = Mode.WALK if current_mode == Mode.NOCLIP else Mode.NOCLIP
+
+	collision_shape.disabled = (current_mode == Mode.NOCLIP)
+
+	var direction := Vector3.ZERO
+	var forward := -transform.basis.z
+	var right := transform.basis.x
+	forward.y = 0
+	right.y = 0
+	forward = forward.normalized()
+	right = right.normalized()
+
+	if Input.is_action_pressed("move_forward"):
+		direction += forward
+	if Input.is_action_pressed("move_backward"):
+		direction -= forward
+	if Input.is_action_pressed("move_left"):
+		direction -= right
+	if Input.is_action_pressed("move_right"):
+		direction += right
+
+	if current_mode == Mode.WALK:
+		if not is_on_floor():
+			current_velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
+
+		if Input.is_action_just_pressed("jump") and is_on_floor():
+			current_velocity.y = jump_force
+
+		if direction.length() > 0:
+			direction = direction.normalized()
+			current_velocity.x = direction.x * speed
+			current_velocity.z = direction.z * speed
+		else:
+			current_velocity.x = lerp(current_velocity.x, 0.0, 0.15)
+			current_velocity.z = lerp(current_velocity.z, 0.0, 0.15)
+	else:
+		if Input.is_action_pressed("move_up"):
+			direction.y += 1
+		if Input.is_action_pressed("move_down"):
+			direction.y -= 1
+
+		var speed_to_use := fly_speed if current_mode == Mode.FLY else noclip_speed
+
+		if direction.length() > 0:
+			current_velocity = direction.normalized() * speed_to_use
+		else:
+			current_velocity = current_velocity.lerp(Vector3.ZERO, 0.1)
+
+	velocity = current_velocity
+	move_and_slide()
+
+	if is_on_ceiling():
+		velocity.y = 0
+
+	apply_floor_snap()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		yaw -= event.relative.x * mouse_sensitivity
+		pitch -= event.relative.y * mouse_sensitivity
+		pitch = clamp(pitch, -PI/2, PI/2)
+		rotation = Vector3(0, yaw, 0)
+		head.rotation = Vector3(pitch, 0, 0)
+
+	if event is InputEventKey and event.pressed and not event.is_echo():
+		if event.keycode >= KEY_0 and event.keycode <= KEY_9:
+			selected_block_id = event.keycode - KEY_0
+
+	if event is InputEventMouseButton and event.pressed:
+		var fov := camera.fov
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			fov -= 2.0
+		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			fov += 2.0
+		camera.fov = clamp(fov, 20.0, 100.0)
+
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			var hit := raycast_block(8.0)
+			if not hit.is_empty():
+				var pos: Vector3 = hit["position"]
+				var normal: Vector3 = hit["normal"]
+				pos -= normal * 0.01
+				if world:
+					world.break_block(pos)
+
+		if event.button_index == MOUSE_BUTTON_RIGHT:
+			var hit := raycast_block(8.0)
+			if not hit.is_empty():
+				var pos: Vector3 = hit["position"]
+				var normal: Vector3 = hit["normal"]
+				pos += normal * 0.01
+				if world:
+					world.set_block(pos, selected_block_id)
+
+func raycast_block(distance: float) -> Dictionary:
+	var from := camera.global_position
+	var to := from + (-camera.global_transform.basis.z) * distance
+	var query := PhysicsRayQueryParameters3D.create(from, to)
+	query.exclude = [get_rid()]
+	var space_state := get_world_3d().direct_space_state
+	return space_state.intersect_ray(query)

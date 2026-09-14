@@ -13,7 +13,7 @@ func _on_create_pressed() -> void:
 	
 	var world_id = SaveService.create_world(editing_seed, editing_name)
 	GameSession.selected_world_id = world_id
-	get_tree().change_scene_to_file("res://scenes/world.tscn")
+	get_tree().change_scene_to_file("res://scenes/VoxelAPI.tscn")
 	
 
 

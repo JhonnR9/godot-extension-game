@@ -15,4 +15,3 @@ func _ready() -> void:
 
 func _on_panel_selected() -> void:
 	GameSession.selected_world_id = id
-	print("Mundo selecionado: ", id)

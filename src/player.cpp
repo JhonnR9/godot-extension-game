@@ -1,6 +1,6 @@
 #include "player.h"
 
-#include "world.h"
+#include "voxel_api.h"
 
 #include "crosshair.h"
 #include <godot_cpp/classes/canvas_layer.hpp>
@@ -31,7 +31,7 @@ void Player::_ready() {
 	}
 
 
-	if ((_world = get_node<World>("../World"))) {
+	if ((_world = get_node<VoxelAPI>("../World"))) {
 		_world->set_focus_node(this);
 	}
 }

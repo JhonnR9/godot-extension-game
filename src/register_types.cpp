@@ -10,7 +10,7 @@
 #include "godot_cpp/classes/engine.hpp"
 #include "player.h"
 #include "save_service.h"
-#include "world.h"
+#include "voxel_api.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/class_db.hpp>
@@ -33,7 +33,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	Engine::get_singleton()->register_singleton("SaveService", SaveService::get_singleton());
 
 	GDREGISTER_CLASS(ChunkNode);
-	GDREGISTER_CLASS(World);
+	GDREGISTER_CLASS(VoxelAPI);
 	GDREGISTER_CLASS(Player);
 	GDREGISTER_CLASS(ChunkPool);
 	GDREGISTER_CLASS(ChunkRepository);
