@@ -7,39 +7,39 @@
 
 namespace godot {
 bool ChunkMeshBuilder::_is_air(const ChunkNeighbors &n, int x, int y, int z) {
-	if (x >= ChunkModel::MIN_X && x <= ChunkModel::MAX_X &&
-		y >= ChunkModel::MIN_Y && y <= ChunkModel::MAX_Y &&
-		z >= ChunkModel::MIN_Z && z <= ChunkModel::MAX_Z) {
+	if (x >= Chunk::MIN_X && x <= Chunk::MAX_X &&
+		y >= Chunk::MIN_Y && y <= Chunk::MAX_Y &&
+		z >= Chunk::MIN_Z && z <= Chunk::MAX_Z) {
 		return voxel::is_air(n.center->get_block(x, y, z));
 	}
 
-	if (x < ChunkModel::MIN_X) {
-		return n.left ? voxel::is_air(n.left->get_block(ChunkModel::MAX_X, y, z)) : true;
+	if (x < Chunk::MIN_X) {
+		return n.left ? voxel::is_air(n.left->get_block(Chunk::MAX_X, y, z)) : true;
 	}
-	if (x > ChunkModel::MAX_X) {
-		return n.right ? voxel::is_air(n.right->get_block(ChunkModel::MIN_X, y, z)) : true;
-	}
-
-	if (y < ChunkModel::MIN_Y) {
-		return n.bottom ? voxel::is_air(n.bottom->get_block(x, ChunkModel::MAX_Y, z)) : true;
-	}
-	if (y > ChunkModel::MAX_Y) {
-		return n.top ? voxel::is_air(n.top->get_block(x, ChunkModel::MIN_Y, z)) : true;
+	if (x > Chunk::MAX_X) {
+		return n.right ? voxel::is_air(n.right->get_block(Chunk::MIN_X, y, z)) : true;
 	}
 
-	if (z < ChunkModel::MIN_Z) {
-		return n.back ? voxel::is_air(n.back->get_block(x, y, ChunkModel::MAX_Z)) : true;
+	if (y < Chunk::MIN_Y) {
+		return n.bottom ? voxel::is_air(n.bottom->get_block(x, Chunk::MAX_Y, z)) : true;
+	}
+	if (y > Chunk::MAX_Y) {
+		return n.top ? voxel::is_air(n.top->get_block(x, Chunk::MIN_Y, z)) : true;
 	}
 
-	return n.front ? voxel::is_air(n.front->get_block(x, y, ChunkModel::MIN_Z)) : true;
+	if (z < Chunk::MIN_Z) {
+		return n.back ? voxel::is_air(n.back->get_block(x, y, Chunk::MAX_Z)) : true;
+	}
+
+	return n.front ? voxel::is_air(n.front->get_block(x, y, Chunk::MIN_Z)) : true;
 }
 
 void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
-	const ChunkModel *center = neighbors.center.get();
+	const Chunk *center = neighbors.center.get();
 
-	const int SX = ChunkModel::SIZE_X;
-	const int SY = ChunkModel::SIZE_Y;
-	const int SZ = ChunkModel::SIZE_Z;
+	const int SX = Chunk::SIZE_X;
+	const int SY = Chunk::SIZE_Y;
+	const int SZ = Chunk::SIZE_Z;
 
 	bool mask[SY][SZ];
 	bool visited[SY][SZ];
@@ -139,11 +139,11 @@ void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
 }
 
 void ChunkMeshBuilder::_add_up_faces(const ChunkNeighbors &neighbors) {
-	const ChunkModel *center = neighbors.center.get();
+	const Chunk *center = neighbors.center.get();
 
-	const int SX = ChunkModel::SIZE_X;
-	const int SY = ChunkModel::SIZE_Y;
-	const int SZ = ChunkModel::SIZE_Z;
+	const int SX = Chunk::SIZE_X;
+	const int SY = Chunk::SIZE_Y;
+	const int SZ = Chunk::SIZE_Z;
 
 	bool mask[SX][SZ];
 	bool visited[SX][SZ];
@@ -246,11 +246,11 @@ void ChunkMeshBuilder::_add_up_faces(const ChunkNeighbors &neighbors) {
 }
 
 void ChunkMeshBuilder::_add_left_faces(const ChunkNeighbors &neighbors) {
-	const ChunkModel *center = neighbors.center.get();
+	const Chunk *center = neighbors.center.get();
 
-	const int SX = ChunkModel::SIZE_X;
-	const int SY = ChunkModel::SIZE_Y;
-	const int SZ = ChunkModel::SIZE_Z;
+	const int SX = Chunk::SIZE_X;
+	const int SY = Chunk::SIZE_Y;
+	const int SZ = Chunk::SIZE_Z;
 
 	bool mask[SY][SZ];
 	bool visited[SY][SZ];
@@ -353,11 +353,11 @@ void ChunkMeshBuilder::_add_left_faces(const ChunkNeighbors &neighbors) {
 }
 
 void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
-	const ChunkModel *center = neighbors.center.get();
+	const Chunk *center = neighbors.center.get();
 
-	const int SX = ChunkModel::SIZE_X;
-	const int SY = ChunkModel::SIZE_Y;
-	const int SZ = ChunkModel::SIZE_Z;
+	const int SX = Chunk::SIZE_X;
+	const int SY = Chunk::SIZE_Y;
+	const int SZ = Chunk::SIZE_Z;
 
 	bool mask[SX][SZ];
 	bool visited[SX][SZ];
@@ -461,11 +461,11 @@ void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
 }
 
 void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
-	const ChunkModel *center = neighbors.center.get();
+	const Chunk *center = neighbors.center.get();
 
-	const int SX = ChunkModel::SIZE_X;
-	const int SY = ChunkModel::SIZE_Y;
-	const int SZ = ChunkModel::SIZE_Z;
+	const int SX = Chunk::SIZE_X;
+	const int SY = Chunk::SIZE_Y;
+	const int SZ = Chunk::SIZE_Z;
 
 	bool mask[SX][SY];
 	bool visited[SX][SY];
@@ -568,11 +568,11 @@ void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
 }
 
 void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
-	const ChunkModel *center = neighbors.center.get();
+	const Chunk *center = neighbors.center.get();
 
-	const int SX = ChunkModel::SIZE_X;
-	const int SY = ChunkModel::SIZE_Y;
-	const int SZ = ChunkModel::SIZE_Z;
+	const int SX = Chunk::SIZE_X;
+	const int SY = Chunk::SIZE_Y;
+	const int SZ = Chunk::SIZE_Z;
 
 	bool mask[SX][SY];
 	bool visited[SX][SY];
@@ -736,6 +736,9 @@ voxel::BlockType godot::ChunkMeshBuilder::map_string_to_type(const godot::String
 	}
 	if (name.begins_with("wood")) {
 		return voxel::BlockType::WOOD;
+	}
+	if (name.begins_with("log")) {
+		return voxel::BlockType::LOG;
 	}
 
 	// Fallback

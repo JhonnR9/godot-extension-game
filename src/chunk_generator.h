@@ -21,7 +21,7 @@ struct TerrainSettings {
 
 class ChunkGenerator {
 public:
-	static ChunkModel generate(
+	static Chunk generate(
 		Vector3i chunk_pos,
 		const TerrainSettings &terrain_settings
 	);

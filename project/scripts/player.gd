@@ -26,10 +26,6 @@ func _ready() -> void:
 	camera.current = true
 	if world:
 		world.set_focus_node(self)
-		call_deferred("_start_world")
-
-func _start_world() -> void:
-	world.start_world(GameSession.selected_world_id)
 
 func _physics_process(delta: float) -> void:
 	var current_velocity := velocity

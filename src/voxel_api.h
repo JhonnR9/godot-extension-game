@@ -3,12 +3,14 @@
 
 #include "chunk_generator.h"
 #include "chunk_mesh_async_generator.h"
+#include "chunk_model.h"
 #include "chunk_model_generator.h"
 #include "chunk_node.h"
 #include "chunk_pool.h"
 #include "chunk_region_async_loader.h"
 #include "chunk_repository.h"
 #include "chunk_streaming_manager.h"
+#include "spawn_tree_service.h"
 
 #include <godot_cpp/classes/fast_noise_lite.hpp>
 #include <godot_cpp/classes/node3d.hpp>
@@ -45,7 +47,9 @@ private:
 	Ref<ChunkMeshAsyncGenerator> _mesh_generator;
 	Ref<ChunkDiskRepository> _disk_repository;
 	Ref<ChunkRegionAsyncLoader> _region_loader;
-	void save_world_final();
+	Ref<TreeDecorator> _tree_decorator;
+
+	void save_world_final() const;
 
 	// Optimization
 	int _world_radius = 4;
@@ -68,15 +72,16 @@ private:
 	Vector3i _last_focos_position;
 
 	// World management
-	void save_world();
+	void save_world() const;
 	void _queue_async_generate_chunk(Vector3i p_pos) const;
 	ChunkNeighbors _get_neighbors_for(Vector3i p_pos) const;
 	void _setup_noises();
 	void _init_chunks();
 	void _remove_chunk(ChunkNode *p_chunk_node);
 	void _update_visible_chunks();
-	void _cleanup_far_chunks();
+	void _cleanup_far_chunks() const;
 	float _get_current_chunks_finalize_amount(float delta);
+	void _clear_world();
 
 	void _finalize_chunk(const MeshResult &res);
 	void _try_build_mesh_with_neighbors(Vector3i p_pos) const;
@@ -102,6 +107,8 @@ private:
 	void _update_region_streaming(const Vector3i &current_chunk_pos, const Vector3i &previous_chunk_pos);
 	void _process_loaded_regions();
 	void _unload_region(const Vector3i &region_pos);
+
+	void _setup_trees(int64_t p_seed);
 
 	bool _is_initializing{false};
 };

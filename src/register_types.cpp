@@ -42,6 +42,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	GDREGISTER_CLASS(ChunkModelGenerator);
 	GDREGISTER_CLASS(Crosshair);
 	GDREGISTER_CLASS(ChunkRegionAsyncLoader);
+	GDREGISTER_CLASS(TreeDecorator)
 
 }
 

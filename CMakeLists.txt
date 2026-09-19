@@ -62,6 +62,7 @@ add_library(${LIBNAME} SHARED
         src/ChunkDiskRepository.cpp
         src/chunk_region_async_loader.cpp
         src/save_service.cpp
+        src/core/voxel_core.cpp
 )
 
 target_sources(${LIBNAME}

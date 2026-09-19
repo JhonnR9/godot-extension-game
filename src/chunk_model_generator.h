@@ -1,5 +1,3 @@
-
-
 #ifndef CHUNK_MODEL_GENERATOR_H
 #define CHUNK_MODEL_GENERATOR_H
 
@@ -29,16 +27,19 @@ protected:
 
 private:
 	std::mutex _generated_results_mutex;
-	HashMap<Vector3i, std::shared_ptr<ChunkModel>> _generated_results;
+	HashMap<Vector3i, std::shared_ptr<Chunk>> _generated_results;
 
 	std::mutex _loading_chunks_mutex;
-	HashSet<Vector3i> _loading_chunks;
+	HashMap<Vector3i, std::shared_ptr<Chunk>> _loading_chunks;
 
 
 public:
-	HashMap<Vector3i, std::shared_ptr<ChunkModel>> consume_generated_results(int amount = -1);
+	HashMap<Vector3i, std::shared_ptr<Chunk>> consume_generated_results(int amount = -1);
 	void _queue_async_generate_chunk_model(Vector3i p_pos, const TerrainSettings &p_settings, bool p_priority = false);
+
 	bool is_loading_chunk(const Vector3i &p_pos);
+
+	std::shared_ptr<Chunk> get_loading_chunk(const Vector3i &p_pos);
 };
 
 } //namespace godot

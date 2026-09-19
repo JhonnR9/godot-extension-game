@@ -1,5 +1,6 @@
 #include "voxel_api.h"
 #include "ChunkDiskRepository.h"
+#include "chunk_model.h"
 #include "chunk_pool.h"
 #include "save_service.h"
 #include "utils.h"
@@ -7,6 +8,7 @@
 #include <vector>
 
 namespace godot {
+
 void VoxelAPI::_ready() {
 	_last_focos_position = Vector3i();
 
@@ -17,6 +19,7 @@ void VoxelAPI::_ready() {
 	_mesh_generator.instantiate();
 	_disk_repository.instantiate();
 	_region_loader.instantiate();
+	_tree_decorator.instantiate();
 
 	_region_loader->set_repository(_disk_repository);
 
@@ -31,6 +34,7 @@ void VoxelAPI::_ready() {
 
 	set_process(true);
 	_setup_noises();
+
 }
 
 void VoxelAPI::_setup_noises() {
@@ -52,40 +56,48 @@ void VoxelAPI::_init_chunks() {
 	_chunk_pool->set_prewarm(_prewarm_chunk_pool);
 	_last_focos_position = voxel::block_to_chunk_coords(_get_current_focus_position());
 
-
 	_previous_player_chunk_pos		= _last_focos_position;
 	const Vector3i current_position = voxel::block_to_chunk_coords(_get_current_focus_position());
 	_chunk_stream_manager->shift_chunks(current_position);
 
-	Vector3i current_region = voxel::chunk_to_region_coords(_last_focos_position);
+	// grid regions 3 x 3 load
+	const Vector3i current_region = voxel::chunk_to_region_coords(_last_focos_position);
 	for (int x = -1; x <= 1; ++x) {
 		for (int z = -1; z <= 1; ++z) {
 			_queue_region_load(current_region + Vector3i(x, 0, z));
 		}
 	}
 
-	Vector<Vector3i> saved_regions = _disk_repository->get_all_saved_regions();
-	for (const Vector3i &region_pos : saved_regions) {
-		_queue_region_load(region_pos);
-	}
+	ERR_FAIL_COND(_chunk_stream_manager.is_null());
 	_chunk_stream_manager->rebuild_all_chunks(_last_focos_position);
 }
+
 void VoxelAPI::_remove_chunk(ChunkNode *p_chunk_node) {
 	ERR_FAIL_NULL(p_chunk_node);
 
 	const Vector3i pos = voxel::block_to_chunk_coords(p_chunk_node->get_global_position());
 	_rendered_chunks.erase(pos);
 	_chunk_pool->release(p_chunk_node);
+
+	// The chunk data still exists (LOADED); it has simply ceased to be
+	// drawn on the screen. If it has been removed from the repository for another
+	// reason (e.g., it was already removed in _cleanup_far_chunks), get_chunk returns
+	// null and we do nothing.
+	if (std::shared_ptr<Chunk> chunk = _chunk_repository->get_chunk(pos)) {
+		if (chunk->stage == ChunkStage::RENDERED) {
+			chunk->stage = ChunkStage::LOADED;
+		}
+	}
 }
 
 void VoxelAPI::_update_visible_chunks() {
 	if (_is_initializing) {
 		if (_pending_region_loads.is_empty()) {
 			_is_initializing = false;
-		} else {
-			return;
 		}
+		return;
 	}
+
 	for (const Vector3i &pos : _chunk_stream_manager->pop_queue_free_chunks()) {
 		if (_rendered_chunks.has(pos)) {
 			_remove_chunk(_rendered_chunks[pos]);
@@ -93,9 +105,22 @@ void VoxelAPI::_update_visible_chunks() {
 	}
 
 	for (const Vector3i &pos : _chunk_stream_manager->get_active_chunks_snapshot()) {
-		if (_chunk_repository->contains_chunk(pos) || _model_generator->is_loading_chunk(pos)) {
-			if (_chunk_repository->contains_chunk(pos) && !_rendered_chunks.has(pos)) {
-				_try_build_mesh_with_neighbors(pos);
+		std::shared_ptr<Chunk> chunk = _chunk_repository->get_chunk(pos);
+
+		if (!chunk) {
+			chunk = _model_generator->get_loading_chunk(pos);
+		}
+
+		if (chunk) {
+			switch (chunk->stage) {
+				case ChunkStage::LOADED:
+				case ChunkStage::WAITING_NEIGHBORS:
+					if (!_rendered_chunks.has(pos)) {
+						_try_build_mesh_with_neighbors(pos);
+					}
+					break;
+				default:
+					break;
 			}
 			continue;
 		}
@@ -104,7 +129,8 @@ void VoxelAPI::_update_visible_chunks() {
 	}
 }
 
-void VoxelAPI::_cleanup_far_chunks() {
+// This routine repeats every 2 seconds.
+void VoxelAPI::_cleanup_far_chunks() const {
 	std::vector<Vector3i> to_remove;
 
 	const int cache_radius_sq = _cache_radius * _cache_radius;
@@ -118,13 +144,26 @@ void VoxelAPI::_cleanup_far_chunks() {
 		bool out_of_horizontal_bounds = (dx * dx + dz * dz) > cache_radius_sq;
 
 		if (out_of_vertical_bounds || out_of_horizontal_bounds) {
-			if (!_mesh_generator->is_queued_mesh(pos) && !_model_generator->is_loading_chunk(pos)) {
+			// Chunks still being generated (QUEUED_GENERATION/GENERATING) do not
+			// yet exist in the repository (only in the model_generator's
+			// placeholder), so get_keys_snapshot() never returns them
+			// here—we only need to protect those that already have
+			// mesh generation in progress.
+			const std::shared_ptr<Chunk> chunk = _chunk_repository->get_chunk(pos);
+
+			const bool busy_with_mesh = chunk &&
+					(chunk->stage == ChunkStage::QUEUED_MESH || chunk->stage == ChunkStage::GENERATING_MESH);
+
+			if (!busy_with_mesh) {
 				to_remove.push_back(pos);
 			}
 		}
 	}
 
 	for (const Vector3i &pos : to_remove) {
+		if (std::shared_ptr<Chunk> chunk = _chunk_repository->get_chunk(pos)) {
+			chunk->stage = ChunkStage::UNLOADING;
+		}
 		_chunk_repository->remove_chunk(pos);
 	}
 }
@@ -194,14 +233,10 @@ void VoxelAPI::set_focus_position(Vector3 p_pos) {
 	_use_manual_pos	  = true;
 }
 
-void VoxelAPI::create_new_world(int32_t p_seed, const String &p_name) {
-	_chunk_repository->clear_all();
-	_chunk_pool->clear();
-	_rendered_chunks.clear();
-	_region_cache.clear();
-	_pending_region_loads.clear();
+void VoxelAPI::create_new_world(const int32_t p_seed, const String &p_name) {
+	_clear_world();
 
-	const int64_t id = SaveService::get_singleton()->create_world(p_seed, p_name);
+	const int64_t id			 = SaveService::get_singleton()->create_world(p_seed, p_name);
 	const WorldModel world_model = SaveService::get_singleton()->load_world_model(id);
 
 	_chunk_repository->set_world_model(world_model);
@@ -210,15 +245,13 @@ void VoxelAPI::create_new_world(int32_t p_seed, const String &p_name) {
 	_terrain_noise->set_seed(world_model.seed);
 	_cave_noise->set_seed(world_model.seed + 1);
 
+	_setup_trees(p_seed);
+
 	_init_chunks();
 }
 
 void VoxelAPI::start_world(int64_t p_id) {
-	_chunk_repository->clear_all();
-	_chunk_pool->clear();
-	_rendered_chunks.clear();
-	_region_cache.clear();
-	_pending_region_loads.clear();
+	_clear_world();
 
 	_disk_repository->set_current_world(p_id);
 	const WorldModel world_model = SaveService::get_singleton()->load_world_model(p_id);
@@ -227,9 +260,9 @@ void VoxelAPI::start_world(int64_t p_id) {
 
 	_terrain_noise->set_seed(world_model.seed);
 	_cave_noise->set_seed(world_model.seed + 1);
+	_setup_trees(world_model.seed);
 
 	_init_chunks();
-	print_line("alguem chamou o start world nativo");
 }
 
 Vector3 VoxelAPI::_get_current_focus_position() const {
@@ -240,14 +273,16 @@ Vector3 VoxelAPI::_get_current_focus_position() const {
 }
 
 void VoxelAPI::_process_models() {
-	HashMap<Vector3i, std::shared_ptr<ChunkModel>> ready_models = _model_generator->consume_generated_results();
+	HashMap<Vector3i, std::shared_ptr<Chunk>> ready_models = _model_generator->consume_generated_results();
 
 	if (ready_models.is_empty()) {
 		return;
 	}
 
 	for (auto &ready_model : ready_models) {
+		//  Chunk start with LOADED.
 		_queue_region_load(voxel::chunk_to_region_coords(ready_model.key));
+		_tree_decorator->decorate_chunk(ready_model.key, ready_model.value);
 		_chunk_repository->add_chunk(ready_model.key, ready_model.value);
 	}
 }
@@ -342,6 +377,14 @@ void VoxelAPI::_unload_region(const Vector3i &region_pos) {
 
 	_region_cache.erase(region_pos);
 }
+void VoxelAPI::_setup_trees(int64_t p_seed) {
+	TreeSettings ts;
+	ts.seed = p_seed;
+	ts.surface_height = [this](int32_t wx, int32_t wz) -> int32_t {
+		return int32_t(_terrain_base_height + _terrain_noise->get_noise_2d(wx, wz) * _terrain_amplitude);
+	};
+	_tree_decorator->set_settings(ts);
+}
 
 void VoxelAPI::_process_meshes(const Vector3i &p_pos) {
 	const MeshResultHashSet ready_meshes = _mesh_generator->consume_generated_meshes(_current_chunks_finalize_in_frame);
@@ -367,8 +410,11 @@ void VoxelAPI::_rebuild_chunk(const Vector3i &pos) const {
 	}
 
 	const uint64_t version	 = _chunk_repository->get_chunk_version(pos);
-	const bool dirty		 = _chunk_repository->is_chunk_dirty(pos);
+	const bool dirty		 = neighbors.center->has_flag(ChunkFlag::DIRTY);
 	const bool high_priority = _is_high_priority(pos, dirty);
+
+	neighbors.center->stage = ChunkStage::QUEUED_MESH;
+	neighbors.center->remove_flag(ChunkFlag::MESH_DIRTY);
 
 	_mesh_generator->queue_async_generate_mesh(pos, neighbors, version, high_priority);
 }
@@ -390,14 +436,24 @@ bool VoxelAPI::_is_high_priority(const Vector3i &pos, bool dirty) const {
 	return false;
 }
 
+void VoxelAPI::_clear_world() {
+}
 void VoxelAPI::_finalize_chunk(const MeshResult &res) {
 	if (res.mesh.is_null()) {
 		return;
 	}
 
-	uint64_t current_version = _chunk_repository->get_chunk_version(res.pos);
+	std::shared_ptr<Chunk> chunk = _chunk_repository->get_chunk(res.pos);
 
-	if (current_version != res.version) {
+	// The chunk was unloaded while the mesh was being generated.
+	if (!chunk) {
+		return;
+	}
+
+	// Someone edited the chunk after this mesh was queued;
+	// a new mesh generation must have already been (or will be) triggered
+	// by _rebuild_chunk. We discard this outdated result.
+	if (const uint64_t current_version = _chunk_repository->get_chunk_version(res.pos); current_version != res.version) {
 		return;
 	}
 
@@ -409,19 +465,21 @@ void VoxelAPI::_finalize_chunk(const MeshResult &res) {
 		_remove_chunk(_rendered_chunks[res.pos]);
 	}
 
-	ChunkNode *chunk = _chunk_pool->acquire();
+	ChunkNode *chunk_node = _chunk_pool->acquire();
 
-	if (chunk == nullptr) {
+	if (chunk_node == nullptr) {
 		WARN_PRINT("ChunkPool is overflow! Increase the prewarm size or check the cleanup.");
 		return;
 	}
 
-	_rendered_chunks[res.pos] = chunk;
+	_rendered_chunks[res.pos] = chunk_node;
 
-	chunk->set_mesh(res.mesh);
-	chunk->set_surface_override_material(0, chunk->get_material());
-	chunk->set_collision_faces(res.collision_faces);
-	chunk->set_global_position(voxel::chunk_coords_to_world(res.pos));
+	chunk_node->set_mesh(res.mesh);
+	chunk_node->set_surface_override_material(0, chunk_node->get_material());
+	chunk_node->set_collision_faces(res.collision_faces);
+	chunk_node->set_global_position(voxel::chunk_coords_to_world(res.pos));
+
+	chunk->stage = ChunkStage::RENDERED;
 }
 
 void VoxelAPI::_queue_async_generate_chunk(const Vector3i p_pos) const {
@@ -438,7 +496,7 @@ void VoxelAPI::_queue_async_generate_chunk(const Vector3i p_pos) const {
 	_model_generator->_queue_async_generate_chunk_model(p_pos, settings, high_priority);
 }
 
-void VoxelAPI::save_world_final() {
+void VoxelAPI::save_world_final() const {
 	if (_disk_repository.is_null())
 		return;
 
@@ -462,7 +520,13 @@ ChunkNeighbors VoxelAPI::_get_neighbors_for(const Vector3i p_pos) const {
 }
 
 void VoxelAPI::_try_build_mesh_with_neighbors(const Vector3i p_pos) const {
-	if (_mesh_generator->is_queued_mesh(p_pos)) {
+	std::shared_ptr<Chunk> chunk = _chunk_repository->get_chunk(p_pos);
+
+	if (!chunk) {
+		return;
+	}
+
+	if (chunk->stage == ChunkStage::QUEUED_MESH || chunk->stage == ChunkStage::GENERATING_MESH) {
 		return;
 	}
 
@@ -473,13 +537,15 @@ void VoxelAPI::_try_build_mesh_with_neighbors(const Vector3i p_pos) const {
 	}
 
 	if (!neighbors.right || !neighbors.left || !neighbors.top || !neighbors.bottom || !neighbors.front || !neighbors.back) {
+		chunk->stage = ChunkStage::WAITING_NEIGHBORS;
 		return;
 	}
 
+	chunk->stage = ChunkStage::QUEUED_MESH;
 	_mesh_generator->queue_async_generate_mesh(p_pos, neighbors, _chunk_repository->get_chunk_version(p_pos));
 }
 
-void VoxelAPI::save_world() {
+void VoxelAPI::save_world() const {
 	if (_disk_repository.is_valid() && _disk_repository->get_current_world_id() != 0) {
 		_chunk_repository->save_edited_chunks_to_disk(_disk_repository);
 	}

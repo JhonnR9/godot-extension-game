@@ -21,25 +21,25 @@ void ChunkRepository::_update_dirty_chunks(const Vector3i &p_local_pos, const Ve
 
 	_dirty_chunks.insert(p_chunk_pos);
 
-	if (p_local_pos.x == ChunkModel::MIN_X)
+	if (p_local_pos.x == Chunk::MIN_X)
 		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_LEFT);
-	if (p_local_pos.x == ChunkModel::MAX_X)
+	if (p_local_pos.x == Chunk::MAX_X)
 		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_RIGHT);
 
-	if (p_local_pos.y == ChunkModel::MIN_Y)
+	if (p_local_pos.y == Chunk::MIN_Y)
 		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_DOWN);
-	if (p_local_pos.y == ChunkModel::MAX_Y)
+	if (p_local_pos.y == Chunk::MAX_Y)
 		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_UP);
 
-	if (p_local_pos.z == ChunkModel::MIN_Z)
+	if (p_local_pos.z == Chunk::MIN_Z)
 		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_BACK);
-	if (p_local_pos.z == ChunkModel::MAX_Z)
+	if (p_local_pos.z == Chunk::MAX_Z)
 		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_FRONT);
 
 	_dirty_regions.insert(voxel::chunk_to_region_coords(p_chunk_pos));
 }
 
-void ChunkRepository::_apply_edited_blocks(const Vector3i &p_chunk_pos, const std::shared_ptr<ChunkModel> &p_model) {
+void ChunkRepository::_apply_edited_blocks(const Vector3i &p_chunk_pos, const std::shared_ptr<Chunk> &p_model) {
 	{
 		std::lock_guard lock(_edited_blocks_mutex);
 		if (_edited_chunks.has(p_chunk_pos)) {
@@ -83,7 +83,7 @@ HashSet<Vector3i> ChunkRepository::get_dirty_regions() {
 void ChunkRepository::_bind_methods() {
 }
 
-void ChunkRepository::add_chunk(const Vector3i &p_pos, const std::shared_ptr<ChunkModel> &p_model) {
+void ChunkRepository::add_chunk(const Vector3i &p_pos, const std::shared_ptr<Chunk> &p_model) {
 	{
 		std::lock_guard lock(_mutex);
 		_chunks[p_pos] = p_model;
@@ -97,7 +97,7 @@ void ChunkRepository::add_chunk(const Vector3i &p_pos, const std::shared_ptr<Chu
 	}
 }
 
-std::shared_ptr<ChunkModel> ChunkRepository::get_chunk(const Vector3i &p_pos) {
+std::shared_ptr<Chunk> ChunkRepository::get_chunk(const Vector3i &p_pos) {
 	std::lock_guard lock(_mutex);
 	if (_chunks.has(p_pos)) {
 		return _chunks[p_pos];
@@ -165,7 +165,7 @@ void ChunkRepository::clear_all() {
 void ChunkRepository::set_block(const Vector3i &world_block_pos, voxel::Block block) {
 	const Vector3i chunk_pos = voxel::block_to_chunk_coords(world_block_pos);
 
-	std::shared_ptr<ChunkModel> chunk;
+	std::shared_ptr<Chunk> chunk;
 	{
 		std::lock_guard lock(_mutex);
 		if (_chunks.has(chunk_pos)) {

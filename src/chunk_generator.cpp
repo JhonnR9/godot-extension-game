@@ -2,18 +2,18 @@
 
 namespace godot {
 
-ChunkModel ChunkGenerator::generate(const Vector3i chunk_pos,const TerrainSettings &terrain_settings) {
-	ChunkModel chunk{};
+Chunk ChunkGenerator::generate(const Vector3i chunk_pos,const TerrainSettings &terrain_settings) {
+	Chunk chunk{};
 
 	Ref<FastNoiseLite> terrain_noise = terrain_settings.noise_set.terrain_noise;
 	Ref<FastNoiseLite> cave_noise = terrain_settings.noise_set.cave_noise;
 
-	for (int z = 0; z < ChunkModel::SIZE_Z; z++) {
-		for (int y = 0; y < ChunkModel::SIZE_Y; y++) {
-			for (int x = 0; x < ChunkModel::SIZE_X; x++) {
-				int world_x = chunk_pos.x * ChunkModel::SIZE_X + x;
-				int world_y = chunk_pos.y * ChunkModel::SIZE_Y + y;
-				int world_z = chunk_pos.z * ChunkModel::SIZE_Z + z;
+	for (int z = 0; z < Chunk::SIZE_Z; z++) {
+		for (int y = 0; y < Chunk::SIZE_Y; y++) {
+			for (int x = 0; x < Chunk::SIZE_X; x++) {
+				int world_x = chunk_pos.x * Chunk::SIZE_X + x;
+				int world_y = chunk_pos.y * Chunk::SIZE_Y + y;
+				int world_z = chunk_pos.z * Chunk::SIZE_Z + z;
 
 				float terrain_n = terrain_noise->get_noise_2d(world_x, world_z);
 

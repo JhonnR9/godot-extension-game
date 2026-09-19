@@ -10,13 +10,13 @@
 #include <mutex>
 
 namespace godot {
-struct ChunkModel;
+struct Chunk;
 
 
 class ChunkRepository : public RefCounted {
 	GDCLASS(ChunkRepository, RefCounted)
 	mutable std::mutex _mutex;
-	HashMap<Vector3i, std::shared_ptr<ChunkModel>> _chunks;
+	HashMap<Vector3i, std::shared_ptr<Chunk>> _chunks;
 	mutable std::mutex _dirty_chunks_mutex;
 	HashSet<Vector3i> _dirty_chunks;
 
@@ -35,8 +35,8 @@ protected:
 	static void _bind_methods();
 
 public:
-	void add_chunk(const Vector3i &p_pos, const std::shared_ptr<ChunkModel> &p_model);
-	std::shared_ptr<ChunkModel> get_chunk(const Vector3i &p_pos);
+	void add_chunk(const Vector3i &p_pos, const std::shared_ptr<Chunk> &p_model);
+	std::shared_ptr<Chunk> get_chunk(const Vector3i &p_pos);
 	bool contains_chunk(const Vector3i &p_pos);
 	void remove_chunk(const Vector3i &p_pos);
 	Vector<Vector3i> get_keys_snapshot();
@@ -58,7 +58,7 @@ public:
 	HashMap<Vector3i, voxel::Region> get_all_edited_regions() const;
 private:
 	void _update_dirty_chunks(const Vector3i &p_local_pos, const Vector3i &p_chunk_pos);
-	void _apply_edited_blocks(const Vector3i &p_chunk_pos, const std::shared_ptr<ChunkModel> &p_model);
+	void _apply_edited_blocks(const Vector3i &p_chunk_pos, const std::shared_ptr<Chunk> &p_model);
 };
 } // godot
 

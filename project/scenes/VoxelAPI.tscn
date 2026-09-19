@@ -1,12 +1,14 @@
 [gd_scene format=3 uid="uid://bx7k6wka5el6q"]
 
 [ext_resource type="Script" uid="uid://6f75v7a46edl" path="res://scripts/player.gd" id="1_xo6ui"]
+[ext_resource type="Script" uid="uid://c8c4g1hdl08kd" path="res://scripts/voxel_api.gd" id="2_715aw"]
 [ext_resource type="Theme" uid="uid://c2gmwveu1je31" path="res://resources/theme.tres" id="2_suxjr"]
 [ext_resource type="Script" uid="uid://darldrg0or1ui" path="res://scripts/control.gd" id="3_715aw"]
 [ext_resource type="Script" uid="uid://xfhdrgxgewkx" path="res://scripts/fps_counter.gd" id="4_v70by"]
 [ext_resource type="Script" uid="uid://c7ijudkbm4v3f" path="res://scripts/debug.gd" id="5_vqlwl"]
 [ext_resource type="Script" uid="uid://benu0o0kncwvk" path="res://scripts/pause.gd" id="6_0bkf4"]
 [ext_resource type="FontFile" uid="uid://dyj0fv3g4ev8t" path="res://fonts/rainyhearts.ttf" id="7_qmtj6"]
+[ext_resource type="Script" uid="uid://bujnam10c35qv" path="res://scenes/directional_light_3d.gd" id="9_715aw"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_xo6ui"]
 
@@ -14,16 +16,15 @@
 font = ExtResource("7_qmtj6")
 font_size = 64
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_a202f"]
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_suxjr"]
+ground_bottom_color = Color(0.012903416, 0.09700882, 0.1965751, 1)
 
-[sub_resource type="Sky" id="Sky_a202f"]
-sky_material = SubResource("ProceduralSkyMaterial_a202f")
+[sub_resource type="Sky" id="Sky_suxjr"]
+sky_material = SubResource("ProceduralSkyMaterial_suxjr")
 
 [sub_resource type="Environment" id="Environment_a202f"]
-sky = SubResource("Sky_a202f")
-ambient_light_source = 3
-ambient_light_color = Color(1, 1, 1, 1)
-adjustment_enabled = true
+background_mode = 2
+sky = SubResource("Sky_suxjr")
 adjustment_brightness = 0.9
 adjustment_contrast = 1.065
 adjustment_saturation = 0.88
@@ -46,6 +47,7 @@ world = NodePath("../VoxelAPI")
 shape = SubResource("CapsuleShape3D_xo6ui")
 
 [node name="VoxelAPI" type="VoxelAPI" parent="." unique_id=764651677]
+script = ExtResource("2_715aw")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=655011314]
 
@@ -140,8 +142,9 @@ text = "Back to MainMenu"
 environment = SubResource("Environment_a202f")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=747512165]
-transform = Transform3D(0.63993454, 0.735131, -0.22375515, -0.3552526, 0.54122716, 0.76214755, 0.6813807, -0.40823495, 0.60750705, 0, 15.588827, 0)
+transform = Transform3D(0.29083142, -0.7403626, 0.6060366, 0.9564279, 0.2420135, -0.16332595, -0.025748607, 0.6271307, 0.77848834, 0, 15.588827, 0)
 shadow_enabled = true
+script = ExtResource("9_715aw")
 
 [connection signal="pressed" from="CanvasLayer/Pause/VBoxContainer/Button" to="CanvasLayer/Pause" method="_on_button_pressed"]
 [connection signal="pressed" from="CanvasLayer/Pause/VBoxContainer/BackToMainMenu" to="CanvasLayer/Pause" method="_on_back_to_main_menu_pressed"]

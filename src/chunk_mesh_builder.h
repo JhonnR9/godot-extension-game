@@ -17,16 +17,16 @@
 
 namespace godot {
 struct ChunkNeighbors {
-	std::shared_ptr<ChunkModel> center;
+	std::shared_ptr<Chunk> center;
 
-	std::shared_ptr<ChunkModel> right;
-	std::shared_ptr<ChunkModel> left;
+	std::shared_ptr<Chunk> right;
+	std::shared_ptr<Chunk> left;
 
-	std::shared_ptr<ChunkModel> top;
-	std::shared_ptr<ChunkModel> bottom;
+	std::shared_ptr<Chunk> top;
+	std::shared_ptr<Chunk> bottom;
 
-	std::shared_ptr<ChunkModel> front;
-	std::shared_ptr<ChunkModel> back;
+	std::shared_ptr<Chunk> front;
+	std::shared_ptr<Chunk> back;
 };
 
 struct TextureKey {
@@ -52,10 +52,6 @@ class ChunkMeshBuilder {
 	void _add_up_faces(const ChunkNeighbors &neighbors);
 	void _add_left_faces(const ChunkNeighbors &neighbors);
 	void _add_down_faces(const ChunkNeighbors &neighbors);
-	void _clear_mask( std::vector<std::vector<bool>> &mask,  std::vector<std::vector<bool>> &visited, const Size2i& size);
-	void _build_mask(const int& slice, std::vector<std::vector<bool>> &mask, const ChunkNeighbors &neighbors, const Size2i& size);
-	void _greedy_mask(const int& slice, std::vector<std::vector<bool>> &mask,  std::vector<std::vector<bool>> &visited, const Size2i& size, const ChunkModel* center, Vector3i dir);
-
 	void _add_front_faces(const ChunkNeighbors &neighbors);
 	void _add_back_faces(const ChunkNeighbors &neighbors);
 	int _get_tex_layer(const CubeFace &face, const voxel::BlockType &type);
