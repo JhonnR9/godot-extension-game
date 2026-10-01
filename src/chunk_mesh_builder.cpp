@@ -4,6 +4,7 @@
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
+#include <algorithm>
 
 namespace godot {
 bool ChunkMeshBuilder::_is_air(const ChunkNeighbors &n, int x, int y, int z) {
@@ -54,656 +55,101 @@ VoxelMesher &ChunkMeshBuilder::_get_mesher(const voxel::Block block) {
 	return voxel::is_transparent(block) ? transparent_mesher : opaque_mesher;
 }
 
-void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
+void ChunkMeshBuilder::_add_faces(const ChunkNeighbors &neighbors, const CubeFace face) {
 	const Chunk *center = neighbors.center.get();
+	const bool x_face = face == CubeFace::R || face == CubeFace::L;
+	const bool y_face = face == CubeFace::U || face == CubeFace::D;
+	const int depth_count = x_face ? Chunk::SIZE_X : (y_face ? Chunk::SIZE_Y : Chunk::SIZE_Z);
+	const int width = y_face ? Chunk::SIZE_Z : (x_face ? Chunk::SIZE_Z : Chunk::SIZE_X);
+	const int height = x_face ? Chunk::SIZE_Y : (y_face ? Chunk::SIZE_X : Chunk::SIZE_Y);
+	std::vector<uint8_t> mask(static_cast<size_t>(width * height));
+	std::vector<uint8_t> visited(static_cast<size_t>(width * height));
 
-	const int SX = Chunk::SIZE_X;
-	const int SY = Chunk::SIZE_Y;
-	const int SZ = Chunk::SIZE_Z;
+	auto index = [width](const int u, const int v) { return static_cast<size_t>(v * width + u); };
+	auto block_at = [center, face](const int depth, const int u, const int v) {
+		if (face == CubeFace::R || face == CubeFace::L) return center->get_block(depth, v, u);
+		if (face == CubeFace::U || face == CubeFace::D) return center->get_block(v, depth, u);
+		return center->get_block(u, v, depth);
+	};
+	auto neighbor_is_visible = [&](const int depth, const int u, const int v, const voxel::Block block) {
+		if (face == CubeFace::R) return _is_face_visible(neighbors, depth + 1, v, u, block);
+		if (face == CubeFace::L) return _is_face_visible(neighbors, depth - 1, v, u, block);
+		if (face == CubeFace::U) return _is_face_visible(neighbors, v, depth + 1, u, block);
+		if (face == CubeFace::D) return _is_face_visible(neighbors, v, depth - 1, u, block);
+		if (face == CubeFace::F) return _is_face_visible(neighbors, u, v, depth + 1, block);
+		return _is_face_visible(neighbors, u, v, depth - 1, block);
+	};
 
-	bool mask[SY][SZ];
-	bool visited[SY][SZ];
-
-	for (int x = 0; x < SX; x++) {
-		for (int y = 0; y < SY; y++)
-			for (int z = 0; z < SZ; z++) {
-				mask[y][z]    = false;
-				visited[y][z] = false;
-			}
-
-		// build mask
-		for (int y = 0; y < SY; y++) {
-			for (int z = 0; z < SZ; z++) {
-				const voxel::Block block = center->get_block(x, y, z);
+	for (int depth = 0; depth < depth_count; ++depth) {
+		std::fill(mask.begin(), mask.end(), 0);
+		std::fill(visited.begin(), visited.end(), 0);
+		for (int v = 0; v < height; ++v) {
+			for (int u = 0; u < width; ++u) {
+				const voxel::Block block = block_at(depth, u, v);
 				if (voxel::is_air(block) || _is_crossed_plant(block) ||
-						voxel::type(block) == voxel::BlockType::WATER)
-					continue;
-
-				if (_is_face_visible(neighbors, x + 1, y, z, block)) {
-					mask[y][z] = true;
-				}
+						(face != CubeFace::U && voxel::type(block) == voxel::BlockType::WATER)) continue;
+				mask[index(u, v)] = neighbor_is_visible(depth, u, v, block);
 			}
 		}
 
-		// greedy
-		for (int y = 0; y < SY; y++) {
-			for (int z = 0; z < SZ; z++) {
-				if (!mask[y][z] || visited[y][z])
-					continue;
-
-				const voxel::Block block    = center->get_block(x, y, z);
+		for (int v = 0; v < height; ++v) {
+			for (int u = 0; u < width; ++u) {
+				const size_t cell = index(u, v);
+				if (!mask[cell] || visited[cell]) continue;
+				const voxel::Block block = block_at(depth, u, v);
 				const voxel::BlockType type = voxel::type(block);
-
-				int quad_h = 1; // Y
-				int quad_w = 1; // Z
-
-				// expand Z
-				while (z + quad_w < SZ) {
-					if (!mask[y][z + quad_w] || visited[y][z + quad_w])
-						break;
-
-					const voxel::BlockType other =
-							voxel::type(center->get_block(x, y, z + quad_w));
-
-					if (other != type)
-						break;
-
-					quad_w++;
+				int quad_w = 1;
+				int quad_h = 1;
+				while (u + quad_w < width) {
+					const size_t next = index(u + quad_w, v);
+					if (!mask[next] || visited[next] || voxel::type(block_at(depth, u + quad_w, v)) != type) break;
+					++quad_w;
 				}
-
-				// expand Y
 				bool can_expand = true;
-				while (y + quad_h < SY && can_expand) {
-					for (int k = 0; k < quad_w; k++) {
-						if (!mask[y + quad_h][z + k] ||
-							visited[y + quad_h][z + k]) {
+				while (v + quad_h < height && can_expand) {
+					for (int k = 0; k < quad_w; ++k) {
+						const size_t next = index(u + k, v + quad_h);
+						if (!mask[next] || visited[next] || voxel::type(block_at(depth, u + k, v + quad_h)) != type) {
 							can_expand = false;
-							break;
-						}
-
-						const voxel::BlockType other =
-								voxel::type(center->get_block(x, y + quad_h, z + k));
-
-						if (other != type) {
-							can_expand = false;
-							break;
-						}
-					}
-
-					if (can_expand)
-						quad_h++;
-				}
-
-				// mark visited
-				for (int dy = 0; dy < quad_h; dy++)
-					for (int dz                 = 0; dz < quad_w; dz++)
-						visited[y + dy][z + dz] = true;
-
-				// quad geometry
-				Vector3 v0(x + 1, y, z);
-				Vector3 v1(x + 1, y + quad_h, z);
-				Vector3 v2(x + 1, y + quad_h, z + quad_w);
-				Vector3 v3(x + 1, y, z + quad_w);
-
-				int tex_layer = _get_tex_layer(CubeFace::R, type);
-
-				_get_mesher(block).add_quad(
-						v0, v1, v2, v3,
-						Vector3(1, 0, 0),
-						tex_layer,
-						Vector2(quad_h, quad_w),
-						true,
-						voxel::is_collidable(block)
-						);
-			}
-		}
-	}
-}
-
-void ChunkMeshBuilder::_add_up_faces(const ChunkNeighbors &neighbors) {
-	const Chunk *center = neighbors.center.get();
-
-	const int SX = Chunk::SIZE_X;
-	const int SY = Chunk::SIZE_Y;
-	const int SZ = Chunk::SIZE_Z;
-
-	bool mask[SX][SZ];
-	bool visited[SX][SZ];
-
-	for (int y = 0; y < SY; y++) {
-		// reset
-		for (int x = 0; x < SX; x++) {
-			for (int z = 0; z < SZ; z++) {
-				mask[x][z]    = false;
-				visited[x][z] = false;
-			}
-		}
-
-		// build mask
-		for (int x = 0; x < SX; x++) {
-			for (int z = 0; z < SZ; z++) {
-				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block) || _is_crossed_plant(block))
-					continue;
-
-				if (_is_face_visible(neighbors, x, y + 1, z, block)) {
-					mask[x][z] = true;
-				}
-			}
-		}
-
-		// greedy meshing
-		for (int x = 0; x < SX; x++) {
-			for (int z = 0; z < SZ; z++) {
-				if (!mask[x][z] || visited[x][z])
-					continue;
-
-				const voxel::Block block    = center->get_block(x, y, z);
-				const voxel::BlockType type = voxel::type(block);
-
-				int quad_w = 1; // Z
-				int quad_h = 1; // X
-
-				// expand Z
-				while (z + quad_w < SZ) {
-					if (!mask[x][z + quad_w] || visited[x][z + quad_w])
 						break;
-
-					const voxel::BlockType other =
-							voxel::type(center->get_block(x, y, z + quad_w));
-
-					if (other != type)
-						break;
-
-					quad_w++;
-				}
-
-				// expand X
-				bool can_expand = true;
-				while (x + quad_h < SX && can_expand) {
-					for (int k = 0; k < quad_w; k++) {
-						if (!mask[x + quad_h][z + k] ||
-							visited[x + quad_h][z + k]) {
-							can_expand = false;
-							break;
-						}
-
-						const voxel::BlockType other =
-								voxel::type(center->get_block(x + quad_h, y, z + k));
-
-						if (other != type) {
-							can_expand = false;
-							break;
 						}
 					}
-
-					if (can_expand)
-						quad_h++;
+					if (can_expand) ++quad_h;
 				}
+				for (int dv = 0; dv < quad_h; ++dv)
+					for (int du = 0; du < quad_w; ++du)
+						visited[index(u + du, v + dv)] = 1;
 
-				// mark visited
-				for (int dx = 0; dx < quad_h; dx++) {
-					for (int dz = 0; dz < quad_w; dz++) {
-						visited[x + dx][z + dz] = true;
-					}
+				Vector3 v0, v1, v2, v3, normal;
+				Vector2 uv_scale;
+				bool swap_uvs = false;
+				if (face == CubeFace::R) {
+					v0 = Vector3(depth + 1, v, u); v1 = Vector3(depth + 1, v + quad_h, u);
+					v2 = Vector3(depth + 1, v + quad_h, u + quad_w); v3 = Vector3(depth + 1, v, u + quad_w);
+					normal = Vector3(1, 0, 0); uv_scale = Vector2(quad_h, quad_w); swap_uvs = true;
+				} else if (face == CubeFace::L) {
+					v0 = Vector3(depth, v, u); v1 = Vector3(depth, v, u + quad_w);
+					v2 = Vector3(depth, v + quad_h, u + quad_w); v3 = Vector3(depth, v + quad_h, u);
+					normal = Vector3(-1, 0, 0); uv_scale = Vector2(quad_w, quad_h);
+				} else if (face == CubeFace::U) {
+					v0 = Vector3(v, depth + 1, u + quad_w); v1 = Vector3(v + quad_h, depth + 1, u + quad_w);
+					v2 = Vector3(v + quad_h, depth + 1, u); v3 = Vector3(v, depth + 1, u);
+					normal = Vector3(0, 1, 0); uv_scale = Vector2(quad_h, quad_w);
+				} else if (face == CubeFace::D) {
+					v0 = Vector3(v, depth, u); v1 = Vector3(v + quad_h, depth, u);
+					v2 = Vector3(v + quad_h, depth, u + quad_w); v3 = Vector3(v, depth, u + quad_w);
+					normal = Vector3(0, -1, 0); uv_scale = Vector2(quad_h, quad_w); swap_uvs = true;
+				} else if (face == CubeFace::F) {
+					v0 = Vector3(u, v, depth + 1); v1 = Vector3(u + quad_w, v, depth + 1);
+					v2 = Vector3(u + quad_w, v + quad_h, depth + 1); v3 = Vector3(u, v + quad_h, depth + 1);
+					normal = Vector3(0, 0, 1); uv_scale = Vector2(quad_w, quad_h);
+				} else {
+					v0 = Vector3(u + quad_w, v, depth); v1 = Vector3(u, v, depth);
+					v2 = Vector3(u, v + quad_h, depth); v3 = Vector3(u + quad_w, v + quad_h, depth);
+					normal = Vector3(0, 0, -1); uv_scale = Vector2(quad_w, quad_h);
 				}
-
-				// geometry
-				Vector3 v0(x, y + 1, z + quad_w);
-				Vector3 v1(x + quad_h, y + 1, z + quad_w);
-				Vector3 v2(x + quad_h, y + 1, z);
-				Vector3 v3(x, y + 1, z);
-
-				int tex_layer = _get_tex_layer(CubeFace::U, type);
-
-				_get_mesher(block).add_quad(
-						v0, v1, v2, v3,
-						Vector3(0, 1, 0),
-						tex_layer,
-						Vector2((float)quad_h, (float)quad_w),
-						false,
-						voxel::is_collidable(block)
-						);
-			}
-		}
-	}
-}
-
-void ChunkMeshBuilder::_add_left_faces(const ChunkNeighbors &neighbors) {
-	const Chunk *center = neighbors.center.get();
-
-	const int SX = Chunk::SIZE_X;
-	const int SY = Chunk::SIZE_Y;
-	const int SZ = Chunk::SIZE_Z;
-
-	bool mask[SY][SZ];
-	bool visited[SY][SZ];
-
-	for (int x = 0; x < SX; x++) {
-		// reset
-		for (int y = 0; y < SY; y++) {
-			for (int z = 0; z < SZ; z++) {
-				mask[y][z]    = false;
-				visited[y][z] = false;
-			}
-		}
-
-		// build mask
-		for (int y = 0; y < SY; y++) {
-			for (int z = 0; z < SZ; z++) {
-				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block) || _is_crossed_plant(block) ||
-						voxel::type(block) == voxel::BlockType::WATER)
-					continue;
-
-				if (_is_face_visible(neighbors, x - 1, y, z, block)) {
-					mask[y][z] = true;
-				}
-			}
-		}
-
-		// greedy
-		for (int y = 0; y < SY; y++) {
-			for (int z = 0; z < SZ; z++) {
-				if (!mask[y][z] || visited[y][z])
-					continue;
-
-				const voxel::Block block    = center->get_block(x, y, z);
-				const voxel::BlockType type = voxel::type(block);
-
-				int quad_w = 1; // Z
-				int quad_h = 1; // Y
-
-				// expand Z
-				while (z + quad_w < SZ) {
-					if (!mask[y][z + quad_w] || visited[y][z + quad_w])
-						break;
-
-					const voxel::BlockType other =
-							voxel::type(center->get_block(x, y, z + quad_w));
-
-					if (other != type)
-						break;
-
-					quad_w++;
-				}
-
-				// expand Y
-				bool can_expand = true;
-				while (y + quad_h < SY && can_expand) {
-					for (int k = 0; k < quad_w; k++) {
-						if (!mask[y + quad_h][z + k] ||
-							visited[y + quad_h][z + k]) {
-							can_expand = false;
-							break;
-						}
-
-						const voxel::BlockType other =
-								voxel::type(center->get_block(x, y + quad_h, z + k));
-
-						if (other != type) {
-							can_expand = false;
-							break;
-						}
-					}
-
-					if (can_expand)
-						quad_h++;
-				}
-
-				// mark visited
-				for (int dy = 0; dy < quad_h; dy++) {
-					for (int dz = 0; dz < quad_w; dz++) {
-						visited[y + dy][z + dz] = true;
-					}
-				}
-
-				// quad geometry (LEFT face)
-				Vector3 v0(x, y, z);
-				Vector3 v1(x, y, z + quad_w);
-				Vector3 v2(x, y + quad_h, z + quad_w);
-				Vector3 v3(x, y + quad_h, z);
-
-				int tex_layer = _get_tex_layer(CubeFace::L, type);
-
-				_get_mesher(block).add_quad(
-						v0, v1, v2, v3,
-						Vector3(-1, 0, 0),
-						tex_layer,
-						Vector2((float)quad_w, (float)quad_h),
-						false,
-						voxel::is_collidable(block)
-						);
-			}
-		}
-	}
-}
-
-void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
-	const Chunk *center = neighbors.center.get();
-
-	const int SX = Chunk::SIZE_X;
-	const int SY = Chunk::SIZE_Y;
-	const int SZ = Chunk::SIZE_Z;
-
-	bool mask[SX][SZ];
-	bool visited[SX][SZ];
-
-	for (int y = 0; y < SY; y++) {
-		// reset
-		for (int x = 0; x < SX; x++) {
-			for (int z = 0; z < SZ; z++) {
-				mask[x][z]    = false;
-				visited[x][z] = false;
-			}
-		}
-
-		// build mask
-		for (int x = 0; x < SX; x++) {
-			for (int z = 0; z < SZ; z++) {
-				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block) || _is_crossed_plant(block) ||
-						voxel::type(block) == voxel::BlockType::WATER)
-					continue;
-
-				if (_is_face_visible(neighbors, x, y - 1, z, block)) {
-					mask[x][z] = true;
-				}
-			}
-		}
-
-		// greedy
-		for (int x = 0; x < SX; x++) {
-			for (int z = 0; z < SZ; z++) {
-				if (!mask[x][z] || visited[x][z])
-					continue;
-
-				const voxel::Block block    = center->get_block(x, y, z);
-				const voxel::BlockType type = voxel::type(block);
-
-				int quad_w = 1; // Z
-				int quad_h = 1; // X
-
-				// expand Z
-				while (z + quad_w < SZ) {
-					if (!mask[x][z + quad_w] || visited[x][z + quad_w])
-						break;
-
-					const voxel::BlockType other =
-							voxel::type(center->get_block(x, y, z + quad_w));
-
-					if (other != type)
-						break;
-
-					quad_w++;
-				}
-
-				// expand X
-				bool can_expand = true;
-				while (x + quad_h < SX && can_expand) {
-					for (int k = 0; k < quad_w; k++) {
-						if (!mask[x + quad_h][z + k] ||
-							visited[x + quad_h][z + k]) {
-							can_expand = false;
-							break;
-						}
-
-						const voxel::BlockType other =
-								voxel::type(center->get_block(x + quad_h, y, z + k));
-
-						if (other != type) {
-							can_expand = false;
-							break;
-						}
-					}
-
-					if (can_expand)
-						quad_h++;
-				}
-
-				// mark visited
-				for (int dx = 0; dx < quad_h; dx++) {
-					for (int dz = 0; dz < quad_w; dz++) {
-						visited[x + dx][z + dz] = true;
-					}
-				}
-
-				// geometry (DOWN face)
-				Vector3 v0(x, y, z);
-				Vector3 v1(x + quad_h, y, z);
-				Vector3 v2(x + quad_h, y, z + quad_w);
-				Vector3 v3(x, y, z + quad_w);
-
-				int tex_layer = _get_tex_layer(CubeFace::D, type);
-
-				_get_mesher(block).add_quad(
-						v0, v1, v2, v3,
-						Vector3(0, -1, 0),
-						tex_layer,
-						Vector2((float)quad_h, (float)quad_w),
-						true,
-						voxel::is_collidable(block)
-						);
-			}
-		}
-	}
-}
-
-void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
-	const Chunk *center = neighbors.center.get();
-
-	const int SX = Chunk::SIZE_X;
-	const int SY = Chunk::SIZE_Y;
-	const int SZ = Chunk::SIZE_Z;
-
-	bool mask[SX][SY];
-	bool visited[SX][SY];
-
-	for (int z = 0; z < SZ; z++) {
-		// reset
-		for (int x = 0; x < SX; x++) {
-			for (int y = 0; y < SY; y++) {
-				mask[x][y]    = false;
-				visited[x][y] = false;
-			}
-		}
-
-		// build mask
-		for (int x = 0; x < SX; x++) {
-			for (int y = 0; y < SY; y++) {
-				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block) || _is_crossed_plant(block) ||
-						voxel::type(block) == voxel::BlockType::WATER)
-					continue;
-
-				if (_is_face_visible(neighbors, x, y, z + 1, block)) {
-					mask[x][y] = true;
-				}
-			}
-		}
-
-		// greedy
-		for (int x = 0; x < SX; x++) {
-			for (int y = 0; y < SY; y++) {
-				if (!mask[x][y] || visited[x][y])
-					continue;
-
-				const voxel::Block block    = center->get_block(x, y, z);
-				const voxel::BlockType type = voxel::type(block);
-
-				int quad_w = 1; // X
-				int quad_h = 1; // Y
-
-				// expand X
-				while (x + quad_w < SX) {
-					if (!mask[x + quad_w][y] || visited[x + quad_w][y])
-						break;
-
-					const voxel::BlockType other =
-							voxel::type(center->get_block(x + quad_w, y, z));
-
-					if (other != type)
-						break;
-
-					quad_w++;
-				}
-
-				// expand Y
-				bool can_expand = true;
-				while (y + quad_h < SY && can_expand) {
-					for (int k = 0; k < quad_w; k++) {
-						if (!mask[x + k][y + quad_h] ||
-							visited[x + k][y + quad_h]) {
-							can_expand = false;
-							break;
-						}
-
-						const voxel::BlockType other =
-								voxel::type(center->get_block(x + k, y + quad_h, z));
-
-						if (other != type) {
-							can_expand = false;
-							break;
-						}
-					}
-
-					if (can_expand)
-						quad_h++;
-				}
-
-				// mark visited
-				for (int dx = 0; dx < quad_w; dx++) {
-					for (int dy = 0; dy < quad_h; dy++) {
-						visited[x + dx][y + dy] = true;
-					}
-				}
-
-				// geometry (FRONT face)
-				Vector3 v0(x, y, z + 1);
-				Vector3 v1(x + quad_w, y, z + 1);
-				Vector3 v2(x + quad_w, y + quad_h, z + 1);
-				Vector3 v3(x, y + quad_h, z + 1);
-
-				int tex_layer = _get_tex_layer(CubeFace::F, type);
-
-				_get_mesher(block).add_quad(
-						v0, v1, v2, v3,
-						Vector3(0, 0, 1),
-						tex_layer,
-						Vector2((float)quad_w, (float)quad_h),
-						false,
-						voxel::is_collidable(block)
-						);
-			}
-		}
-	}
-}
-
-void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
-	const Chunk *center = neighbors.center.get();
-
-	const int SX = Chunk::SIZE_X;
-	const int SY = Chunk::SIZE_Y;
-	const int SZ = Chunk::SIZE_Z;
-
-	bool mask[SX][SY];
-	bool visited[SX][SY];
-
-	for (int z = 0; z < SZ; z++) {
-		// reset
-		for (int x = 0; x < SX; x++) {
-			for (int y = 0; y < SY; y++) {
-				mask[x][y]    = false;
-				visited[x][y] = false;
-			}
-		}
-
-		// build mask
-		for (int x = 0; x < SX; x++) {
-			for (int y = 0; y < SY; y++) {
-				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block) || _is_crossed_plant(block) ||
-						voxel::type(block) == voxel::BlockType::WATER)
-					continue;
-
-				if (_is_face_visible(neighbors, x, y, z - 1, block)) {
-					mask[x][y] = true;
-				}
-			}
-		}
-
-		// greedy
-		for (int x = 0; x < SX; x++) {
-			for (int y = 0; y < SY; y++) {
-				if (!mask[x][y] || visited[x][y])
-					continue;
-
-				const voxel::Block block    = center->get_block(x, y, z);
-				const voxel::BlockType type = voxel::type(block);
-
-				int quad_w = 1; // X
-				int quad_h = 1; // Y
-
-				// expand X
-				while (x + quad_w < SX) {
-					if (!mask[x + quad_w][y] || visited[x + quad_w][y])
-						break;
-
-					const voxel::BlockType other =
-							voxel::type(center->get_block(x + quad_w, y, z));
-
-					if (other != type)
-						break;
-
-					quad_w++;
-				}
-
-				// expand Y
-				bool can_expand = true;
-				while (y + quad_h < SY && can_expand) {
-					for (int k = 0; k < quad_w; k++) {
-						if (!mask[x + k][y + quad_h] ||
-							visited[x + k][y + quad_h]) {
-							can_expand = false;
-							break;
-						}
-
-						const voxel::BlockType other =
-								voxel::type(center->get_block(x + k, y + quad_h, z));
-
-						if (other != type) {
-							can_expand = false;
-							break;
-						}
-					}
-
-					if (can_expand)
-						quad_h++;
-				}
-
-				// mark visited
-				for (int dx = 0; dx < quad_w; dx++) {
-					for (int dy = 0; dy < quad_h; dy++) {
-						visited[x + dx][y + dy] = true;
-					}
-				}
-
-				// geometry (BACK face)
-				Vector3 v0(x + quad_w, y, z);
-				Vector3 v1(x, y, z);
-				Vector3 v2(x, y + quad_h, z);
-				Vector3 v3(x + quad_w, y + quad_h, z);
-
-				int tex_layer = _get_tex_layer(CubeFace::B, type);
-
-				_get_mesher(block).add_quad(
-						v0, v1, v2, v3,
-						Vector3(0, 0, -1),
-						tex_layer,
-						Vector2((float)quad_w, (float)quad_h),
-						false,
-						voxel::is_collidable(block)
-						);
+				_get_mesher(block).add_quad(v0, v1, v2, v3, normal,
+						_get_tex_layer(face, type), uv_scale, swap_uvs, voxel::is_collidable(block));
 			}
 		}
 	}
@@ -852,12 +298,12 @@ Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
 	opaque_mesher.clear();
 	transparent_mesher.clear();
 
-	_add_up_faces(neighbors);
-	_add_left_faces(neighbors);
-	_add_right_faces(neighbors);
-	_add_down_faces(neighbors);
-	_add_front_faces(neighbors);
-	_add_back_faces(neighbors);
+	_add_faces(neighbors, CubeFace::U);
+	_add_faces(neighbors, CubeFace::L);
+	_add_faces(neighbors, CubeFace::R);
+	_add_faces(neighbors, CubeFace::D);
+	_add_faces(neighbors, CubeFace::F);
+	_add_faces(neighbors, CubeFace::B);
 	_add_crossed_plant_faces(neighbors);
 
 	Array opaque_arrays = opaque_mesher.build_arrays();

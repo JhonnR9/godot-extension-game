@@ -50,12 +50,7 @@ class ChunkMeshBuilder {
 	VoxelMesher opaque_mesher;
 	VoxelMesher transparent_mesher;
 	VoxelMesher &_get_mesher(voxel::Block block);
-	void _add_right_faces(const ChunkNeighbors &neighbors);
-	void _add_up_faces(const ChunkNeighbors &neighbors);
-	void _add_left_faces(const ChunkNeighbors &neighbors);
-	void _add_down_faces(const ChunkNeighbors &neighbors);
-	void _add_front_faces(const ChunkNeighbors &neighbors);
-	void _add_back_faces(const ChunkNeighbors &neighbors);
+	void _add_faces(const ChunkNeighbors &neighbors, CubeFace face);
 	void _add_crossed_plant_faces(const ChunkNeighbors &neighbors);
 	int _get_tex_layer(const CubeFace &face, const voxel::BlockType &type);
 
