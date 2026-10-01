@@ -29,7 +29,8 @@ enum class BiomeId : uint16_t {
 	PLAINS = 0,
 	DESERT = 1,
 	OCEAN = 2,
-	RIVER = 3
+	RIVER = 3,
+	BEACH = 4
 };
 
 // Generation writes are ordered by ownership. A later layer can replace an

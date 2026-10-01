@@ -104,23 +104,42 @@ void TerrainSurfacePass::apply(ChunkGenerationContext &context) const {
 			column.surface_height = settings.terrain_base_height + column.height_offset +
 					Math::round(noise * settings.terrain_amplitude * column.height_scale);
 			const bool is_desert = column.biome_id == static_cast<uint16_t>(BiomeId::DESERT);
-			const bool is_macro_ocean = column.ocean_weight < -0.28f;
-			if (!is_desert && (is_macro_ocean || column.surface_height <= column.water_level - 4)) {
-				if (is_macro_ocean) {
-					column.surface_height = MIN(column.surface_height, column.water_level - 6);
-				}
+			float ocean_t = Math::clamp((-column.ocean_weight - 0.05f) / 0.60f, 0.0f, 1.0f);
+			ocean_t = ocean_t * ocean_t * (3.0f - 2.0f * ocean_t);
+			// Apply the same broad coastal slope to every biome. Desert coastlines
+			// stay dry, so their transition eases down to just above sea level.
+			const int32_t coast_target = is_desert ? column.water_level + 1 : column.water_level - 8;
+			column.surface_height = Math::round(Math::lerp(static_cast<float>(column.surface_height),
+					static_cast<float>(coast_target), ocean_t));
+			bool has_named_biome = false;
+			if (!is_desert && column.surface_height <= column.water_level - 4) {
 				column.biome_id = static_cast<uint16_t>(BiomeId::OCEAN);
 				column.surface_block = voxel::make_block(voxel::BlockType::SAND);
 				column.subsurface_block = voxel::make_block(voxel::BlockType::SAND);
 				column.subsurface_depth = 5;
 				column.trees_allowed = false;
-			} else if (!is_desert && Math::abs(column.river_weight) < 0.035f &&
+				has_named_biome = true;
+			} else if (!is_desert && column.surface_height <= column.water_level + 2) {
+				const float river_t = 1.0f - Math::clamp(Math::abs(column.river_weight) / 0.07f, 0.0f, 1.0f);
+				const float river_influence = river_t * river_t * (3.0f - 2.0f * river_t);
+				const int32_t river_bed_height = MIN(column.surface_height, column.water_level - 2);
+				column.surface_height = Math::round(Math::lerp(static_cast<float>(column.surface_height),
+						static_cast<float>(river_bed_height), river_influence));
+				if (river_influence > 0.5f && column.surface_height <= column.water_level - 2) {
+					column.biome_id = static_cast<uint16_t>(BiomeId::RIVER);
+					column.surface_block = voxel::make_block(voxel::BlockType::SAND);
+					column.subsurface_block = voxel::make_block(voxel::BlockType::SAND);
+					column.subsurface_depth = 2;
+					column.trees_allowed = false;
+					has_named_biome = true;
+				}
+			}
+			if (!is_desert && !has_named_biome && ocean_t > 0.05f &&
 					column.surface_height <= column.water_level + 2) {
-				column.surface_height = MIN(column.surface_height, column.water_level - 2);
-				column.biome_id = static_cast<uint16_t>(BiomeId::RIVER);
+				column.biome_id = static_cast<uint16_t>(BiomeId::BEACH);
 				column.surface_block = voxel::make_block(voxel::BlockType::SAND);
 				column.subsurface_block = voxel::make_block(voxel::BlockType::SAND);
-				column.subsurface_depth = 2;
+				column.subsurface_depth = 3;
 				column.trees_allowed = false;
 			}
 

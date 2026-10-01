@@ -4,6 +4,20 @@
 
 namespace godot {
 
+namespace {
+
+float ocean_influence(const float noise) {
+	const float t = Math::clamp((-noise - 0.05f) / 0.60f, 0.0f, 1.0f);
+	return t * t * (3.0f - 2.0f * t);
+}
+
+float river_influence(const float noise) {
+	const float t = 1.0f - Math::clamp(Math::abs(noise) / 0.07f, 0.0f, 1.0f);
+	return t * t * (3.0f - 2.0f * t);
+}
+
+} // namespace
+
 ChunkGenerationContext::ChunkGenerationContext(const Vector3i &p_chunk_position, Chunk &p_chunk, const TerrainSettings &p_settings) :
 		chunk_position(p_chunk_position), chunk(p_chunk), settings(p_settings),
 		columns(Chunk::SIZE_X * Chunk::SIZE_Z), block_write_layers(Chunk::VOLUME, 0) {
@@ -68,13 +82,19 @@ int32_t ChunkGenerationContext::surface_height_at(const int32_t p_world_x, const
 	const float height_scale = Math::lerp(2.4f, 0.32f, desert);
 	const float height_delta = terrain * settings.terrain_amplitude * height_scale + height_offset;
 	int32_t surface_height = settings.terrain_base_height + static_cast<int32_t>(Math::round(height_delta));
-	if (desert < 0.68f && settings.ocean_noise.is_valid() &&
-			settings.ocean_noise->get_noise_2d(p_world_x, p_world_z) < -0.28f) {
-		surface_height = MIN(surface_height, settings.water_level - 6);
-	} else if (desert < 0.68f && settings.river_noise.is_valid() &&
-			Math::abs(settings.river_noise->get_noise_2d(p_world_x, p_world_z)) < 0.035f &&
-			surface_height > settings.water_level - 4 && surface_height <= settings.water_level + 2) {
-		surface_height = MIN(surface_height, settings.water_level - 2);
+	if (settings.ocean_noise.is_valid()) {
+		const float influence = ocean_influence(settings.ocean_noise->get_noise_2d(p_world_x, p_world_z));
+		const int32_t coast_target = desert >= 0.68f ? settings.water_level + 1 : settings.water_level - 8;
+		surface_height = static_cast<int32_t>(Math::round(Math::lerp(static_cast<float>(surface_height),
+				static_cast<float>(coast_target), influence)));
+	}
+	if (desert < 0.68f) {
+		if (surface_height > settings.water_level - 4 && surface_height <= settings.water_level + 2 &&
+				settings.river_noise.is_valid()) {
+			const float influence = river_influence(settings.river_noise->get_noise_2d(p_world_x, p_world_z));
+			surface_height = static_cast<int32_t>(Math::round(Math::lerp(static_cast<float>(surface_height),
+					static_cast<float>(settings.water_level - 2), influence)));
+		}
 	}
 	return surface_height;
 }
@@ -103,16 +123,17 @@ bool ChunkGenerationContext::trees_allowed_at(const int32_t p_world_x, const int
 	if (local_x >= 0 && local_x < Chunk::SIZE_X && local_z >= 0 && local_z < Chunk::SIZE_Z) {
 		return column(local_x, local_z).trees_allowed;
 	}
-	if (desert_weight_at(p_world_x, p_world_z) >= 0.45f ||
-			surface_height_at(p_world_x, p_world_z) <= settings.water_level - 4) {
+	const float desert = desert_weight_at(p_world_x, p_world_z);
+	const int32_t surface_height = surface_height_at(p_world_x, p_world_z);
+	if (desert >= 0.45f || surface_height <= settings.water_level - 4) {
 		return false;
 	}
-	if (settings.ocean_noise.is_valid() && settings.ocean_noise->get_noise_2d(p_world_x, p_world_z) < -0.28f) {
+	if (desert < 0.68f && surface_height <= settings.water_level + 2 &&
+			settings.ocean_noise.is_valid() && ocean_influence(settings.ocean_noise->get_noise_2d(p_world_x, p_world_z)) > 0.05f) {
 		return false;
 	}
-	return !settings.river_noise.is_valid() ||
-			Math::abs(settings.river_noise->get_noise_2d(p_world_x, p_world_z)) >= 0.035f ||
-			surface_height_at(p_world_x, p_world_z) > settings.water_level + 2;
+	return !settings.river_noise.is_valid() || surface_height > settings.water_level - 2 ||
+			river_influence(settings.river_noise->get_noise_2d(p_world_x, p_world_z)) < 0.5f;
 }
 
 void ChunkGenerationPipeline::add_pass(std::shared_ptr<const ChunkGenerationPass> pass) {
