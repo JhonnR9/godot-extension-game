@@ -75,6 +75,7 @@ private:
 	Ref<FastNoiseLite> _cave_noise;
 	Ref<FastNoiseLite> _biome_noise;
 	Ref<FastNoiseLite> _dune_noise;
+	Ref<FastNoiseLite> _mountain_noise;
 
 	// Player position control
 	Vector3i _last_focos_position;

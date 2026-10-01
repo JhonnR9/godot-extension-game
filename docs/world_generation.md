@@ -4,17 +4,18 @@ Chunk generation now runs as an ordered list of immutable `ChunkGenerationPass` 
 
 The default order is:
 
-1. `BiomeSelectionPass` chooses per-column biome settings.
+1. `BiomeSelectionPass` blends per-column terrain, water and biome palettes across a broad transition band.
 2. `TerrainSurfacePass` selects the surface height and fills the terrain palette.
 3. `CaveCarvingPass` removes blocks from the generated terrain.
 4. `WaterFillPass` fills exposed columns up to their water level.
-5. `TreeGenerationPass` places deterministic trees and their leaves, skipping disallowed biomes and planting columns whose base is at or below that column's water level.
+5. `VegetationGenerationPass` places deterministic cacti in the desert and flowers or tall grass in the plains.
+6. `TreeGenerationPass` places deterministic trees and their leaves, skipping disallowed biomes and planting columns whose base is at or below that column's water level.
 
 Each pass receives a `ChunkGenerationContext` with the chunk coordinates, world seed, noise resources, writable chunk, and per-column `ColumnGenerationData`. Passes can be inserted before or after existing stages with `ChunkGenerationPipeline::add_pass()`.
 
 ## Desert biome
 
-`BiomeSelectionPass` currently selects desert columns when the biome noise reaches `0.28`. Deserts use sand for the surface and shallow subsurface, sandstone below, less height variation with a separate ridged dune signal, a lower water level, and no trees. The sand and sandstone textures are included in the block texture array.
+`BiomeSelectionPass` uses a smooth biome-noise weight, and the low biome-noise frequency creates larger regions. The transition belt blends terrain height and water level continuously, with a scrubby dirt palette between grassland and full desert. Deserts use sand at the surface, sandstone below, dune relief, fewer trees, and cacti. The plains use stronger broad relief and deterministic flowers and tall grass. Plant blocks use cutout textures and do not collide.
 
 ## Adding another biome
 

@@ -20,6 +20,7 @@ struct TerrainSettings {
 	Ref<FastNoiseLite> cave_noise;
 	Ref<FastNoiseLite> biome_noise;
 	Ref<FastNoiseLite> dune_noise;
+	Ref<FastNoiseLite> mountain_noise;
 };
 
 enum class BiomeId : uint16_t {
@@ -36,6 +37,7 @@ struct ColumnGenerationData {
 	int32_t water_level = 24;
 	uint16_t biome_id = 0;
 	int32_t subsurface_depth = 15;
+	float desert_weight = 0.0f;
 	bool trees_allowed = true;
 	voxel::Block surface_block = 0;
 	voxel::Block subsurface_block = 0;
@@ -54,6 +56,7 @@ struct ChunkGenerationContext {
 	const ColumnGenerationData &column(int x, int z) const;
 	int32_t surface_height_at(int32_t world_x, int32_t world_z) const;
 	int32_t water_level_at(int32_t world_x, int32_t world_z) const;
+	float desert_weight_at(int32_t world_x, int32_t world_z) const;
 	bool trees_allowed_at(int32_t world_x, int32_t world_z) const;
 	int32_t world_x(int local_x) const;
 	int32_t world_y(int local_y) const;

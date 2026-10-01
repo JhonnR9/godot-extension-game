@@ -45,6 +45,11 @@ bool ChunkMeshBuilder::_is_face_visible(const ChunkNeighbors &n, int x, int y, i
 					(voxel::is_transparent(neighbor) || voxel::is_cutout(neighbor)));
 }
 
+bool ChunkMeshBuilder::_is_crossed_plant(const voxel::Block block) {
+	const voxel::BlockType type = voxel::type(block);
+	return type == voxel::BlockType::FLOWER || type == voxel::BlockType::TALL_GRASS;
+}
+
 VoxelMesher &ChunkMeshBuilder::_get_mesher(const voxel::Block block) {
 	return voxel::is_transparent(block) ? transparent_mesher : opaque_mesher;
 }
@@ -70,7 +75,7 @@ void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
 		for (int y = 0; y < SY; y++) {
 			for (int z = 0; z < SZ; z++) {
 				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block))
+				if (voxel::is_air(block) || _is_crossed_plant(block))
 					continue;
 
 				if (_is_face_visible(neighbors, x + 1, y, z, block)) {
@@ -177,7 +182,7 @@ void ChunkMeshBuilder::_add_up_faces(const ChunkNeighbors &neighbors) {
 		for (int x = 0; x < SX; x++) {
 			for (int z = 0; z < SZ; z++) {
 				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block))
+				if (voxel::is_air(block) || _is_crossed_plant(block))
 					continue;
 
 				if (_is_face_visible(neighbors, x, y + 1, z, block)) {
@@ -286,7 +291,7 @@ void ChunkMeshBuilder::_add_left_faces(const ChunkNeighbors &neighbors) {
 		for (int y = 0; y < SY; y++) {
 			for (int z = 0; z < SZ; z++) {
 				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block))
+				if (voxel::is_air(block) || _is_crossed_plant(block))
 					continue;
 
 				if (_is_face_visible(neighbors, x - 1, y, z, block)) {
@@ -395,7 +400,7 @@ void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
 		for (int x = 0; x < SX; x++) {
 			for (int z = 0; z < SZ; z++) {
 				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block))
+				if (voxel::is_air(block) || _is_crossed_plant(block))
 					continue;
 
 				if (_is_face_visible(neighbors, x, y - 1, z, block)) {
@@ -504,7 +509,7 @@ void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
 		for (int x = 0; x < SX; x++) {
 			for (int y = 0; y < SY; y++) {
 				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block))
+				if (voxel::is_air(block) || _is_crossed_plant(block))
 					continue;
 
 				if (_is_face_visible(neighbors, x, y, z + 1, block)) {
@@ -613,7 +618,7 @@ void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
 		for (int x = 0; x < SX; x++) {
 			for (int y = 0; y < SY; y++) {
 				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block))
+				if (voxel::is_air(block) || _is_crossed_plant(block))
 					continue;
 
 				if (_is_face_visible(neighbors, x, y, z - 1, block)) {
@@ -707,8 +712,15 @@ int ChunkMeshBuilder::_get_tex_layer(const CubeFace &face, const voxel::BlockTyp
 	if (TextureKey key = { type, face }; texture_map.has(key)) {
 		return texture_map[key];
 	}
+	// Blocks without a dedicated texture (for example ores and deepslate)
+	// inherit stone, never atlas layer zero, which may belong to another block.
+	if (TextureKey stone_key = { voxel::BlockType::STONE, face }; texture_map.has(stone_key)) {
+		return texture_map[stone_key];
+	}
 
-	return 0;
+	return texture_map.has({ voxel::BlockType::STONE, CubeFace::F })
+			? texture_map[{ voxel::BlockType::STONE, CubeFace::F }]
+			: 0;
 }
 
 void ChunkMeshBuilder::_load_textures() {
@@ -760,6 +772,9 @@ void ChunkMeshBuilder::_initialize_texture_map() {
 }
 
 voxel::BlockType godot::ChunkMeshBuilder::map_string_to_type(const godot::String &name) {
+	if (name.begins_with("dirt")) {
+		return voxel::BlockType::DIRT;
+	}
 	if (name.begins_with("grass")) {
 		return voxel::BlockType::GRASS;
 	}
@@ -781,9 +796,46 @@ voxel::BlockType godot::ChunkMeshBuilder::map_string_to_type(const godot::String
 	if (name.begins_with("sand")) {
 		return voxel::BlockType::SAND;
 	}
+	if (name.begins_with("cactus")) {
+		return voxel::BlockType::CACTUS;
+	}
+	if (name.begins_with("flower")) {
+		return voxel::BlockType::FLOWER;
+	}
+	if (name.begins_with("tallgrass")) {
+		return voxel::BlockType::TALL_GRASS;
+	}
 
 	// Fallback
 	return voxel::BlockType::STONE;
+}
+
+void ChunkMeshBuilder::_add_crossed_plant_faces(const ChunkNeighbors &neighbors) {
+	const Chunk *center = neighbors.center.get();
+	for (int x = 0; x < Chunk::SIZE_X; ++x) {
+		for (int y = 0; y < Chunk::SIZE_Y; ++y) {
+			for (int z = 0; z < Chunk::SIZE_Z; ++z) {
+				const voxel::Block block = center->get_block(x, y, z);
+				if (!_is_crossed_plant(block)) continue;
+				const int layer = _get_tex_layer(CubeFace::F, voxel::type(block));
+				const Vector3 a(x + 0.12f, y, z + 0.12f);
+				const Vector3 b(x + 0.88f, y, z + 0.88f);
+				const Vector3 c(x + 0.88f, y + 1.0f, z + 0.88f);
+				const Vector3 d(x + 0.12f, y + 1.0f, z + 0.12f);
+				const Vector3 e(x + 0.12f, y, z + 0.88f);
+				const Vector3 f(x + 0.88f, y, z + 0.12f);
+				const Vector3 g(x + 0.88f, y + 1.0f, z + 0.12f);
+				const Vector3 h(x + 0.12f, y + 1.0f, z + 0.88f);
+				const Vector2 uv_scale(1.0f, 1.0f);
+				const Vector3 normal_a(0.707f, 0.0f, -0.707f);
+				const Vector3 normal_b(-0.707f, 0.0f, -0.707f);
+				opaque_mesher.add_quad(a, b, c, d, normal_a, layer, uv_scale, false, false);
+				opaque_mesher.add_quad(a, d, c, b, -normal_a, layer, uv_scale, true, false);
+				opaque_mesher.add_quad(e, f, g, h, normal_b, layer, uv_scale, false, false);
+				opaque_mesher.add_quad(e, h, g, f, -normal_b, layer, uv_scale, true, false);
+			}
+		}
+	}
 }
 
 ChunkMeshBuilder::ChunkMeshBuilder() {
@@ -801,6 +853,7 @@ Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
 	_add_down_faces(neighbors);
 	_add_front_faces(neighbors);
 	_add_back_faces(neighbors);
+	_add_crossed_plant_faces(neighbors);
 
 	Array opaque_arrays = opaque_mesher.build_arrays();
 	Array transparent_arrays = transparent_mesher.build_arrays();

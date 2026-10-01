@@ -41,20 +41,17 @@ int32_t ChunkGenerationContext::surface_height_at(const int32_t p_world_x, const
 	if (local_x >= 0 && local_x < Chunk::SIZE_X && local_z >= 0 && local_z < Chunk::SIZE_Z) {
 		return column(local_x, local_z).surface_height;
 	}
-	float height_scale = 1.0f;
-	int32_t height_offset = 0;
-	if (settings.biome_noise.is_valid() && settings.biome_noise->get_noise_2d(p_world_x, p_world_z) >= 0.28f) {
-		height_scale = 0.32f;
-		if (settings.dune_noise.is_valid()) {
-			const float ridge = 1.0f - Math::abs(settings.dune_noise->get_noise_2d(p_world_x, p_world_z));
-			height_offset = static_cast<int32_t>(Math::round(ridge * 4.0f - 1.5f));
-		}
-	}
-	const float noise = settings.terrain_noise.is_valid()
-			? settings.terrain_noise->get_noise_2d(p_world_x, p_world_z)
-			: 0.0f;
-	return settings.terrain_base_height + height_offset +
-			static_cast<int32_t>(Math::round(noise * settings.terrain_amplitude * height_scale));
+	const float desert = desert_weight_at(p_world_x, p_world_z);
+	const float terrain = settings.terrain_noise.is_valid() ? settings.terrain_noise->get_noise_2d(p_world_x, p_world_z) : 0.0f;
+	const float mountain = settings.mountain_noise.is_valid() ? settings.mountain_noise->get_noise_2d(p_world_x, p_world_z) : terrain;
+	const float ridge = 1.0f - Math::abs(mountain);
+	const float mountain_offset = Math::pow(ridge, 2.0f) * 19.0f - 5.0f;
+	const float dune = settings.dune_noise.is_valid() ? settings.dune_noise->get_noise_2d(p_world_x, p_world_z) : 0.0f;
+	const float dune_height = (1.0f - Math::abs(dune)) * 4.0f - 1.5f;
+	const float height_offset = Math::lerp(mountain_offset, dune_height, desert);
+	const float height_scale = Math::lerp(2.4f, 0.32f, desert);
+	const float height_delta = terrain * settings.terrain_amplitude * height_scale + height_offset;
+	return settings.terrain_base_height + static_cast<int32_t>(Math::round(height_delta));
 }
 
 int32_t ChunkGenerationContext::water_level_at(const int32_t p_world_x, const int32_t p_world_z) const {
@@ -63,10 +60,17 @@ int32_t ChunkGenerationContext::water_level_at(const int32_t p_world_x, const in
 	if (local_x >= 0 && local_x < Chunk::SIZE_X && local_z >= 0 && local_z < Chunk::SIZE_Z) {
 		return column(local_x, local_z).water_level;
 	}
-	if (settings.biome_noise.is_valid() && settings.biome_noise->get_noise_2d(p_world_x, p_world_z) >= 0.28f) {
-		return settings.terrain_base_height - 8;
+	return static_cast<int32_t>(Math::round(Math::lerp(static_cast<float>(settings.water_level),
+			static_cast<float>(settings.terrain_base_height - 8), desert_weight_at(p_world_x, p_world_z))));
+}
+
+float ChunkGenerationContext::desert_weight_at(const int32_t p_world_x, const int32_t p_world_z) const {
+	if (settings.biome_noise.is_null()) {
+		return 0.0f;
 	}
-	return settings.water_level;
+	const float sample = settings.biome_noise->get_noise_2d(p_world_x, p_world_z);
+	const float t = Math::clamp((sample - 0.05f) / 0.30f, 0.0f, 1.0f);
+	return t * t * (3.0f - 2.0f * t);
 }
 
 bool ChunkGenerationContext::trees_allowed_at(const int32_t p_world_x, const int32_t p_world_z) const {
@@ -75,7 +79,7 @@ bool ChunkGenerationContext::trees_allowed_at(const int32_t p_world_x, const int
 	if (local_x >= 0 && local_x < Chunk::SIZE_X && local_z >= 0 && local_z < Chunk::SIZE_Z) {
 		return column(local_x, local_z).trees_allowed;
 	}
-	return settings.biome_noise.is_null() || settings.biome_noise->get_noise_2d(p_world_x, p_world_z) < 0.28f;
+	return desert_weight_at(p_world_x, p_world_z) < 0.45f;
 }
 
 void ChunkGenerationPipeline::add_pass(std::shared_ptr<const ChunkGenerationPass> pass) {

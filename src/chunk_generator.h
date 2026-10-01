@@ -10,6 +10,14 @@ public:
 	void apply(ChunkGenerationContext &context) const override;
 };
 
+class VegetationGenerationPass final : public ChunkGenerationPass {
+	int64_t _seed;
+
+public:
+	explicit VegetationGenerationPass(int64_t p_seed) : _seed(p_seed) {}
+	void apply(ChunkGenerationContext &context) const override;
+};
+
 class TerrainSurfacePass final : public ChunkGenerationPass {
 public:
 	void apply(ChunkGenerationContext &context) const override;

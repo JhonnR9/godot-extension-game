@@ -42,8 +42,8 @@ void VoxelAPI::_ready() {
 void VoxelAPI::_setup_noises() {
 	_terrain_noise.instantiate();
 	_terrain_noise->set_noise_type(FastNoiseLite::TYPE_PERLIN);
-	_terrain_noise->set_frequency(0.035);
-	_terrain_noise->set_fractal_octaves(5);
+	_terrain_noise->set_frequency(0.025);
+	_terrain_noise->set_fractal_octaves(4);
 
 	_cave_noise.instantiate();
 	_cave_noise->set_noise_type(FastNoiseLite::TYPE_PERLIN);
@@ -51,13 +51,18 @@ void VoxelAPI::_setup_noises() {
 
 	_biome_noise.instantiate();
 	_biome_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
-	_biome_noise->set_frequency(0.0035);
+	_biome_noise->set_frequency(0.0010);
 	_biome_noise->set_fractal_octaves(2);
 
 	_dune_noise.instantiate();
 	_dune_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
-	_dune_noise->set_frequency(0.012);
+	_dune_noise->set_frequency(0.008);
 	_dune_noise->set_fractal_octaves(2);
+
+	_mountain_noise.instantiate();
+	_mountain_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
+	_mountain_noise->set_frequency(0.006);
+	_mountain_noise->set_fractal_octaves(3);
 }
 
 void VoxelAPI::_init_chunks() {
@@ -282,6 +287,7 @@ void VoxelAPI::create_new_world(const int32_t p_seed, const String &p_name) {
 	_cave_noise->set_seed(world_model.seed + 1);
 	_biome_noise->set_seed(world_model.seed + 2);
 	_dune_noise->set_seed(world_model.seed + 3);
+	_mountain_noise->set_seed(world_model.seed + 4);
 
 	_setup_generation_pipeline(p_seed);
 
@@ -316,6 +322,7 @@ void VoxelAPI::start_world(int64_t p_id) {
 	_cave_noise->set_seed(world_model.seed + 1);
 	_biome_noise->set_seed(world_model.seed + 2);
 	_dune_noise->set_seed(world_model.seed + 3);
+	_mountain_noise->set_seed(world_model.seed + 4);
 	_setup_generation_pipeline(world_model.seed);
 
 	_init_chunks();
@@ -518,6 +525,7 @@ void VoxelAPI::_setup_generation_pipeline(int64_t p_seed) {
 	pipeline->add_pass(std::make_shared<TerrainSurfacePass>());
 	pipeline->add_pass(std::make_shared<CaveCarvingPass>());
 	pipeline->add_pass(std::make_shared<WaterFillPass>());
+	pipeline->add_pass(std::make_shared<VegetationGenerationPass>(p_seed));
 	pipeline->add_pass(std::make_shared<TreeGenerationPass>(p_seed));
 	_generation_pipeline = std::move(pipeline);
 }
@@ -635,6 +643,7 @@ void VoxelAPI::_queue_async_generate_chunk(const Vector3i p_pos) const {
 	settings.cave_noise = _cave_noise;
 	settings.biome_noise = _biome_noise;
 	settings.dune_noise = _dune_noise;
+	settings.mountain_noise = _mountain_noise;
 
 	constexpr bool dirty	 = false;
 	const bool high_priority = _is_high_priority(p_pos, dirty);

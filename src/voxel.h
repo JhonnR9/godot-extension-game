@@ -13,7 +13,7 @@ constexpr Block BLOCK_FLAG_TRANSPARENT = Block{1u} << 11;
 constexpr Block BLOCK_FLAG_EMISSIVE    = Block{1u} << 12;
 constexpr Block BLOCK_FLAG_WATERLOG    = Block{1u} << 13;
 constexpr Block BLOCK_FLAG_CUTOUT      = Block{1u} << 14;
-constexpr int WATER_TEXTURE_LAYER = 20;
+constexpr int WATER_TEXTURE_LAYER = 23;
 
 constexpr uint16_t block_id(Block b) {
 	return b & BLOCK_ID_MASK;
@@ -42,7 +42,7 @@ constexpr bool is_cutout(Block b) {
 }
 
 constexpr bool is_collidable(Block b) {
-	if (is_air(b) || is_transparent(b)) {
+	if (is_air(b) || is_transparent(b) || type(b) == BlockType::FLOWER || type(b) == BlockType::TALL_GRASS) {
 		return false;
 	}
 	const Block behavior_flags = b & (BLOCK_FLAG_SOLID | BLOCK_FLAG_TRANSPARENT);
@@ -50,7 +50,7 @@ constexpr bool is_collidable(Block b) {
 }
 
 constexpr Block make_block(BlockType type, Block flags = 0) {
-	if (type == BlockType::LEAVES) {
+	if (type == BlockType::LEAVES || type == BlockType::FLOWER || type == BlockType::TALL_GRASS) {
 		flags |= BLOCK_FLAG_CUTOUT;
 	}
 	if (type != BlockType::AIR && !has_flag(flags, BLOCK_FLAG_TRANSPARENT)) {

@@ -56,6 +56,7 @@ class ChunkMeshBuilder {
 	void _add_down_faces(const ChunkNeighbors &neighbors);
 	void _add_front_faces(const ChunkNeighbors &neighbors);
 	void _add_back_faces(const ChunkNeighbors &neighbors);
+	void _add_crossed_plant_faces(const ChunkNeighbors &neighbors);
 	int _get_tex_layer(const CubeFace &face, const voxel::BlockType &type);
 
 	Ref<Texture2DArray> block_texture_array;
@@ -66,6 +67,7 @@ class ChunkMeshBuilder {
 	HashMap<TextureKey, int, TextureKeyHasher> texture_map;
 	static voxel::Block _get_block(const ChunkNeighbors &neighbors, int x, int y, int z);
 	static bool _is_face_visible(const ChunkNeighbors &neighbors, int x, int y, int z, voxel::Block current_block);
+	static bool _is_crossed_plant(voxel::Block block);
 
 public:
 	ChunkMeshBuilder();

@@ -38,7 +38,10 @@ enum class BlockType : uint16_t {
 	LEAVES,
 	WATER,
 	SAND,
-	SANDSTONE
+	SANDSTONE,
+	CACTUS,
+	FLOWER,
+	TALL_GRASS
 };
 }
 
