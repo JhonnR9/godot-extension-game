@@ -2,6 +2,7 @@
 #define BLOCK_H
 
 #include "voxel_types.h"
+#include "../project/generated/block_registry.generated.h"
 
 namespace voxel {
 
@@ -14,14 +15,14 @@ constexpr Block BLOCK_FLAG_EMISSIVE    = Block{1u} << 12;
 constexpr Block BLOCK_FLAG_WATERLOG    = Block{1u} << 13;
 constexpr Block BLOCK_FLAG_CUTOUT      = Block{1u} << 14;
 constexpr Block BLOCK_FLAG_OCEAN       = Block{1u} << 15;
-constexpr int WATER_TEXTURE_LAYER = 23;
+constexpr Block BLOCK_FLAG_CROSSED     = Block{1u} << 16;
 
 constexpr uint16_t block_id(Block b) {
 	return b & BLOCK_ID_MASK;
 }
 
-constexpr BlockType type(Block b) {
-	return static_cast<BlockType>(block_id(b));
+constexpr uint16_t type(Block b) {
+	return block_id(b);
 }
 
 constexpr bool has_flag(Block b, Block flag) {
@@ -33,31 +34,23 @@ constexpr bool is_air(Block b) {
 }
 
 constexpr bool is_transparent(Block b) {
-	// Cutout blocks (such as leaves) stay in the opaque pass and use alpha scissor.
-	// Keep older saved/manual water blocks working even if they lack the flag.
-	return has_flag(b, BLOCK_FLAG_TRANSPARENT) || type(b) == BlockType::WATER;
+	return has_flag(b, BLOCK_FLAG_TRANSPARENT) ||
+			has_flag(default_block_flags(block_id(b)), BLOCK_FLAG_TRANSPARENT);
 }
 
 constexpr bool is_cutout(Block b) {
-	return has_flag(b, BLOCK_FLAG_CUTOUT);
+	return has_flag(b, BLOCK_FLAG_CUTOUT) ||
+			has_flag(default_block_flags(block_id(b)), BLOCK_FLAG_CUTOUT);
 }
 
 constexpr bool is_collidable(Block b) {
-	if (is_air(b) || is_transparent(b) || type(b) == BlockType::FLOWER || type(b) == BlockType::TALL_GRASS) {
-		return false;
-	}
-	const Block behavior_flags = b & (BLOCK_FLAG_SOLID | BLOCK_FLAG_TRANSPARENT);
-	return behavior_flags == 0 || has_flag(b, BLOCK_FLAG_SOLID);
+	return !is_air(b) && !is_transparent(b) &&
+			has_flag(default_block_flags(block_id(b)), BLOCK_FLAG_SOLID);
 }
 
-constexpr Block make_block(BlockType type, Block flags = 0) {
-	if (type == BlockType::LEAVES || type == BlockType::FLOWER || type == BlockType::TALL_GRASS) {
-		flags |= BLOCK_FLAG_CUTOUT;
-	}
-	if (type != BlockType::AIR && !has_flag(flags, BLOCK_FLAG_TRANSPARENT)) {
-		flags |= BLOCK_FLAG_SOLID;
-	}
-	return static_cast<Block>(type) | flags;
+constexpr Block make_block(uint16_t id, Block flags = 0) {
+	if (id == block_ids::air || id > BLOCK_ID_MASK) return 0;
+	return static_cast<Block>(id) | default_block_flags(id) | flags;
 }
 
 } // namespace voxel

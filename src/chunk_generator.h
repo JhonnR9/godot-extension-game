@@ -28,6 +28,11 @@ public:
 	void apply(ChunkGenerationContext &context) const override;
 };
 
+class OreGenerationPass final : public ChunkGenerationPass {
+public:
+	void apply(ChunkGenerationContext &context) const override;
+};
+
 class WaterFillPass final : public ChunkGenerationPass {
 public:
 	void apply(ChunkGenerationContext &context) const override;

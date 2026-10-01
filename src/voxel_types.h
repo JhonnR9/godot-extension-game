@@ -24,25 +24,4 @@ struct WorldModel {
 };
 } //namespace godot
 
-namespace voxel {
-enum class BlockType : uint16_t {
-	AIR = 0,
-	GRASS,
-	DIRT,
-	STONE,
-	WOOD,
-	DEEPSLATE,
-	IRON_ORE,
-	DIAMOND_ORE,
-	LOG,
-	LEAVES,
-	WATER,
-	SAND,
-	SANDSTONE,
-	CACTUS,
-	FLOWER,
-	TALL_GRASS
-};
-}
-
 #endif //VOXEL_TYPES_H

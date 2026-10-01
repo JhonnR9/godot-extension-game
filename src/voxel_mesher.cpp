@@ -15,6 +15,7 @@ void VoxelMesher::clear() {
 	_indices.clear();
 	_collision_faces.clear();
 	_tex_layer.clear();
+	_colors.clear();
 }
 
 
@@ -27,7 +28,8 @@ void VoxelMesher::add_quad(
 		const int tex_layer,
 		const Vector2 &tile_scale,
 		bool swap_uvs,
-		bool collidable
+		bool collidable,
+		const Color &tint
 		) {
 	const int start = static_cast<int>(_vertices.size());
 
@@ -40,6 +42,7 @@ void VoxelMesher::add_quad(
 	for (int i = 0; i < 4; i++) {
 		_normals.append(normal);
 		_tex_layer.append(static_cast<float>(tex_layer));
+		_colors.append(tint);
 	}
 
 	if (swap_uvs) {
@@ -82,6 +85,7 @@ Array VoxelMesher::build_arrays() const {
 	arrays[Mesh::ARRAY_NORMAL]  = _normals;
 	arrays[Mesh::ARRAY_TEX_UV]  = _uvs;
 	arrays[Mesh::ARRAY_CUSTOM0] = _tex_layer;
+	arrays[Mesh::ARRAY_COLOR] = _colors;
 	arrays[Mesh::ARRAY_INDEX]   = _indices;
 
 	return arrays;

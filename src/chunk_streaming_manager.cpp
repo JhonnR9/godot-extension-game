@@ -21,6 +21,10 @@ void ChunkStreamingManager::shift_chunks(const Vector3i &p_pos_center) {
           for (int y = -radius_y; y <= radius_y; y++) {
              Vector3i chunk_pos = p_pos_center + Vector3i(x, y, z);
 
+             if (chunk_pos.y < WORLD_MIN_CHUNK_Y || chunk_pos.y > WORLD_MAX_CHUNK_Y) {
+                continue;
+             }
+
              if (voxel::is_position_in_cylinder(chunk_pos, p_pos_center, radius_xz, radius_y)) {
                 new_active_chunks.insert(chunk_pos);
              }
@@ -61,6 +65,10 @@ void ChunkStreamingManager::rebuild_all_chunks(const Vector3i &p_pos_center) {
        for (int z = -radius_xz; z <= radius_xz; z++) {
           for (int y = -radius_y; y <= radius_y; y++) {
              Vector3i chunk_pos = p_pos_center + Vector3i(x, y, z);
+
+             if (chunk_pos.y < WORLD_MIN_CHUNK_Y || chunk_pos.y > WORLD_MAX_CHUNK_Y) {
+                continue;
+             }
 
              if (voxel::is_position_in_cylinder(chunk_pos, p_pos_center, radius_xz, radius_y)) {
                 _active_chunks.insert(chunk_pos);

@@ -20,7 +20,7 @@ void fragment() {
 	vec3 uvw = vec3(block_uv, v_layer);
     vec4 tex = texture(albedo_array, uvw);
 
-    ALBEDO = tex.rgb;
+    ALBEDO = tex.rgb * COLOR.rgb;
     // Alpha scissor keeps leaf pixels crisp while the rest of the chunk stays opaque.
     ALPHA = tex.a;
     ALPHA_SCISSOR_THRESHOLD = 0.5;

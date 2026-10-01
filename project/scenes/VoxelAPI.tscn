@@ -10,9 +10,11 @@
 [ext_resource type="FontFile" uid="uid://dyj0fv3g4ev8t" path="res://fonts/rainyhearts.ttf" id="7_qmtj6"]
 [ext_resource type="Script" uid="uid://bujnam10c35qv" path="res://scenes/directional_light_3d.gd" id="9_715aw"]
 [ext_resource type="PackedScene" uid="uid://b508fktn2kxq2" path="res://scenes/settings_panel.tscn" id="10_settings"]
+[ext_resource type="Script" uid="uid://dd3dsrhcdjb1l" path="res://scripts/loading_screen.gd" id="11_loading"]
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_xo6ui"]
-radius = 0.1
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_d4nwg"]
+radius = 0.3
+height = 1.6
 
 [sub_resource type="LabelSettings" id="LabelSettings_71j4m"]
 font = ExtResource("7_qmtj6")
@@ -27,6 +29,12 @@ sky_material = SubResource("ProceduralSkyMaterial_suxjr")
 [sub_resource type="Environment" id="Environment_a202f"]
 background_mode = 2
 sky = SubResource("Sky_suxjr")
+fog_enabled = true
+fog_mode = 1
+fog_light_color = Color(0.47, 0.54, 0.65, 1)
+fog_density = 1.0
+fog_depth_begin = 28.8
+fog_depth_end = 65.28
 adjustment_brightness = 0.9
 adjustment_contrast = 1.065
 adjustment_saturation = 0.88
@@ -47,11 +55,14 @@ collision_shape = NodePath("CollisionShape3D")
 world = NodePath("../VoxelAPI")
 
 [node name="Head" type="Marker3D" parent="Player" unique_id=585627958]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 
 [node name="Camera3D" type="Camera3D" parent="Player/Head" unique_id=308776030]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1576425526]
-shape = SubResource("CapsuleShape3D_xo6ui")
+shape = SubResource("CapsuleShape3D_d4nwg")
+debug_color = Color(0.9983817, 0, 0.15484494, 0.41960785)
+debug_fill = false
 
 [node name="VoxelAPI" type="VoxelAPI" parent="." unique_id=764651677]
 script = ExtResource("2_715aw")
@@ -153,6 +164,9 @@ text = "Back to MainMenu"
 
 [node name="SettingsPanel" parent="CanvasLayer" unique_id=1437757337 instance=ExtResource("10_settings")]
 visible = false
+
+[node name="LoadingScreen" type="CanvasLayer" parent="." unique_id=1882017364]
+script = ExtResource("11_loading")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=7603342]
 environment = SubResource("Environment_a202f")

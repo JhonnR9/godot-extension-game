@@ -27,15 +27,15 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -260.0
-offset_top = -240.0
-offset_right = 260.0
-offset_bottom = 240.0
+offset_left = -300.0
+offset_top = -280.0
+offset_right = 300.0
+offset_bottom = 280.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Panel" type="PanelContainer" parent="Center" unique_id=1081915164]
-custom_minimum_size = Vector2(520, 480)
+custom_minimum_size = Vector2(600, 560)
 layout_mode = 2
 
 [node name="Margin" type="MarginContainer" parent="Center/Panel" unique_id=1579961521]
@@ -47,12 +47,38 @@ theme_override_constants/margin_bottom = 24
 
 [node name="Options" type="VBoxContainer" parent="Center/Panel/Margin" unique_id=302505444]
 layout_mode = 2
-theme_override_constants/separation = 18
+theme_override_constants/separation = 10
 
 [node name="Title" type="Label" parent="Center/Panel/Margin/Options" unique_id=864662593]
 layout_mode = 2
 text = "Settings"
 horizontal_alignment = 1
+
+[node name="WindowModeRow" type="HBoxContainer" parent="Center/Panel/Margin/Options" unique_id=907270100]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="Center/Panel/Margin/Options/WindowModeRow" unique_id=907270101]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Window mode"
+
+[node name="WindowMode" type="OptionButton" parent="Center/Panel/Margin/Options/WindowModeRow" unique_id=907270102]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ResolutionRow" type="HBoxContainer" parent="Center/Panel/Margin/Options" unique_id=907270103]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="Center/Panel/Margin/Options/ResolutionRow" unique_id=907270104]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Window resolution"
+
+[node name="Resolution" type="OptionButton" parent="Center/Panel/Margin/Options/ResolutionRow" unique_id=907270105]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="RenderDistanceRow" type="HBoxContainer" parent="Center/Panel/Margin/Options" unique_id=1981992443]
 layout_mode = 2
@@ -66,13 +92,13 @@ text = "Render distance"
 [node name="RenderDistance" type="HSlider" parent="Center/Panel/Margin/Options/RenderDistanceRow" unique_id=1812837821]
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 2.0
-max_value = 12.0
-step = 1.0
+min_value = 4.0
+max_value = 30.0
+value = 4.0
 tick_count = 11
 ticks_on_borders = true
 
-[node name="RenderDistanceValue" type="Label" parent="Center/Panel/Margin/Options/RenderDistanceRow"]
+[node name="RenderDistanceValue" type="Label" parent="Center/Panel/Margin/Options/RenderDistanceRow" unique_id=1559594884]
 custom_minimum_size = Vector2(65, 0)
 layout_mode = 2
 text = "4 chunks"
@@ -90,52 +116,52 @@ text = "Vertical render distance"
 [node name="VerticalDistance" type="HSlider" parent="Center/Panel/Margin/Options/VerticalDistanceRow" unique_id=96024702]
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 1.0
-max_value = 6.0
-step = 1.0
+min_value = 2.0
+max_value = 15.0
+value = 2.0
 tick_count = 6
 ticks_on_borders = true
 
-[node name="VerticalDistanceValue" type="Label" parent="Center/Panel/Margin/Options/VerticalDistanceRow"]
+[node name="VerticalDistanceValue" type="Label" parent="Center/Panel/Margin/Options/VerticalDistanceRow" unique_id=427619393]
 custom_minimum_size = Vector2(65, 0)
 layout_mode = 2
 text = "3 chunks"
 horizontal_alignment = 2
 
-[node name="DistanceFogRow" type="HBoxContainer" parent="Center/Panel/Margin/Options"]
+[node name="DistanceFogRow" type="HBoxContainer" parent="Center/Panel/Margin/Options" unique_id=1705130963]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="Center/Panel/Margin/Options/DistanceFogRow"]
+[node name="Label" type="Label" parent="Center/Panel/Margin/Options/DistanceFogRow" unique_id=1787287509]
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Distance fog"
 
-[node name="DistanceFog" type="CheckButton" parent="Center/Panel/Margin/Options/DistanceFogRow"]
+[node name="DistanceFog" type="CheckButton" parent="Center/Panel/Margin/Options/DistanceFogRow" unique_id=1576594550]
 layout_mode = 2
 button_pressed = true
 text = "Enabled"
 
-[node name="FogStartRow" type="HBoxContainer" parent="Center/Panel/Margin/Options"]
+[node name="FogStartRow" type="HBoxContainer" parent="Center/Panel/Margin/Options" unique_id=1765319712]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="Center/Panel/Margin/Options/FogStartRow"]
+[node name="Label" type="Label" parent="Center/Panel/Margin/Options/FogStartRow" unique_id=1296562124]
 custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Fog starts at"
 
-[node name="FogStart" type="HSlider" parent="Center/Panel/Margin/Options/FogStartRow"]
+[node name="FogStart" type="HSlider" parent="Center/Panel/Margin/Options/FogStartRow" unique_id=1504153048]
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 45.0
-max_value = 75.0
+max_value = 90.0
 step = 5.0
 value = 65.0
 tick_count = 7
 ticks_on_borders = true
 
-[node name="FogStartValue" type="Label" parent="Center/Panel/Margin/Options/FogStartRow"]
+[node name="FogStartValue" type="Label" parent="Center/Panel/Margin/Options/FogStartRow" unique_id=1381845791]
 custom_minimum_size = Vector2(65, 0)
 layout_mode = 2
 text = "65%"
@@ -153,6 +179,76 @@ text = "VSync"
 [node name="VSync" type="OptionButton" parent="Center/Panel/Margin/Options/VSyncRow" unique_id=327050059]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="AudioTitle" type="Label" parent="Center/Panel/Margin/Options" unique_id=1536224495]
+layout_mode = 2
+text = "Audio"
+
+[node name="MasterVolumeRow" type="HBoxContainer" parent="Center/Panel/Margin/Options" unique_id=1325077104]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="Center/Panel/Margin/Options/MasterVolumeRow" unique_id=1325077105]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Master volume"
+
+[node name="MasterVolume" type="HSlider" parent="Center/Panel/Margin/Options/MasterVolumeRow" unique_id=1325077106]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 100.0
+value = 100.0
+
+[node name="Value" type="Label" parent="Center/Panel/Margin/Options/MasterVolumeRow" unique_id=1325077107]
+custom_minimum_size = Vector2(65, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
+
+[node name="MusicVolumeRow" type="HBoxContainer" parent="Center/Panel/Margin/Options" unique_id=1325077108]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="Center/Panel/Margin/Options/MusicVolumeRow" unique_id=1325077109]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Music"
+
+[node name="MusicVolume" type="HSlider" parent="Center/Panel/Margin/Options/MusicVolumeRow" unique_id=1325077110]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 100.0
+value = 100.0
+
+[node name="Value" type="Label" parent="Center/Panel/Margin/Options/MusicVolumeRow" unique_id=1325077111]
+custom_minimum_size = Vector2(65, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
+
+[node name="SfxVolumeRow" type="HBoxContainer" parent="Center/Panel/Margin/Options" unique_id=1325077112]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="Center/Panel/Margin/Options/SfxVolumeRow" unique_id=1325077113]
+custom_minimum_size = Vector2(165, 0)
+layout_mode = 2
+text = "Effects"
+
+[node name="SfxVolume" type="HSlider" parent="Center/Panel/Margin/Options/SfxVolumeRow" unique_id=1325077114]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 100.0
+value = 100.0
+
+[node name="Value" type="Label" parent="Center/Panel/Margin/Options/SfxVolumeRow" unique_id=1325077115]
+custom_minimum_size = Vector2(65, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
 
 [node name="Buttons" type="HBoxContainer" parent="Center/Panel/Margin/Options" unique_id=1243189552]
 layout_mode = 2

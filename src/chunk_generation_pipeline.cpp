@@ -35,10 +35,10 @@ ChunkGenerationContext::ChunkGenerationContext(const Vector3i &p_chunk_position,
 		columns(Chunk::SIZE_X * Chunk::SIZE_Z), block_write_layers(Chunk::VOLUME, 0) {
 	for (ColumnGenerationData &data : columns) {
 		data.water_level = settings.water_level;
-		data.surface_block = voxel::make_block(voxel::BlockType::GRASS);
-		data.subsurface_block = voxel::make_block(voxel::BlockType::DIRT);
-		data.stone_block = voxel::make_block(voxel::BlockType::STONE);
-		data.deep_stone_block = voxel::make_block(voxel::BlockType::DEEPSLATE);
+		data.surface_block = voxel::make_block(voxel::block_ids::grass);
+		data.subsurface_block = voxel::make_block(voxel::block_ids::dirt);
+		data.stone_block = voxel::make_block(voxel::block_ids::stone);
+		data.deep_stone_block = voxel::make_block(voxel::block_ids::deepslate);
 	}
 }
 

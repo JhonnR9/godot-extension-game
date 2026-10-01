@@ -132,19 +132,19 @@ void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
 		}
 		const voxel::Block existing = context.chunk.get_block(lx, ly, lz);
 		if (voxel::is_air(existing) ||
-				(replace_leaves && voxel::type(existing) == voxel::BlockType::LEAVES) ||
-				(replace_leaves && (voxel::type(existing) == voxel::BlockType::FLOWER ||
-						voxel::type(existing) == voxel::BlockType::TALL_GRASS)) ||
+				(replace_leaves && voxel::type(existing) == voxel::block_ids::leaves) ||
+				(replace_leaves && (voxel::type(existing) == voxel::block_ids::flower ||
+						voxel::type(existing) == voxel::block_ids::tall_grass)) ||
 				(replace_ground && voxel::is_collidable(existing))) {
-			const GenerationLayer layer = voxel::type(block) == voxel::BlockType::LOG
+			const GenerationLayer layer = voxel::type(block) == voxel::block_ids::log
 					? GenerationLayer::TREE_TRUNK
 					: GenerationLayer::TREE_FOLIAGE;
 			context.write_block(lx, ly, lz, block, layer);
 		}
 	};
 
-	const voxel::Block log_block = voxel::make_block(voxel::BlockType::LOG);
-	const voxel::Block leaves_block = voxel::make_block(voxel::BlockType::LEAVES, voxel::BLOCK_FLAG_CUTOUT);
+	const voxel::Block log_block = voxel::make_block(voxel::block_ids::log);
+	const voxel::Block leaves_block = voxel::make_block(voxel::block_ids::leaves, voxel::BLOCK_FLAG_CUTOUT);
 
 	for (int dcx = -1; dcx <= 1; ++dcx) {
 		for (int dcz = -1; dcz <= 1; ++dcz) {

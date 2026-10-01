@@ -13,11 +13,14 @@ namespace godot {
 struct TerrainSettings {
 	int terrain_base_height = 24;
 	float terrain_amplitude = 9.0f;
-	float cave_threshold = 0.1f;
+	float cave_threshold = 0.72f;
 	int water_level = 24;
 	int64_t world_seed = 0;
 	Ref<FastNoiseLite> terrain_noise;
 	Ref<FastNoiseLite> cave_noise;
+	Ref<FastNoiseLite> cave_tunnel_noise;
+	Ref<FastNoiseLite> cave_cross_tunnel_noise;
+	Ref<FastNoiseLite> ore_noise;
 	Ref<FastNoiseLite> biome_noise;
 	Ref<FastNoiseLite> dune_noise;
 	Ref<FastNoiseLite> mountain_noise;
@@ -38,10 +41,11 @@ enum class BiomeId : uint16_t {
 enum class GenerationLayer : uint8_t {
 	TERRAIN = 1,
 	CARVING = 2,
-	WATER = 3,
-	VEGETATION = 4,
-	TREE_FOLIAGE = 5,
-	TREE_TRUNK = 6
+	ORE = 3,
+	WATER = 4,
+	VEGETATION = 5,
+	TREE_FOLIAGE = 6,
+	TREE_TRUNK = 7
 };
 
 // Mutable per-column input/output for generation passes. A biome-selection pass

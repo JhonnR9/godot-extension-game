@@ -7,8 +7,11 @@
 #include "chunk_repository.h"
 #include "chunk_streaming_manager.h"
 #include "crosshair.h"
+#include "grid_inventory.h"
+#include "inventory_manager.h"
 #include "godot_cpp/classes/engine.hpp"
 #include "player.h"
+#include "item_view.h"
 #include "save_service.h"
 #include "voxel_api.h"
 
@@ -20,6 +23,7 @@
 using namespace godot;
 
 static SaveService *save_service_singleton;
+static InventoryManager *inventory_manager_singleton;
 
 void initialize_gdextension_types(ModuleInitializationLevel p_level)
 {
@@ -42,6 +46,11 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	GDREGISTER_CLASS(ChunkModelGenerator);
 	GDREGISTER_CLASS(Crosshair);
 	GDREGISTER_CLASS(ChunkRegionAsyncLoader);
+	GDREGISTER_CLASS(ItemView);
+	GDREGISTER_CLASS(GridInventory);
+	GDREGISTER_CLASS(InventoryManager);
+	inventory_manager_singleton = memnew(InventoryManager);
+	Engine::get_singleton()->register_singleton("InventoryManager", InventoryManager::get_singleton());
 
 }
 
@@ -52,6 +61,8 @@ void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {
 
 	Engine::get_singleton()->unregister_singleton("SaveService");
 	memdelete(save_service_singleton);
+	Engine::get_singleton()->unregister_singleton("InventoryManager");
+	memdelete(inventory_manager_singleton);
 }
 
 extern "C"

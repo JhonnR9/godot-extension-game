@@ -84,6 +84,7 @@ void ChunkNode::set_collision_faces( const PackedVector3Array &collision_faces) 
 
     if (_collision_shape->get_shape() != _shape) {
         _collision_shape->set_shape(_shape);
+        _collision_shape->set_debug_color(Color(235, 0, 38));
     }
 }
 

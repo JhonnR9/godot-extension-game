@@ -30,7 +30,7 @@ struct ChunkNeighbors {
 };
 
 struct TextureKey {
-	voxel::BlockType type;
+	uint16_t type;
 	CubeFace face;
 
 	bool operator==(const TextureKey &p_other) const {
@@ -40,7 +40,7 @@ struct TextureKey {
 
 struct TextureKeyHasher {
 	static uint32_t hash(const TextureKey &p_key) {
-		uint32_t h = hash_murmur3_buffer(&p_key.type, sizeof(voxel::BlockType));
+		uint32_t h = hash_murmur3_buffer(&p_key.type, sizeof(uint16_t));
 		h          = hash_murmur3_buffer(&p_key.face, sizeof(CubeFace), h);
 		return h;
 	}
@@ -52,14 +52,15 @@ class ChunkMeshBuilder {
 	VoxelMesher &_get_mesher(voxel::Block block);
 	void _add_faces(const ChunkNeighbors &neighbors, CubeFace face);
 	void _add_crossed_plant_faces(const ChunkNeighbors &neighbors);
-	int _get_tex_layer(const CubeFace &face, const voxel::BlockType &type);
+	int _get_tex_layer(const CubeFace &face, uint16_t type);
+	Color _get_block_tint(uint16_t type) const;
 
 	Ref<Texture2DArray> block_texture_array;
 	void _load_textures();
 	void _initialize_texture_map();
-	static voxel::BlockType map_string_to_type(const String &name);
 
 	HashMap<TextureKey, int, TextureKeyHasher> texture_map;
+	HashMap<uint16_t, Color> block_tints;
 	static voxel::Block _get_block(const ChunkNeighbors &neighbors, int x, int y, int z);
 	static bool _is_face_visible(const ChunkNeighbors &neighbors, int x, int y, int z, voxel::Block current_block);
 	static bool _is_crossed_plant(voxel::Block block);

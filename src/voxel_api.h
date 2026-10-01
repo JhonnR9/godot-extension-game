@@ -38,6 +38,10 @@ public:
 	void set_focus_position(Vector3 p_pos);
 	void create_new_world(int32_t p_seed, const String &p_name);
 	void start_world(int64_t p_id);
+	bool is_initial_loading() const { return _is_initializing; }
+	int get_initial_loading_total_chunks() const { return _initial_loading_chunks.size(); }
+	int get_initial_loading_ready_chunks() const;
+	float get_initial_loading_progress() const;
 	void set_render_settings(const Dictionary &p_settings);
 	Dictionary get_render_settings() const;
 	static Dictionary get_default_render_settings();
@@ -77,6 +81,9 @@ private:
 
 	Ref<FastNoiseLite> _terrain_noise;
 	Ref<FastNoiseLite> _cave_noise;
+	Ref<FastNoiseLite> _cave_tunnel_noise;
+	Ref<FastNoiseLite> _cave_cross_tunnel_noise;
+	Ref<FastNoiseLite> _ore_noise;
 	Ref<FastNoiseLite> _biome_noise;
 	Ref<FastNoiseLite> _dune_noise;
 	Ref<FastNoiseLite> _mountain_noise;
@@ -117,6 +124,7 @@ private:
 	HashMap<Vector3i, ChunkNode *> _rendered_chunks;
 	HashMap<Vector3i, voxel::Region> _region_cache;
 	HashSet<Vector3i> _pending_region_loads;
+	HashSet<Vector3i> _initial_loading_chunks;
 	Vector3i _previous_player_chunk_pos;
 
 	void _queue_region_load(const Vector3i &region_pos);
@@ -131,6 +139,7 @@ private:
 	static void _apply_vsync_setting(const Dictionary &p_settings);
 
 	bool _is_initializing{false};
+	void _update_initial_loading_status();
 };
 } // namespace godot
 

@@ -81,6 +81,11 @@ private:
 	}
 };
 
+// 32 vertical chunks centered around world chunk Y = 0.
+constexpr int WORLD_MIN_CHUNK_Y = -16;
+constexpr int WORLD_MAX_CHUNK_Y = 15;
+constexpr int WORLD_BEDROCK_Y = WORLD_MIN_CHUNK_Y * Chunk::SIZE_Y;
+
 } // namespace godot
 
 #endif

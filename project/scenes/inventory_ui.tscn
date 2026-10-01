@@ -1,0 +1,75 @@
+[gd_scene format=3 uid="uid://cy8vhcta1a1ec"]
+
+[ext_resource type="Script" uid="uid://cj70hciq8ecqy" path="res://scripts/inventory_ui.gd" id="1_inventory_ui"]
+
+[node name="InventoryUI" type="Control" unique_id=137748071]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+script = ExtResource("1_inventory_ui")
+
+[node name="CreativePanel" type="PanelContainer" parent="." unique_id=924296323]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -250.0
+offset_top = -340.0
+offset_right = 250.0
+offset_bottom = -94.0
+grow_horizontal = 2
+
+[node name="Margin" type="MarginContainer" parent="CreativePanel" unique_id=1956087292]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="Content" type="VBoxContainer" parent="CreativePanel/Margin" unique_id=701974649]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="CreativePanel/Margin/Content" unique_id=2134923103]
+layout_mode = 2
+text = "Creative Inventory"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="CreativePanel/Margin/Content" unique_id=1989051617]
+layout_mode = 2
+text = "Drag blocks to the hotbar"
+horizontal_alignment = 1
+
+[node name="CreativeGrid" type="GridInventory" parent="CreativePanel/Margin/Content" unique_id=2043662853]
+layout_mode = 2
+
+[node name="HotbarPanel" type="PanelContainer" parent="." unique_id=1029529787]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -278.0
+offset_top = -82.0
+offset_right = 278.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="Margin" type="MarginContainer" parent="HotbarPanel" unique_id=801209504]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 7
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 7
+
+[node name="HotbarGrid" type="GridInventory" parent="HotbarPanel/Margin" unique_id=1413637113]
+layout_mode = 2

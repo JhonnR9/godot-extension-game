@@ -19,7 +19,6 @@ const DOUBLE_TAP_TIME := 0.3
 
 var yaw := 0.0
 var pitch := 0.0
-var selected_block_id := 1
 var underwater_amount := 0.0
 var underwater_overlay: ColorRect
 var underwater_material: ShaderMaterial
@@ -36,8 +35,35 @@ func _ready() -> void:
 	camera.current = true
 	_create_underwater_overlay()
 	_create_water_audio()
+	_create_inventory_ui()
 	if world:
 		world.set_focus_node(self)
+
+func _create_inventory_ui() -> void:
+	var inventory_layer := CanvasLayer.new()
+	inventory_layer.name = "InventoryCanvas"
+	inventory_layer.layer = 2
+	add_child(inventory_layer)
+	var scene := load("res://scenes/inventory_ui.tscn") as PackedScene
+	if scene == null:
+		push_error("Could not load inventory UI scene")
+		return
+
+	var inventory_ui := scene.instantiate() as Control
+	inventory_layer.add_child(inventory_ui)
+	InventoryManager.setup(self, inventory_ui)
+
+func _input(event: InputEvent) -> void:
+	if world and world.is_initial_loading():
+		return
+	if not (event is InputEventKey) or not event.pressed or event.is_echo():
+		return
+	if event.keycode == KEY_I:
+		InventoryManager.toggle_inventory()
+		get_viewport().set_input_as_handled()
+	elif event.keycode == KEY_ESCAPE and InventoryManager.is_inventory_open():
+		InventoryManager.close_inventory()
+		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
 	var in_water := world != null and camera != null and world.is_water_at(camera.global_position)
@@ -58,7 +84,8 @@ func _process(delta: float) -> void:
 func _create_water_audio() -> void:
 	ocean_ambience = AudioStreamPlayer.new()
 	ocean_ambience.name = "OceanAmbience"
-	var ambience := load("res://audio/ocean_ambience.wav") as AudioStreamWAV
+	ocean_ambience.bus = "Music"
+	var ambience := load("res://audio/ocean_ambience.mp3") as AudioStreamWAV
 	if ambience:
 		ambience.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		ocean_ambience.stream = ambience
@@ -68,12 +95,14 @@ func _create_water_audio() -> void:
 
 	water_splash = AudioStreamPlayer.new()
 	water_splash.name = "WaterSplash"
+	water_splash.bus = "SFX"
 	water_splash.stream = load("res://audio/water_splash.wav")
 	water_splash.volume_db = -5.0
 	add_child(water_splash)
 
 	footstep_player = AudioStreamPlayer.new()
 	footstep_player.name = "Footsteps"
+	footstep_player.bus = "SFX"
 	footstep_player.volume_db = -7.0
 	add_child(footstep_player)
 	footstep_streams = {
@@ -107,6 +136,14 @@ func restore_rotation(saved_yaw: float, saved_pitch: float) -> void:
 	head.rotation = Vector3(pitch, 0.0, 0.0)
 
 func _physics_process(delta: float) -> void:
+	if world and world.is_initial_loading():
+		velocity = Vector3.ZERO
+		return
+
+	if InventoryManager.is_inventory_open():
+		velocity = Vector3.ZERO
+		return
+
 	if Input.is_action_just_pressed("save") and world:
 		world.save_world()
 
@@ -204,6 +241,11 @@ func _update_footsteps(delta: float) -> void:
 	footstep_timer = clampf(0.5 - Vector2(velocity.x, velocity.z).length() * 0.025, 0.3, 0.5)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if world and world.is_initial_loading():
+		return
+	if InventoryManager.is_inventory_open():
+		return
+
 	if event is InputEventMouseMotion:
 		yaw -= event.relative.x * mouse_sensitivity
 		pitch -= event.relative.y * mouse_sensitivity
@@ -212,16 +254,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		head.rotation = Vector3(pitch, 0, 0)
 
 	if event is InputEventKey and event.pressed and not event.is_echo():
-		if event.keycode >= KEY_0 and event.keycode <= KEY_9:
-			selected_block_id = 10 if event.keycode == KEY_0 else event.keycode - KEY_0
+		if event.keycode >= KEY_1 and event.keycode <= KEY_9:
+			InventoryManager.select_hotbar_slot(event.keycode - KEY_1)
 
 	if event is InputEventMouseButton and event.pressed:
-		var fov := camera.fov
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			fov -= 2.0
+			InventoryManager.select_hotbar_slot(InventoryManager.get_selected_hotbar_slot() + 1)
+			return
 		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			fov += 2.0
-		camera.fov = clamp(fov, 20.0, 100.0)
+			InventoryManager.select_hotbar_slot(InventoryManager.get_selected_hotbar_slot() - 1)
+			return
 
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			var hit := raycast_block(8.0)
@@ -239,7 +281,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				var normal: Vector3 = hit["normal"]
 				pos += normal * 0.01
 				if world:
-					world.set_block(pos, selected_block_id)
+					world.set_block(pos, InventoryManager.get_selected_block_id())
 
 func raycast_block(distance: float) -> Dictionary:
 	var from := camera.global_position

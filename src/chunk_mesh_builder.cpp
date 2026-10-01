@@ -47,8 +47,8 @@ bool ChunkMeshBuilder::_is_face_visible(const ChunkNeighbors &n, int x, int y, i
 }
 
 bool ChunkMeshBuilder::_is_crossed_plant(const voxel::Block block) {
-	const voxel::BlockType type = voxel::type(block);
-	return type == voxel::BlockType::FLOWER || type == voxel::BlockType::TALL_GRASS;
+	return voxel::has_flag(block, voxel::BLOCK_FLAG_CROSSED) ||
+			voxel::has_flag(voxel::default_block_flags(voxel::block_id(block)), voxel::BLOCK_FLAG_CROSSED);
 }
 
 VoxelMesher &ChunkMeshBuilder::_get_mesher(const voxel::Block block) {
@@ -87,7 +87,7 @@ void ChunkMeshBuilder::_add_faces(const ChunkNeighbors &neighbors, const CubeFac
 			for (int u = 0; u < width; ++u) {
 				const voxel::Block block = block_at(depth, u, v);
 				if (voxel::is_air(block) || _is_crossed_plant(block) ||
-						(face != CubeFace::U && voxel::type(block) == voxel::BlockType::WATER)) continue;
+						(face != CubeFace::U && voxel::type(block) == voxel::block_ids::water)) continue;
 				mask[index(u, v)] = neighbor_is_visible(depth, u, v, block);
 			}
 		}
@@ -97,7 +97,7 @@ void ChunkMeshBuilder::_add_faces(const ChunkNeighbors &neighbors, const CubeFac
 				const size_t cell = index(u, v);
 				if (!mask[cell] || visited[cell]) continue;
 				const voxel::Block block = block_at(depth, u, v);
-				const voxel::BlockType type = voxel::type(block);
+				const uint16_t type = voxel::type(block);
 				int quad_w = 1;
 				int quad_h = 1;
 				while (u + quad_w < width) {
@@ -149,29 +149,24 @@ void ChunkMeshBuilder::_add_faces(const ChunkNeighbors &neighbors, const CubeFac
 					normal = Vector3(0, 0, -1); uv_scale = Vector2(quad_w, quad_h);
 				}
 				_get_mesher(block).add_quad(v0, v1, v2, v3, normal,
-						_get_tex_layer(face, type), uv_scale, swap_uvs, voxel::is_collidable(block));
+						_get_tex_layer(face, type), uv_scale, swap_uvs, voxel::is_collidable(block), _get_block_tint(type));
 			}
 		}
 	}
 }
 
-int ChunkMeshBuilder::_get_tex_layer(const CubeFace &face, const voxel::BlockType &type) {
-	if (type == voxel::BlockType::WATER) {
+int ChunkMeshBuilder::_get_tex_layer(const CubeFace &face, const uint16_t type) {
+	if (type == voxel::block_ids::water) {
 		return voxel::WATER_TEXTURE_LAYER;
 	}
-
 	if (TextureKey key = { type, face }; texture_map.has(key)) {
 		return texture_map[key];
 	}
-	// Blocks without a dedicated texture (for example ores and deepslate)
-	// inherit stone, never atlas layer zero, which may belong to another block.
-	if (TextureKey stone_key = { voxel::BlockType::STONE, face }; texture_map.has(stone_key)) {
-		return texture_map[stone_key];
-	}
+	return 0;
+}
 
-	return texture_map.has({ voxel::BlockType::STONE, CubeFace::F })
-			? texture_map[{ voxel::BlockType::STONE, CubeFace::F }]
-			: 0;
+Color ChunkMeshBuilder::_get_block_tint(const uint16_t type) const {
+	return block_tints.has(type) ? block_tints[type] : Color(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 void ChunkMeshBuilder::_load_textures() {
@@ -179,9 +174,9 @@ void ChunkMeshBuilder::_load_textures() {
 }
 
 void ChunkMeshBuilder::_initialize_texture_map() {
-	Ref<FileAccess> file = FileAccess::open("res://textures/block_mapping.json", FileAccess::READ);
+	Ref<FileAccess> file = FileAccess::open("res://data/block_registry.generated.json", FileAccess::READ);
 	if (file.is_null()) {
-		ERR_PRINT("Não foi possível carregar o mapeamento de texturas!");
+		ERR_PRINT("Could not load generated block registry metadata.");
 		return;
 	}
 
@@ -189,76 +184,32 @@ void ChunkMeshBuilder::_initialize_texture_map() {
 	Variant data     = JSON::parse_string(json_text);
 
 	if (data.get_type() != Variant::DICTIONARY) {
-		ERR_PRINT("Formato de JSON inválido!");
+		ERR_PRINT("Generated block registry metadata is invalid.");
 		return;
 	}
 
-	Dictionary dict = data;
-	Array keys      = dict.keys();
-
-	for (int i = 0; i < keys.size(); i++) {
-		String file_name = keys[i];
-		int layer_index  = (int)dict[file_name];
-
-		String base_name      = file_name.get_slice("_", 0);
-		voxel::BlockType type = map_string_to_type(base_name);
-
-		if (file_name.ends_with("_top")) {
-			texture_map[{ type, CubeFace::U }] = layer_index;
-		} else if (file_name.ends_with("_bottom")) {
-			texture_map[{ type, CubeFace::D }] = layer_index;
-		} else if (file_name.ends_with("_side")) {
-			texture_map[{ type, CubeFace::F }] = layer_index;
-			texture_map[{ type, CubeFace::B }] = layer_index;
-			texture_map[{ type, CubeFace::L }] = layer_index;
-			texture_map[{ type, CubeFace::R }] = layer_index;
-			if (!texture_map.has({ type, CubeFace::U })) {
-				texture_map[{ type, CubeFace::U }] = layer_index;
-			}
-			if (!texture_map.has({ type, CubeFace::D })) {
-				texture_map[{ type, CubeFace::D }] = layer_index;
-			}
+	Dictionary root = data;
+	Array blocks = root.get("blocks", Array());
+	for (int i = 0; i < blocks.size(); ++i) {
+		Dictionary block = blocks[i];
+		const uint16_t id = static_cast<uint16_t>(int(block.get("id", 0)));
+		Array tint = block.get("tint", Array());
+		if (tint.size() == 4) {
+			block_tints[id] = Color(double(tint[0]), double(tint[1]), double(tint[2]), double(tint[3]));
 		}
+		Dictionary faces = block.get("texture_layers", Dictionary());
+		const int side = int(faces.get("side", -1));
+		const int top = int(faces.get("top", side));
+		const int bottom = int(faces.get("bottom", side));
+		if (side >= 0) {
+			texture_map[{ id, CubeFace::F }] = side;
+			texture_map[{ id, CubeFace::B }] = side;
+			texture_map[{ id, CubeFace::L }] = side;
+			texture_map[{ id, CubeFace::R }] = side;
+		}
+		if (top >= 0) texture_map[{ id, CubeFace::U }] = top;
+		if (bottom >= 0) texture_map[{ id, CubeFace::D }] = bottom;
 	}
-}
-
-voxel::BlockType godot::ChunkMeshBuilder::map_string_to_type(const godot::String &name) {
-	if (name.begins_with("dirt")) {
-		return voxel::BlockType::DIRT;
-	}
-	if (name.begins_with("grass")) {
-		return voxel::BlockType::GRASS;
-	}
-	if (name.begins_with("leaves")) {
-		return voxel::BlockType::LEAVES;
-	}
-	if (name.begins_with("stone")) {
-		return voxel::BlockType::STONE;
-	}
-	if (name.begins_with("wood")) {
-		return voxel::BlockType::WOOD;
-	}
-	if (name.begins_with("log")) {
-		return voxel::BlockType::LOG;
-	}
-	if (name.begins_with("sandstone")) {
-		return voxel::BlockType::SANDSTONE;
-	}
-	if (name.begins_with("sand")) {
-		return voxel::BlockType::SAND;
-	}
-	if (name.begins_with("cactus")) {
-		return voxel::BlockType::CACTUS;
-	}
-	if (name.begins_with("flower")) {
-		return voxel::BlockType::FLOWER;
-	}
-	if (name.begins_with("tallgrass")) {
-		return voxel::BlockType::TALL_GRASS;
-	}
-
-	// Fallback
-	return voxel::BlockType::STONE;
 }
 
 void ChunkMeshBuilder::_add_crossed_plant_faces(const ChunkNeighbors &neighbors) {
@@ -280,10 +231,11 @@ void ChunkMeshBuilder::_add_crossed_plant_faces(const ChunkNeighbors &neighbors)
 				const Vector2 uv_scale(1.0f, 1.0f);
 				const Vector3 normal_a(0.707f, 0.0f, -0.707f);
 				const Vector3 normal_b(-0.707f, 0.0f, -0.707f);
-				opaque_mesher.add_quad(a, b, c, d, normal_a, layer, uv_scale, false, false);
-				opaque_mesher.add_quad(a, d, c, b, -normal_a, layer, uv_scale, true, false);
-				opaque_mesher.add_quad(e, f, g, h, normal_b, layer, uv_scale, false, false);
-				opaque_mesher.add_quad(e, h, g, f, -normal_b, layer, uv_scale, true, false);
+				const Color tint = _get_block_tint(voxel::type(block));
+				opaque_mesher.add_quad(a, b, c, d, normal_a, layer, uv_scale, false, false, tint);
+				opaque_mesher.add_quad(a, d, c, b, -normal_a, layer, uv_scale, true, false, tint);
+				opaque_mesher.add_quad(e, f, g, h, normal_b, layer, uv_scale, false, false, tint);
+				opaque_mesher.add_quad(e, h, g, f, -normal_b, layer, uv_scale, true, false, tint);
 			}
 		}
 	}
@@ -321,6 +273,7 @@ Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
 			Mesh::ARRAY_FORMAT_NORMAL |
 			Mesh::ARRAY_FORMAT_TEX_UV |
 			Mesh::ARRAY_FORMAT_CUSTOM0 |
+			Mesh::ARRAY_FORMAT_COLOR |
 			Mesh::ARRAY_FORMAT_INDEX |
 			(Mesh::ARRAY_CUSTOM_R_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT);
 

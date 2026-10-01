@@ -1,0 +1,448 @@
+{
+	"blocks": [
+		{
+			"category": "empty",
+			"display_name": "Air",
+			"flag_mask": 0,
+			"flags": [],
+			"id": 0,
+			"name": "air",
+			"texture_layers": {},
+			"textures": {},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "terrain",
+			"display_name": "Grass",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 1,
+			"name": "grass",
+			"texture_layers": {
+				"bottom": 5,
+				"side": 6,
+				"top": 7
+			},
+			"textures": {
+				"bottom": "grass_bottom",
+				"side": "grass_side",
+				"top": "grass_top"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "terrain",
+			"display_name": "Dirt",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 2,
+			"name": "dirt",
+			"texture_layers": {
+				"bottom": 1,
+				"side": 2,
+				"top": 3
+			},
+			"textures": {
+				"bottom": "dirt_down",
+				"side": "dirt_side",
+				"top": "dirt_top"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "terrain",
+			"display_name": "Stone",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 3,
+			"name": "stone",
+			"texture_layers": {
+				"bottom": 16,
+				"side": 17,
+				"top": 18
+			},
+			"textures": {
+				"bottom": "stone_bottom",
+				"side": "stone_side",
+				"top": "stone_top"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "terrain",
+			"display_name": "Wood",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 4,
+			"name": "wood",
+			"texture_layers": {
+				"bottom": 20,
+				"side": 21,
+				"top": 22
+			},
+			"textures": {
+				"bottom": "wood_bottom",
+				"side": "wood_side",
+				"top": "wood_top"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "terrain",
+			"display_name": "Deepslate",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 5,
+			"name": "deepslate",
+			"texture_layers": {
+				"bottom": 16,
+				"side": 17,
+				"top": 18
+			},
+			"textures": {
+				"bottom": "stone_bottom",
+				"side": "stone_side",
+				"top": "stone_top"
+			},
+			"tint": [
+				0.55,
+				0.58,
+				0.64,
+				1.0
+			]
+		},
+		{
+			"category": "ore",
+			"display_name": "Iron Ore",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 6,
+			"name": "iron_ore",
+			"texture_layers": {
+				"bottom": 16,
+				"side": 17,
+				"top": 18
+			},
+			"textures": {
+				"bottom": "stone_bottom",
+				"side": "stone_side",
+				"top": "stone_top"
+			},
+			"tint": [
+				1.0,
+				0.62,
+				0.3,
+				1.0
+			]
+		},
+		{
+			"category": "ore",
+			"display_name": "Diamond Ore",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 7,
+			"name": "diamond_ore",
+			"texture_layers": {
+				"bottom": 16,
+				"side": 17,
+				"top": 18
+			},
+			"textures": {
+				"bottom": "stone_bottom",
+				"side": "stone_side",
+				"top": "stone_top"
+			},
+			"tint": [
+				0.28,
+				0.86,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "foliage",
+			"display_name": "Log",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 8,
+			"name": "log",
+			"texture_layers": {
+				"bottom": 11,
+				"side": 12,
+				"top": 13
+			},
+			"textures": {
+				"bottom": "log_bottom",
+				"side": "log_side",
+				"top": "log_top"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "foliage",
+			"display_name": "Leaves",
+			"flag_mask": 17408,
+			"flags": [
+				"solid",
+				"cutout"
+			],
+			"id": 9,
+			"name": "leaves",
+			"texture_layers": {
+				"bottom": 8,
+				"side": 9,
+				"top": 10
+			},
+			"textures": {
+				"bottom": "leaves_bottom",
+				"side": "leaves_side",
+				"top": "leaves_top"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "fluid",
+			"display_name": "Water",
+			"flag_mask": 2048,
+			"flags": [
+				"transparent"
+			],
+			"id": 10,
+			"name": "water",
+			"texture_layers": {},
+			"textures": {},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "terrain",
+			"display_name": "Sand",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 11,
+			"name": "sand",
+			"texture_layers": {
+				"bottom": 14,
+				"side": 14,
+				"top": 14
+			},
+			"textures": {
+				"side": "sand_side"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "terrain",
+			"display_name": "Sandstone",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 12,
+			"name": "sandstone",
+			"texture_layers": {
+				"bottom": 15,
+				"side": 15,
+				"top": 15
+			},
+			"textures": {
+				"side": "sandstone_side"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "foliage",
+			"display_name": "Cactus",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 13,
+			"name": "cactus",
+			"texture_layers": {
+				"bottom": 0,
+				"side": 0,
+				"top": 0
+			},
+			"textures": {
+				"side": "cactus_side"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "foliage",
+			"display_name": "Flower",
+			"flag_mask": 81920,
+			"flags": [
+				"cutout",
+				"crossed"
+			],
+			"id": 14,
+			"name": "flower",
+			"texture_layers": {
+				"bottom": 4,
+				"side": 4,
+				"top": 4
+			},
+			"textures": {
+				"side": "flower_side"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "foliage",
+			"display_name": "Tall Grass",
+			"flag_mask": 81920,
+			"flags": [
+				"cutout",
+				"crossed"
+			],
+			"id": 15,
+			"name": "tall_grass",
+			"texture_layers": {
+				"bottom": 19,
+				"side": 19,
+				"top": 19
+			},
+			"textures": {
+				"side": "tallgrass_side"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "terrain",
+			"display_name": "Bedrock",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 16,
+			"name": "bedrock",
+			"texture_layers": {
+				"bottom": 16,
+				"side": 17,
+				"top": 18
+			},
+			"textures": {
+				"bottom": "stone_bottom",
+				"side": "stone_side",
+				"top": "stone_top"
+			},
+			"tint": [
+				0.35,
+				0.36,
+				0.39,
+				1.0
+			]
+		}
+	],
+	"texture_layers": {
+		"cactus_side": 0,
+		"dirt_down": 1,
+		"dirt_side": 2,
+		"dirt_top": 3,
+		"flower_side": 4,
+		"grass_bottom": 5,
+		"grass_side": 6,
+		"grass_top": 7,
+		"leaves_bottom": 8,
+		"leaves_side": 9,
+		"leaves_top": 10,
+		"log_bottom": 11,
+		"log_side": 12,
+		"log_top": 13,
+		"sand_side": 14,
+		"sandstone_side": 15,
+		"stone_bottom": 16,
+		"stone_side": 17,
+		"stone_top": 18,
+		"tallgrass_side": 19,
+		"wood_bottom": 20,
+		"wood_side": 21,
+		"wood_top": 22
+	},
+	"version": 1,
+	"water_texture_layer": 23
+}
