@@ -3,13 +3,15 @@
 #include "godot_cpp/classes/dir_access.hpp"
 #include "godot_cpp/classes/file_access.hpp"
 #include "godot_cpp/classes/json.hpp"
+#include "godot_cpp/classes/project_settings.hpp"
 #include "godot_cpp/classes/resource_uid.hpp"
 #include "godot_cpp/core/class_db.hpp"
 #include "godot_cpp/variant/packed_int64_array.hpp"
 
 using namespace godot;
 
-static constexpr int WORLD_MODEL_VERSION = 1;
+static constexpr int WORLD_MODEL_VERSION = 2;
+static constexpr int OLDEST_SUPPORTED_WORLD_VERSION = 1;
 
 SaveService *SaveService::singleton = nullptr;
 
@@ -210,7 +212,7 @@ WorldModel SaveService::load_world_model_from_disk(const int64_t p_id) {
 
 	const String name = root["name"];
 
-	if (version != WORLD_MODEL_VERSION) {
+	if (version < OLDEST_SUPPORTED_WORLD_VERSION || version > WORLD_MODEL_VERSION) {
 		return model;
 	}
 
@@ -233,6 +235,76 @@ String SaveService::get_world_dir(const int64_t p_id) {
 	return "user://voxelcraft/worlds/" + String::num_int64(p_id);
 }
 
+Dictionary SaveService::load_world_section(const int64_t p_id, const String &p_section) const {
+	Dictionary result;
+	if (p_id < 0 || p_section.is_empty()) {
+		return result;
+	}
+
+	const String path = get_world_dir(p_id) + "/level.json";
+	const Ref<FileAccess> file = FileAccess::open(path, FileAccess::READ);
+	if (file.is_null()) {
+		return result;
+	}
+	const Variant parsed = JSON::parse_string(file->get_as_text());
+	file->close();
+	if (parsed.get_type() != Variant::DICTIONARY) {
+		return result;
+	}
+
+	const Dictionary root = parsed;
+	const int version = root.get("version", 0);
+	if (version < OLDEST_SUPPORTED_WORLD_VERSION || version > WORLD_MODEL_VERSION) {
+		return result;
+	}
+	const Dictionary sections = root.get("data", Dictionary());
+	if (sections.has(p_section) && sections[p_section].get_type() == Variant::DICTIONARY) {
+		result = sections[p_section];
+	}
+	return result;
+}
+
+bool SaveService::save_world_section(const int64_t p_id, const String &p_section, const Dictionary &p_values) {
+	if (p_id < 0 || p_section.is_empty() || load_world_model(p_id).id != p_id) {
+		return false;
+	}
+
+	const String path = get_world_dir(p_id) + "/level.json";
+	const Ref<FileAccess> file = FileAccess::open(path, FileAccess::READ);
+	if (file.is_null()) {
+		return false;
+	}
+	const Variant parsed = JSON::parse_string(file->get_as_text());
+	file->close();
+	if (parsed.get_type() != Variant::DICTIONARY) {
+		return false;
+	}
+
+	Dictionary root = parsed;
+	Dictionary sections = root.get("data", Dictionary());
+	Dictionary section_values = sections.get(p_section, Dictionary());
+	section_values.merge(p_values, true);
+	sections[p_section] = section_values;
+	root["data"] = sections;
+	root["version"] = WORLD_MODEL_VERSION;
+
+	const String temp_path = path + String(".tmp");
+	const Ref<FileAccess> output = FileAccess::open(temp_path, FileAccess::WRITE);
+	if (output.is_null()) {
+		return false;
+	}
+	output->store_string(JSON::stringify(root, "\t"));
+	output->close();
+
+	const String absolute_temp = ProjectSettings::get_singleton()->globalize_path(temp_path);
+	const String absolute_path = ProjectSettings::get_singleton()->globalize_path(path);
+	if (DirAccess::rename_absolute(absolute_temp, absolute_path) != OK) {
+		DirAccess::remove_absolute(absolute_temp);
+		return false;
+	}
+	return true;
+}
+
 int64_t SaveService::create_world(const int32_t p_seed, const String &p_name) {
 	const WorldModel world_model{
 		.seed = p_seed,
@@ -253,6 +325,7 @@ int64_t SaveService::create_world(const int32_t p_seed, const String &p_name) {
 	root["id"] = String::num_int64(world_model.id);
 	root["seed"] = world_model.seed;
 	root["name"] = world_model.name;
+	root["data"] = Dictionary();
 
 	const String text = JSON::stringify(root, "\t");
 
@@ -316,6 +389,8 @@ void SaveService::_bind_methods() {
 		D_METHOD("load_world_model", "id"),
 		&SaveService::load_world_model_dict
 	);
+	ClassDB::bind_method(D_METHOD("load_world_section", "id", "section"), &SaveService::load_world_section);
+	ClassDB::bind_method(D_METHOD("save_world_section", "id", "section", "values"), &SaveService::save_world_section);
 
 	ClassDB::bind_method(
 		D_METHOD("delete_world", "id"),
@@ -343,5 +418,3 @@ void SaveService::_bind_methods() {
 		&SaveService::invalidate_world_cache
 	);
 }
-
-

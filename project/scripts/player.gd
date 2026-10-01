@@ -20,14 +20,46 @@ const DOUBLE_TAP_TIME := 0.3
 var yaw := 0.0
 var pitch := 0.0
 var selected_block_id := 1
+var underwater_amount := 0.0
+var underwater_overlay: ColorRect
+var underwater_material: ShaderMaterial
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	camera.current = true
+	_create_underwater_overlay()
 	if world:
 		world.set_focus_node(self)
 
+func _process(delta: float) -> void:
+	var target_amount := 0.0
+	if world and camera and world.is_water_at(camera.global_position):
+		target_amount = 1.0
+	underwater_amount = move_toward(underwater_amount, target_amount, delta * 2.5)
+	if underwater_material:
+		underwater_material.set_shader_parameter("underwater_amount", underwater_amount)
+
+func _create_underwater_overlay() -> void:
+	var canvas_layer := CanvasLayer.new()
+	canvas_layer.name = "UnderwaterPostProcess"
+	canvas_layer.layer = 0
+	add_child(canvas_layer)
+
+	underwater_overlay = ColorRect.new()
+	underwater_overlay.name = "ColorGrade"
+	underwater_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	underwater_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas_layer.add_child(underwater_overlay)
+
+	underwater_material = ShaderMaterial.new()
+	underwater_material.shader = load("res://shaders/underwater.gdshader")
+	underwater_material.set_shader_parameter("underwater_amount", 0.0)
+	underwater_overlay.material = underwater_material
+
 func _physics_process(delta: float) -> void:
+	if Input.is_action_just_pressed("save") and world:
+		world.save_world()
+
 	var current_velocity := velocity
 
 	if double_tap_timer > 0:

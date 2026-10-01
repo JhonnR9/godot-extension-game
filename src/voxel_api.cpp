@@ -229,6 +229,22 @@ void VoxelAPI::set_block(const Vector3 &p_world_pos, const voxel::Block &p_block
 	_chunk_repository->set_block(block_pos, block);
 }
 
+bool VoxelAPI::is_water_at(const Vector3 &p_world_pos) const {
+	if (_chunk_repository.is_null()) {
+		return false;
+	}
+
+	const Vector3i block_pos = voxel::world_to_block(p_world_pos);
+	const Vector3i chunk_pos = voxel::block_to_chunk_coords(block_pos);
+	const std::shared_ptr<Chunk> chunk = _chunk_repository->get_chunk(chunk_pos);
+	if (!chunk) {
+		return false;
+	}
+
+	const Vector3i local_pos = voxel::block_to_chunk_local_block(block_pos);
+	return voxel::type(chunk->get_block(local_pos.x, local_pos.y, local_pos.z)) == voxel::BlockType::WATER;
+}
+
 void VoxelAPI::set_focus_node(Node3D *p_node) {
 	_focus_node		= p_node;
 	_use_manual_pos = false;
@@ -240,6 +256,9 @@ void VoxelAPI::set_focus_position(Vector3 p_pos) {
 }
 
 void VoxelAPI::create_new_world(const int32_t p_seed, const String &p_name) {
+	if (_disk_repository.is_valid() && _disk_repository->get_current_world_id() != 0) {
+		save_world_final();
+	}
 	_clear_world();
 
 	const int64_t id			 = SaveService::get_singleton()->create_world(p_seed, p_name);
@@ -257,12 +276,25 @@ void VoxelAPI::create_new_world(const int32_t p_seed, const String &p_name) {
 }
 
 void VoxelAPI::start_world(int64_t p_id) {
+	if (_disk_repository.is_valid() && _disk_repository->get_current_world_id() != 0) {
+		save_world_final();
+	}
 	_clear_world();
 
 	_disk_repository->set_current_world(p_id);
 	const WorldModel world_model = SaveService::get_singleton()->load_world_model(p_id);
 
 	_chunk_repository->set_world_model(world_model);
+	if (_focus_node) {
+		const Dictionary player_data = SaveService::get_singleton()->load_world_section(p_id, "player");
+		const Array saved_position = player_data.get("position", Array());
+		if (saved_position.size() >= 3) {
+			_focus_node->set_global_position(Vector3(
+					double(saved_position[0]),
+					double(saved_position[1]),
+					double(saved_position[2])));
+		}
+	}
 
 	_terrain_noise->set_seed(world_model.seed);
 	_cave_noise->set_seed(world_model.seed + 1);
@@ -510,9 +542,25 @@ void VoxelAPI::_queue_async_generate_chunk(const Vector3i p_pos) const {
 }
 
 void VoxelAPI::save_world_final() const {
-	if (_disk_repository.is_null())
+	if (_disk_repository.is_null() || _disk_repository->get_current_world_id() == 0)
 		return;
 
+	if (_focus_node && SaveService::get_singleton()) {
+		const Vector3 position = _focus_node->get_global_position();
+		Array serialized_position;
+		serialized_position.push_back(position.x);
+		serialized_position.push_back(position.y);
+		serialized_position.push_back(position.z);
+		Dictionary player_data;
+		player_data["position"] = serialized_position;
+		if (!SaveService::get_singleton()->save_world_section(
+				_disk_repository->get_current_world_id(), "player", player_data)) {
+			WARN_PRINT("Could not save player position.");
+		}
+	}
+
+	if (_chunk_repository.is_null())
+		return;
 	HashMap<Vector3i, voxel::Region> all_edits = _chunk_repository->get_all_edited_regions();
 
 	for (const auto &E : all_edits) {
@@ -559,9 +607,7 @@ void VoxelAPI::_try_build_mesh_with_neighbors(const Vector3i p_pos) const {
 }
 
 void VoxelAPI::save_world() const {
-	if (_disk_repository.is_valid() && _disk_repository->get_current_world_id() != 0) {
-		_chunk_repository->save_edited_chunks_to_disk(_disk_repository);
-	}
+	save_world_final();
 }
 
 void VoxelAPI::_bind_methods() {
@@ -569,6 +615,7 @@ void VoxelAPI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_focus_position", "pos"), &VoxelAPI::set_focus_position);
 	ClassDB::bind_method(D_METHOD("break_block", "world_pos"), &VoxelAPI::break_block);
 	ClassDB::bind_method(D_METHOD("set_block", "world_pos", "block"), &VoxelAPI::set_block);
+	ClassDB::bind_method(D_METHOD("is_water_at", "world_pos"), &VoxelAPI::is_water_at);
 	ClassDB::bind_method(D_METHOD("save_world"), &VoxelAPI::save_world);
 	ClassDB::bind_method(D_METHOD("start_world", "id"), &VoxelAPI::start_world);
 }

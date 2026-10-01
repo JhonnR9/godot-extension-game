@@ -31,6 +31,7 @@ public:
 
 	void break_block(const Vector3 &world_pos);
 	void set_block(const Vector3 &p_world_pos, const voxel::Block &p_block) const;
+	bool is_water_at(const Vector3 &p_world_pos) const;
 	void set_focus_node(Node3D *p_node);
 	void set_focus_position(Vector3 p_pos);
 	void create_new_world(int32_t p_seed, const String &p_name);

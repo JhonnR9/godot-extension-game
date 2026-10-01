@@ -42,6 +42,10 @@ public:
 
 	HashSet<int64_t> get_saved_worlds();
 	WorldModel load_world_model(int64_t p_id);
+	// World-specific extension data is stored by named section under level.json's "data" key.
+	// Saving merges keys into that section, preserving unrelated sections and future fields.
+	Dictionary load_world_section(int64_t p_id, const String &p_section) const;
+	bool save_world_section(int64_t p_id, const String &p_section, const Dictionary &p_values);
 	void delete_world(int64_t p_id);
 	static String get_world_dir(int64_t p_id) ;
 	int64_t create_world(int32_t p_seed, const String &p_name);
