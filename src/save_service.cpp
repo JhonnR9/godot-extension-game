@@ -305,6 +305,78 @@ bool SaveService::save_world_section(const int64_t p_id, const String &p_section
 	return true;
 }
 
+Dictionary SaveService::load_user_settings(const String &p_section) const {
+	Dictionary result;
+	if (p_section.is_empty()) {
+		return result;
+	}
+
+	const String path = "user://voxelcraft/settings.json";
+	if (!FileAccess::file_exists(path)) {
+		return result;
+	}
+	const Ref<FileAccess> file = FileAccess::open(path, FileAccess::READ);
+	if (file.is_null()) {
+		return result;
+	}
+	const Variant parsed = JSON::parse_string(file->get_as_text());
+	file->close();
+	if (parsed.get_type() != Variant::DICTIONARY) {
+		return result;
+	}
+	const Dictionary sections = Dictionary(parsed).get("data", Dictionary());
+	if (sections.has(p_section) && sections[p_section].get_type() == Variant::DICTIONARY) {
+		result = sections[p_section];
+	}
+	return result;
+}
+
+bool SaveService::save_user_settings(const String &p_section, const Dictionary &p_values) const {
+	if (p_section.is_empty()) {
+		return false;
+	}
+
+	const String path = "user://voxelcraft/settings.json";
+	Dictionary root;
+	const Ref<FileAccess> input = FileAccess::file_exists(path)
+			? FileAccess::open(path, FileAccess::READ)
+			: Ref<FileAccess>();
+	if (input.is_valid()) {
+		const Variant parsed = JSON::parse_string(input->get_as_text());
+		input->close();
+		if (parsed.get_type() == Variant::DICTIONARY) {
+			root = parsed;
+		}
+	}
+
+	Dictionary sections = root.get("data", Dictionary());
+	Dictionary values = sections.get(p_section, Dictionary());
+	values.merge(p_values, true);
+	sections[p_section] = values;
+	root["version"] = 1;
+	root["data"] = sections;
+
+	if (DirAccess::make_dir_recursive_absolute("user://voxelcraft") != OK &&
+			!DirAccess::dir_exists_absolute("user://voxelcraft")) {
+		return false;
+	}
+	const String temp_path = path + String(".tmp");
+	const Ref<FileAccess> output = FileAccess::open(temp_path, FileAccess::WRITE);
+	if (output.is_null()) {
+		return false;
+	}
+	output->store_string(JSON::stringify(root, "\t"));
+	output->close();
+
+	const String absolute_temp = ProjectSettings::get_singleton()->globalize_path(temp_path);
+	const String absolute_path = ProjectSettings::get_singleton()->globalize_path(path);
+	if (DirAccess::rename_absolute(absolute_temp, absolute_path) != OK) {
+		DirAccess::remove_absolute(absolute_temp);
+		return false;
+	}
+	return true;
+}
+
 int64_t SaveService::create_world(const int32_t p_seed, const String &p_name) {
 	const WorldModel world_model{
 		.seed = p_seed,
@@ -391,6 +463,8 @@ void SaveService::_bind_methods() {
 	);
 	ClassDB::bind_method(D_METHOD("load_world_section", "id", "section"), &SaveService::load_world_section);
 	ClassDB::bind_method(D_METHOD("save_world_section", "id", "section", "values"), &SaveService::save_world_section);
+	ClassDB::bind_method(D_METHOD("load_user_settings", "section"), &SaveService::load_user_settings);
+	ClassDB::bind_method(D_METHOD("save_user_settings", "section", "values"), &SaveService::save_user_settings);
 
 	ClassDB::bind_method(
 		D_METHOD("delete_world", "id"),

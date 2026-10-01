@@ -56,6 +56,12 @@ func _create_underwater_overlay() -> void:
 	underwater_material.set_shader_parameter("underwater_amount", 0.0)
 	underwater_overlay.material = underwater_material
 
+func restore_rotation(saved_yaw: float, saved_pitch: float) -> void:
+	yaw = saved_yaw
+	pitch = clamp(saved_pitch, -PI / 2.0, PI / 2.0)
+	rotation = Vector3(0.0, yaw, 0.0)
+	head.rotation = Vector3(pitch, 0.0, 0.0)
+
 func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("save") and world:
 		world.save_world()

@@ -41,7 +41,8 @@ voxel::Block ChunkMeshBuilder::_get_block(const ChunkNeighbors &n, int x, int y,
 bool ChunkMeshBuilder::_is_face_visible(const ChunkNeighbors &n, int x, int y, int z, const voxel::Block current_block) {
 	const voxel::Block neighbor = _get_block(n, x, y, z);
 	return voxel::is_air(neighbor) ||
-			(voxel::is_collidable(current_block) && voxel::is_transparent(neighbor));
+			(voxel::is_collidable(current_block) &&
+					(voxel::is_transparent(neighbor) || voxel::is_cutout(neighbor)));
 }
 
 VoxelMesher &ChunkMeshBuilder::_get_mesher(const voxel::Block block) {
@@ -748,6 +749,12 @@ void ChunkMeshBuilder::_initialize_texture_map() {
 			texture_map[{ type, CubeFace::B }] = layer_index;
 			texture_map[{ type, CubeFace::L }] = layer_index;
 			texture_map[{ type, CubeFace::R }] = layer_index;
+			if (!texture_map.has({ type, CubeFace::U })) {
+				texture_map[{ type, CubeFace::U }] = layer_index;
+			}
+			if (!texture_map.has({ type, CubeFace::D })) {
+				texture_map[{ type, CubeFace::D }] = layer_index;
+			}
 		}
 	}
 }
@@ -767,6 +774,12 @@ voxel::BlockType godot::ChunkMeshBuilder::map_string_to_type(const godot::String
 	}
 	if (name.begins_with("log")) {
 		return voxel::BlockType::LOG;
+	}
+	if (name.begins_with("sandstone")) {
+		return voxel::BlockType::SANDSTONE;
+	}
+	if (name.begins_with("sand")) {
+		return voxel::BlockType::SAND;
 	}
 
 	// Fallback

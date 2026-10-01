@@ -11,10 +11,12 @@
 	"log_bottom": 9,
 	"log_side": 10,
 	"log_top": 11,
-	"stone_bottom": 12,
-	"stone_side": 13,
-	"stone_top": 14,
-	"wood_bottom": 15,
-	"wood_side": 16,
-	"wood_top": 17
+	"sand_side": 12,
+	"sandstone_side": 13,
+	"stone_bottom": 14,
+	"stone_side": 15,
+	"stone_top": 16,
+	"wood_bottom": 17,
+	"wood_side": 18,
+	"wood_top": 19
 }

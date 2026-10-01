@@ -2,6 +2,7 @@
 #define CHUNK_MODEL_GENERATOR_H
 
 #include "chunk_generator.h"
+#include "chunk_generation_pipeline.h"
 #include "chunk_model.h"
 #include "godot_cpp/classes/wrapped.hpp"
 #include "godot_cpp/templates/hash_set.hpp"
@@ -16,6 +17,7 @@ class ChunkModelGenerator;
 struct ChunkJob {
 	Vector3i pos;
 	TerrainSettings settings;
+	std::shared_ptr<const ChunkGenerationPipeline> pipeline;
 	ChunkModelGenerator *generator;
 };
 
@@ -35,7 +37,8 @@ private:
 
 public:
 	HashMap<Vector3i, std::shared_ptr<Chunk>> consume_generated_results(int amount = -1);
-	void _queue_async_generate_chunk_model(Vector3i p_pos, const TerrainSettings &p_settings, bool p_priority = false);
+	void _queue_async_generate_chunk_model(Vector3i p_pos, const TerrainSettings &p_settings,
+			std::shared_ptr<const ChunkGenerationPipeline> p_pipeline, bool p_priority = false);
 
 	bool is_loading_chunk(const Vector3i &p_pos);
 

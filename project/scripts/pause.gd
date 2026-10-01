@@ -6,6 +6,8 @@ func _ready() -> void:
 	visible = false
 
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	$"../SettingsPanel".configure(get_node("../../VoxelAPI"))
+	$"../SettingsPanel".close_requested.connect(_on_settings_closed)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -37,3 +39,11 @@ func _on_back_to_main_menu_pressed() -> void:
 
 func _on_button_pressed() -> void:
 	toggle_pause()
+
+func _on_settings_pressed() -> void:
+	visible = false
+	$"../SettingsPanel".show()
+
+func _on_settings_closed() -> void:
+	$"../SettingsPanel".hide()
+	visible = true

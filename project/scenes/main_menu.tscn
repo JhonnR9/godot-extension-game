@@ -1,13 +1,20 @@
 [gd_scene format=3 uid="uid://cvanbewcp0wwt"]
 
 [ext_resource type="Script" uid="uid://nd7j4w58sf6g" path="res://scripts/main_menu.gd" id="1_l6cm7"]
+[ext_resource type="PackedScene" uid="uid://b508fktn2kxq2" path="res://scenes/settings_panel.tscn" id="2_settings"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_rhts7"]
 font_size = 96
 
 [node name="MainMenu" type="Control" unique_id=1897305354]
 layout_mode = 3
-anchors_preset = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 6
+size_flags_vertical = 6
 script = ExtResource("1_l6cm7")
 
 [node name="HUD" type="BoxContainer" parent="." unique_id=182916981]
@@ -17,10 +24,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = 674.0
-offset_top = 371.5
-offset_right = 1266.0
-offset_bottom = 744.5
+offset_left = -296.0
+offset_top = -186.5
+offset_right = 296.0
+offset_bottom = 186.5
 grow_horizontal = 2
 grow_vertical = 2
 alignment = 1
@@ -52,6 +59,19 @@ text = "Singleplayer
 layout_mode = 2
 text = "Mulplayey (coming soon)"
 
+[node name="Settings" type="Button" parent="HUD/Buttons" unique_id=80389888]
+layout_mode = 2
+text = "Settings"
+
 [node name="Quit" type="Button" parent="HUD/Buttons" unique_id=1928771386]
 layout_mode = 2
 text = "Quit"
+
+[node name="SettingsPanel" parent="." unique_id=1706740361 instance=ExtResource("2_settings")]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5

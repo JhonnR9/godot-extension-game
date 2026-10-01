@@ -46,6 +46,8 @@ public:
 	// Saving merges keys into that section, preserving unrelated sections and future fields.
 	Dictionary load_world_section(int64_t p_id, const String &p_section) const;
 	bool save_world_section(int64_t p_id, const String &p_section, const Dictionary &p_values);
+	Dictionary load_user_settings(const String &p_section) const;
+	bool save_user_settings(const String &p_section, const Dictionary &p_values) const;
 	void delete_world(int64_t p_id);
 	static String get_world_dir(int64_t p_id) ;
 	int64_t create_world(int32_t p_seed, const String &p_name);

@@ -6,7 +6,13 @@ namespace godot {
 void ChunkModelGenerator::_bind_methods() {
 }
 
-void ChunkModelGenerator::_queue_async_generate_chunk_model(Vector3i p_pos, const TerrainSettings &p_settings, bool p_priotity) {
+void ChunkModelGenerator::_queue_async_generate_chunk_model(Vector3i p_pos, const TerrainSettings &p_settings,
+		std::shared_ptr<const ChunkGenerationPipeline> p_pipeline, bool p_priotity) {
+	if (!p_pipeline) {
+		ERR_PRINT("Cannot generate a chunk without a generation pipeline.");
+		return;
+	}
+
 	{
 		auto placeholder  = std::make_shared<Chunk>();
 		placeholder->stage = ChunkStage::QUEUED_GENERATION;
@@ -18,6 +24,7 @@ void ChunkModelGenerator::_queue_async_generate_chunk_model(Vector3i p_pos, cons
 	auto job = new ChunkJob{
 		p_pos,
 		p_settings,
+		std::move(p_pipeline),
 		this
 	};
 
@@ -32,7 +39,8 @@ void ChunkModelGenerator::_queue_async_generate_chunk_model(Vector3i p_pos, cons
 					}
 				}
 
-				const auto model = std::make_shared<Chunk>(ChunkGenerator::generate(chunk_job->pos, chunk_job->settings));
+				const auto model = std::make_shared<Chunk>(ChunkGenerator::generate(
+						chunk_job->pos, chunk_job->settings, *chunk_job->pipeline));
 				model->stage	 = ChunkStage::LOADED;
 
 				{

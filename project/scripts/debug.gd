@@ -11,13 +11,9 @@ func _process(_delta: float) -> void:
 	update_text()
 
 func toggle_vsync() -> void:
-	var modo_atual = DisplayServer.window_get_vsync_mode()
-	
-
-	if modo_atual == DisplayServer.VSYNC_DISABLED:
-		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
-	else:
-		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	var settings: Dictionary = VoxelAPI.get_default_render_settings()
+	settings["vsync"] = DisplayServer.window_get_vsync_mode() == DisplayServer.VSYNC_DISABLED
+	VoxelAPI.set_default_render_settings(settings)
 
 func update_text() -> void:
 	var vsync_status = "on" if DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED else "off"

@@ -13,7 +13,7 @@ constexpr Block BLOCK_FLAG_TRANSPARENT = Block{1u} << 11;
 constexpr Block BLOCK_FLAG_EMISSIVE    = Block{1u} << 12;
 constexpr Block BLOCK_FLAG_WATERLOG    = Block{1u} << 13;
 constexpr Block BLOCK_FLAG_CUTOUT      = Block{1u} << 14;
-constexpr int WATER_TEXTURE_LAYER = 18;
+constexpr int WATER_TEXTURE_LAYER = 20;
 
 constexpr uint16_t block_id(Block b) {
 	return b & BLOCK_ID_MASK;
@@ -35,6 +35,10 @@ constexpr bool is_transparent(Block b) {
 	// Cutout blocks (such as leaves) stay in the opaque pass and use alpha scissor.
 	// Keep older saved/manual water blocks working even if they lack the flag.
 	return has_flag(b, BLOCK_FLAG_TRANSPARENT) || type(b) == BlockType::WATER;
+}
+
+constexpr bool is_cutout(Block b) {
+	return has_flag(b, BLOCK_FLAG_CUTOUT);
 }
 
 constexpr bool is_collidable(Block b) {

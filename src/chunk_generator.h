@@ -1,33 +1,38 @@
 #ifndef CHUNK_GENERATOR_H
 #define CHUNK_GENERATOR_H
 
-#include "chunk_model.h"
-#include "godot_cpp/classes/ref.hpp"
-#include "godot_cpp/classes/fast_noise_lite.hpp"
+#include "chunk_generation_pipeline.h"
 
 namespace godot {
 
-struct NoiseSet {
-	Ref<FastNoiseLite> terrain_noise;
-	Ref<FastNoiseLite> cave_noise;
+class BiomeSelectionPass final : public ChunkGenerationPass {
+public:
+	void apply(ChunkGenerationContext &context) const override;
 };
 
-struct TerrainSettings {
-	int terrain_base_height;
-	float terrain_amplitude;
-	float cave_threshold;
-	int water_level = 24;
-	NoiseSet noise_set;
+class TerrainSurfacePass final : public ChunkGenerationPass {
+public:
+	void apply(ChunkGenerationContext &context) const override;
 };
 
+class CaveCarvingPass final : public ChunkGenerationPass {
+public:
+	void apply(ChunkGenerationContext &context) const override;
+};
+
+class WaterFillPass final : public ChunkGenerationPass {
+public:
+	void apply(ChunkGenerationContext &context) const override;
+};
+
+// Small entry point retained for callers that want to generate a chunk with a
+// configured, reusable pass pipeline.
 class ChunkGenerator {
 public:
-	static Chunk generate(
-		Vector3i chunk_pos,
-		const TerrainSettings &terrain_settings
-	);
+	static Chunk generate(const Vector3i &chunk_pos, const TerrainSettings &settings,
+			const ChunkGenerationPipeline &pipeline);
 };
 
-}
+} // namespace godot
 
 #endif

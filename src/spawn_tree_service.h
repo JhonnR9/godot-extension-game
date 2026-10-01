@@ -1,45 +1,30 @@
 #ifndef TREE_DECORATOR_H
 #define TREE_DECORATOR_H
 
-#include "chunk_model.h"
-#include <godot_cpp/classes/ref_counted.hpp>
+#include "chunk_generation_pipeline.h"
 #include <cstdint>
-#include <functional>
-#include <memory>
 
 namespace godot {
 
-struct TreeSettings {
-	int64_t seed = 0;
-	int max_trees_per_chunk = 4; // por coluna de chunk (32x32)
-	int min_trunk_height = 4;
-	int max_trunk_height = 6;
-
-	// Altura (Y em blocos, mundo) do ultimo bloco solido da coluna (wx, wz).
-	// DEVE ser a mesma formula usada pelo gerador de terreno.
-	std::function<int32_t(int32_t wx, int32_t wz)> surface_height;
-};
-
-// Servico 100% deterministico e sem estado:
-// as arvores de uma coluna de chunk (cx, cz) dependem so de (seed, cx, cz) + altura do terreno.
-// Ao decorar o chunk C, calculamos as arvores das 9 colunas vizinhas (3x3) e
-// escrevemos apenas os blocos que caem dentro de C. Assim arvores na borda
-// ficam completas e reaparecem identicas se o chunk for descarregado/recarregado.
-class TreeDecorator : public RefCounted {
-	GDCLASS(TreeDecorator, RefCounted)
-
-protected:
-	static void _bind_methods() {}
-
+// 100% deterministic and stateless generation:
+// the trees for a chunk column (cx, cz) depend only on (seed, cx, cz) and the terrain height.
+// When decorating chunk C, we calculate the trees for the 9 neighboring columns (3x3)
+// and write only the blocks that fall within C. This ensures that trees on the boundary
+// are complete and reappear identically if the chunk is unloaded and reloaded.
+class TreeGenerationPass final : public ChunkGenerationPass {
 public:
-	void set_settings(const TreeSettings &p_settings) { _settings = p_settings; }
-	void set_seed(int64_t p_seed) { _settings.seed = p_seed; }
+	explicit TreeGenerationPass(int64_t p_seed, int p_max_trees_per_chunk = 4,
+			int p_min_trunk_height = 5, int p_max_trunk_height = 7) :
+			_seed(p_seed), _max_trees_per_chunk(p_max_trees_per_chunk),
+			_min_trunk_height(p_min_trunk_height), _max_trunk_height(p_max_trunk_height) {}
 
-	// Thread-safe (nao altera estado interno). Chamar ANTES de o chunk entrar no repositorio.
-	void decorate_chunk(const Vector3i &p_chunk_pos, const std::shared_ptr<Chunk> &p_chunk) const;
+	void apply(ChunkGenerationContext &context) const override;
 
 private:
-	TreeSettings _settings;
+	int64_t _seed = 0;
+	int _max_trees_per_chunk = 4;
+	int _min_trunk_height = 5;
+	int _max_trunk_height = 7;
 };
 
 } // namespace godot

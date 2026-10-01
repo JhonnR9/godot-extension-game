@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://benu0o0kncwvk" path="res://scripts/pause.gd" id="6_0bkf4"]
 [ext_resource type="FontFile" uid="uid://dyj0fv3g4ev8t" path="res://fonts/rainyhearts.ttf" id="7_qmtj6"]
 [ext_resource type="Script" uid="uid://bujnam10c35qv" path="res://scenes/directional_light_3d.gd" id="9_715aw"]
+[ext_resource type="PackedScene" uid="uid://b508fktn2kxq2" path="res://scenes/settings_panel.tscn" id="10_settings"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_xo6ui"]
 
@@ -133,10 +134,19 @@ size_flags_horizontal = 4
 size_flags_vertical = 4
 text = "      continue      "
 
+[node name="Settings" type="Button" parent="CanvasLayer/Pause/VBoxContainer" unique_id=1141609509]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+text = "      Settings      "
+
 [node name="BackToMainMenu" type="Button" parent="CanvasLayer/Pause/VBoxContainer" unique_id=1166826323]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Back to MainMenu"
+
+[node name="SettingsPanel" parent="CanvasLayer" unique_id=1437757337 instance=ExtResource("10_settings")]
+visible = false
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=7603342]
 environment = SubResource("Environment_a202f")
@@ -147,4 +157,5 @@ shadow_enabled = true
 script = ExtResource("9_715aw")
 
 [connection signal="pressed" from="CanvasLayer/Pause/VBoxContainer/Button" to="CanvasLayer/Pause" method="_on_button_pressed"]
+[connection signal="pressed" from="CanvasLayer/Pause/VBoxContainer/Settings" to="CanvasLayer/Pause" method="_on_settings_pressed"]
 [connection signal="pressed" from="CanvasLayer/Pause/VBoxContainer/BackToMainMenu" to="CanvasLayer/Pause" method="_on_back_to_main_menu_pressed"]

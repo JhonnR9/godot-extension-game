@@ -36,6 +36,10 @@ public:
 	void set_focus_position(Vector3 p_pos);
 	void create_new_world(int32_t p_seed, const String &p_name);
 	void start_world(int64_t p_id);
+	void set_render_settings(const Dictionary &p_settings);
+	Dictionary get_render_settings() const;
+	static Dictionary get_default_render_settings();
+	static void set_default_render_settings(const Dictionary &p_settings);
 
 protected:
 	static void _bind_methods();
@@ -48,7 +52,8 @@ private:
 	Ref<ChunkMeshAsyncGenerator> _mesh_generator;
 	Ref<ChunkDiskRepository> _disk_repository;
 	Ref<ChunkRegionAsyncLoader> _region_loader;
-	Ref<TreeDecorator> _tree_decorator;
+	std::shared_ptr<const ChunkGenerationPipeline> _generation_pipeline;
+	int64_t _world_seed = 0;
 
 	void save_world_final() const;
 
@@ -68,6 +73,8 @@ private:
 
 	Ref<FastNoiseLite> _terrain_noise;
 	Ref<FastNoiseLite> _cave_noise;
+	Ref<FastNoiseLite> _biome_noise;
+	Ref<FastNoiseLite> _dune_noise;
 
 	// Player position control
 	Vector3i _last_focos_position;
@@ -109,7 +116,10 @@ private:
 	void _process_loaded_regions();
 	void _unload_region(const Vector3i &region_pos);
 
-	void _setup_trees(int64_t p_seed);
+	void _setup_generation_pipeline(int64_t p_seed);
+	void _apply_render_settings_fields(const Dictionary &p_settings, bool p_refresh_active_chunks);
+	static Dictionary _normalize_render_settings(const Dictionary &p_settings);
+	static void _apply_vsync_setting(const Dictionary &p_settings);
 
 	bool _is_initializing{false};
 };

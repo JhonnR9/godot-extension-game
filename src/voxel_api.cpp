@@ -4,6 +4,7 @@
 #include "chunk_pool.h"
 #include "save_service.h"
 #include "utils.h"
+#include <godot_cpp/classes/display_server.hpp>
 #include <godot_cpp/classes/resource_uid.hpp>
 #include <vector>
 
@@ -19,7 +20,8 @@ void VoxelAPI::_ready() {
 	_mesh_generator.instantiate();
 	_disk_repository.instantiate();
 	_region_loader.instantiate();
-	_tree_decorator.instantiate();
+	_apply_render_settings_fields(get_default_render_settings(), false);
+	_apply_vsync_setting(get_default_render_settings());
 
 	_region_loader->set_repository(_disk_repository);
 
@@ -46,6 +48,16 @@ void VoxelAPI::_setup_noises() {
 	_cave_noise.instantiate();
 	_cave_noise->set_noise_type(FastNoiseLite::TYPE_PERLIN);
 	_cave_noise->set_frequency(0.02);
+
+	_biome_noise.instantiate();
+	_biome_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
+	_biome_noise->set_frequency(0.0035);
+	_biome_noise->set_fractal_octaves(2);
+
+	_dune_noise.instantiate();
+	_dune_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
+	_dune_noise->set_frequency(0.012);
+	_dune_noise->set_fractal_octaves(2);
 }
 
 void VoxelAPI::_init_chunks() {
@@ -53,7 +65,6 @@ void VoxelAPI::_init_chunks() {
 
 	_is_initializing = true;
 
-	_chunk_pool->set_prewarm(_prewarm_chunk_pool);
 	_last_focos_position = voxel::block_to_chunk_coords(_get_current_focus_position());
 
 	_previous_player_chunk_pos		= _last_focos_position;
@@ -269,8 +280,10 @@ void VoxelAPI::create_new_world(const int32_t p_seed, const String &p_name) {
 
 	_terrain_noise->set_seed(world_model.seed);
 	_cave_noise->set_seed(world_model.seed + 1);
+	_biome_noise->set_seed(world_model.seed + 2);
+	_dune_noise->set_seed(world_model.seed + 3);
 
-	_setup_trees(p_seed);
+	_setup_generation_pipeline(p_seed);
 
 	_init_chunks();
 }
@@ -294,13 +307,97 @@ void VoxelAPI::start_world(int64_t p_id) {
 					double(saved_position[1]),
 					double(saved_position[2])));
 		}
+		if (player_data.has("yaw") && player_data.has("pitch") && _focus_node->has_method("restore_rotation")) {
+			_focus_node->call("restore_rotation", double(player_data["yaw"]), double(player_data["pitch"]));
+		}
 	}
 
 	_terrain_noise->set_seed(world_model.seed);
 	_cave_noise->set_seed(world_model.seed + 1);
-	_setup_trees(world_model.seed);
+	_biome_noise->set_seed(world_model.seed + 2);
+	_dune_noise->set_seed(world_model.seed + 3);
+	_setup_generation_pipeline(world_model.seed);
 
 	_init_chunks();
+}
+
+Dictionary VoxelAPI::_normalize_render_settings(const Dictionary &p_settings) {
+	const auto read_int = [&p_settings](const String &key, int fallback, int min_value, int max_value) {
+		const Variant value = p_settings.get(key, fallback);
+		int parsed = fallback;
+		if (value.get_type() == Variant::INT || value.get_type() == Variant::FLOAT) {
+			parsed = static_cast<int>(double(value));
+		}
+		return CLAMP(parsed, min_value, max_value);
+	};
+
+	Dictionary normalized;
+	normalized["render_distance"] = read_int("render_distance", 4, 2, 12);
+	normalized["vertical_render_distance"] = read_int("vertical_render_distance", 3, 1, 6);
+	normalized["vsync"] = bool(p_settings.get("vsync", true));
+	return normalized;
+}
+
+Dictionary VoxelAPI::get_default_render_settings() {
+	Dictionary saved;
+	if (SaveService *service = SaveService::get_singleton()) {
+		saved = service->load_user_settings("render");
+	}
+	return _normalize_render_settings(saved);
+}
+
+void VoxelAPI::_apply_vsync_setting(const Dictionary &p_settings) {
+	if (DisplayServer *display = DisplayServer::get_singleton()) {
+		const bool enabled = bool(p_settings.get("vsync", true));
+		display->window_set_vsync_mode(enabled ? DisplayServer::VSYNC_ENABLED : DisplayServer::VSYNC_DISABLED);
+	}
+}
+
+void VoxelAPI::set_default_render_settings(const Dictionary &p_settings) {
+	const Dictionary normalized = _normalize_render_settings(p_settings);
+	_apply_vsync_setting(normalized);
+	if (SaveService *service = SaveService::get_singleton()) {
+		if (!service->save_user_settings("render", normalized)) {
+			WARN_PRINT("Could not save render settings.");
+		}
+	}
+}
+
+Dictionary VoxelAPI::get_render_settings() const {
+	Dictionary settings;
+	settings["render_distance"] = _world_radius;
+	settings["vertical_render_distance"] = _world_height;
+	if (DisplayServer *display = DisplayServer::get_singleton()) {
+		settings["vsync"] = display->window_get_vsync_mode() != DisplayServer::VSYNC_DISABLED;
+	} else {
+		settings["vsync"] = true;
+	}
+	return settings;
+}
+
+void VoxelAPI::_apply_render_settings_fields(const Dictionary &p_settings, const bool p_refresh_active_chunks) {
+	const Dictionary settings = _normalize_render_settings(p_settings);
+	_world_radius = settings["render_distance"];
+	_world_height = settings["vertical_render_distance"];
+	_cache_radius = _world_radius + 3;
+	_diameter = (_cache_radius * 2) + 1;
+	const int active_chunk_estimate = (_world_radius * 2 + 1) * (_world_radius * 2 + 1) * (_world_height * 2 + 1);
+	_prewarm_chunk_pool = MIN(active_chunk_estimate, 1024);
+
+	if (p_refresh_active_chunks && _chunk_stream_manager.is_valid()) {
+		StreamSettings stream_settings{};
+		stream_settings.cache_radius = _cache_radius;
+		stream_settings.world_height = _world_height;
+		stream_settings.world_radius = _world_radius;
+		_chunk_stream_manager->set_stream_settings(stream_settings);
+		_chunk_stream_manager->shift_chunks(_last_focos_position);
+	}
+}
+
+void VoxelAPI::set_render_settings(const Dictionary &p_settings) {
+	const Dictionary normalized = _normalize_render_settings(p_settings);
+	set_default_render_settings(normalized);
+	_apply_render_settings_fields(normalized, true);
 }
 
 Vector3 VoxelAPI::_get_current_focus_position() const {
@@ -320,7 +417,6 @@ void VoxelAPI::_process_models() {
 	for (auto &ready_model : ready_models) {
 		//  Chunk start with LOADED.
 		_queue_region_load(voxel::chunk_to_region_coords(ready_model.key));
-		_tree_decorator->decorate_chunk(ready_model.key, ready_model.value);
 		_chunk_repository->add_chunk(ready_model.key, ready_model.value);
 	}
 }
@@ -415,13 +511,15 @@ void VoxelAPI::_unload_region(const Vector3i &region_pos) {
 
 	_region_cache.erase(region_pos);
 }
-void VoxelAPI::_setup_trees(int64_t p_seed) {
-	TreeSettings ts;
-	ts.seed = p_seed;
-	ts.surface_height = [this](int32_t wx, int32_t wz) -> int32_t {
-		return int32_t(_terrain_base_height + _terrain_noise->get_noise_2d(wx, wz) * _terrain_amplitude);
-	};
-	_tree_decorator->set_settings(ts);
+void VoxelAPI::_setup_generation_pipeline(int64_t p_seed) {
+	_world_seed = p_seed;
+	auto pipeline = std::make_shared<ChunkGenerationPipeline>();
+	pipeline->add_pass(std::make_shared<BiomeSelectionPass>());
+	pipeline->add_pass(std::make_shared<TerrainSurfacePass>());
+	pipeline->add_pass(std::make_shared<CaveCarvingPass>());
+	pipeline->add_pass(std::make_shared<WaterFillPass>());
+	pipeline->add_pass(std::make_shared<TreeGenerationPass>(p_seed));
+	_generation_pipeline = std::move(pipeline);
 }
 
 void VoxelAPI::_process_meshes(const Vector3i &p_pos) {
@@ -532,13 +630,16 @@ void VoxelAPI::_queue_async_generate_chunk(const Vector3i p_pos) const {
 	settings.terrain_base_height	 = _terrain_base_height;
 	settings.terrain_amplitude		 = _terrain_amplitude;
 	settings.cave_threshold			 = 0.1f;
-	settings.noise_set.terrain_noise = _terrain_noise;
-	settings.noise_set.cave_noise	 = _cave_noise;
+	settings.world_seed = _world_seed;
+	settings.terrain_noise = _terrain_noise;
+	settings.cave_noise = _cave_noise;
+	settings.biome_noise = _biome_noise;
+	settings.dune_noise = _dune_noise;
 
 	constexpr bool dirty	 = false;
 	const bool high_priority = _is_high_priority(p_pos, dirty);
 
-	_model_generator->_queue_async_generate_chunk_model(p_pos, settings, high_priority);
+	_model_generator->_queue_async_generate_chunk_model(p_pos, settings, _generation_pipeline, high_priority);
 }
 
 void VoxelAPI::save_world_final() const {
@@ -553,6 +654,12 @@ void VoxelAPI::save_world_final() const {
 		serialized_position.push_back(position.z);
 		Dictionary player_data;
 		player_data["position"] = serialized_position;
+		player_data["yaw"] = _focus_node->get_rotation().y;
+		if (Node *head_node = _focus_node->get_node_or_null("Head")) {
+			if (Node3D *head = Object::cast_to<Node3D>(head_node)) {
+				player_data["pitch"] = head->get_rotation().x;
+			}
+		}
 		if (!SaveService::get_singleton()->save_world_section(
 				_disk_repository->get_current_world_id(), "player", player_data)) {
 			WARN_PRINT("Could not save player position.");
@@ -618,5 +725,9 @@ void VoxelAPI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_water_at", "world_pos"), &VoxelAPI::is_water_at);
 	ClassDB::bind_method(D_METHOD("save_world"), &VoxelAPI::save_world);
 	ClassDB::bind_method(D_METHOD("start_world", "id"), &VoxelAPI::start_world);
+	ClassDB::bind_method(D_METHOD("set_render_settings", "settings"), &VoxelAPI::set_render_settings);
+	ClassDB::bind_method(D_METHOD("get_render_settings"), &VoxelAPI::get_render_settings);
+	ClassDB::bind_static_method(VoxelAPI::get_class_static(), D_METHOD("get_default_render_settings"), &VoxelAPI::get_default_render_settings);
+	ClassDB::bind_static_method(VoxelAPI::get_class_static(), D_METHOD("set_default_render_settings", "settings"), &VoxelAPI::set_default_render_settings);
 }
 } // namespace godot
