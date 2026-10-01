@@ -28,6 +28,52 @@ inline uint64_t leaf_hash(uint64_t seed, int32_t x, int32_t y, int32_t z) {
 
 } // namespace
 
+TreeGenerationPass::CandidateList TreeGenerationPass::_calculate_chunk_candidates(
+		const ChunkGenerationContext &context, const int32_t cx, const int32_t cz) const {
+	CandidateList candidates;
+	if (_max_trees_per_chunk <= 0) return candidates;
+	uint64_t rng = static_cast<uint64_t>(_seed) ^
+			(static_cast<uint64_t>(static_cast<int64_t>(cx)) * 0x9E3779B97F4A7C15ULL) ^
+			(static_cast<uint64_t>(static_cast<int64_t>(cz)) * 0xC2B2AE3D27D4EB4FULL);
+	next_rand(rng);
+	const int tree_count = static_cast<int>(next_rand(rng) % (_max_trees_per_chunk + 1));
+	for (int i = 0; i < tree_count; ++i) {
+		const int lx = static_cast<int>(next_rand(rng) % Chunk::SIZE_X);
+		const int lz = static_cast<int>(next_rand(rng) % Chunk::SIZE_Z);
+		const int span = _max_trunk_height - _min_trunk_height + 1;
+		const int trunk_h = _min_trunk_height + static_cast<int>(next_rand(rng) % span);
+		const int32_t wx = cx * Chunk::SIZE_X + lx;
+		const int32_t wz = cz * Chunk::SIZE_Z + lz;
+		if (!context.trees_allowed_at(wx, wz)) continue;
+		const int32_t base_y = context.surface_height_at(wx, wz) + 1;
+		if (base_y <= context.water_level_at(wx, wz)) continue;
+		candidates.push_back({wx, wz, base_y, trunk_h, next_rand(rng)});
+	}
+	return candidates;
+}
+
+TreeGenerationPass::CandidateList TreeGenerationPass::_get_chunk_candidates(
+		const ChunkGenerationContext &context, const int32_t cx, const int32_t cz) const {
+	const ChunkKey key{cx, cz};
+	{
+		std::lock_guard<std::mutex> lock(_cache_mutex);
+		const auto found = _candidate_cache.find(key);
+		if (found != _candidate_cache.end()) return found->second;
+	}
+	// Do expensive noise sampling outside the lock; concurrent requests may race
+	// once, but only one immutable result is retained in the cache.
+	CandidateList calculated = _calculate_chunk_candidates(context, cx, cz);
+	std::lock_guard<std::mutex> lock(_cache_mutex);
+	const auto inserted = _candidate_cache.emplace(key, std::move(calculated));
+	if (!inserted.second) return inserted.first->second;
+	_cache_order.push_back(key);
+	while (_cache_order.size() > MAX_CACHED_CHUNKS) {
+		_candidate_cache.erase(_cache_order.front());
+		_cache_order.pop_front();
+	}
+	return inserted.first->second;
+}
+
 void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
 	if (_max_trees_per_chunk <= 0) {
 		return;
@@ -65,33 +111,12 @@ void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
 		for (int dcz = -1; dcz <= 1; ++dcz) {
 			const int32_t cx = context.chunk_position.x + dcx;
 			const int32_t cz = context.chunk_position.z + dcz;
-
-			uint64_t rng = static_cast<uint64_t>(_seed) ^
-					(static_cast<uint64_t>(static_cast<int64_t>(cx)) * 0x9E3779B97F4A7C15ULL) ^
-					(static_cast<uint64_t>(static_cast<int64_t>(cz)) * 0xC2B2AE3D27D4EB4FULL);
-			next_rand(rng);
-
-			const int tree_count = static_cast<int>(next_rand(rng) % (_max_trees_per_chunk + 1));
-
-			for (int i = 0; i < tree_count; ++i) {
-				const int lx = static_cast<int>(next_rand(rng) % Chunk::SIZE_X);
-				const int lz = static_cast<int>(next_rand(rng) % Chunk::SIZE_Z);
-				const int span = _max_trunk_height - _min_trunk_height + 1;
-				const int trunk_h = _min_trunk_height + static_cast<int>(next_rand(rng) % span);
-
-				const int32_t wx = cx * Chunk::SIZE_X + lx;
-				const int32_t wz = cz * Chunk::SIZE_Z + lz;
-				if (!context.trees_allowed_at(wx, wz)) {
-					continue;
-				}
-			const int32_t surface_y = context.surface_height_at(wx, wz);
-			const int32_t base_y = surface_y + 1;
-			// The water fill pass runs before trees. Reject the whole feature when
-			// its planting cell is at or below the local water surface.
-			if (base_y <= context.water_level_at(wx, wz)) {
-				continue;
-			}
-			const uint64_t shape_seed = next_rand(rng);
+			for (const TreeCandidate &candidate : _get_chunk_candidates(context, cx, cz)) {
+				const int32_t wx = candidate.x;
+				const int32_t wz = candidate.z;
+				const int32_t base_y = candidate.base_y;
+				const int trunk_h = candidate.trunk_height;
+				const uint64_t shape_seed = candidate.shape_seed;
 
 				if (base_y + trunk_h + 2 < origin_y || base_y - 1 > origin_y + Chunk::MAX_Y) {
 					continue;
