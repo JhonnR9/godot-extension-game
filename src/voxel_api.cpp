@@ -56,8 +56,8 @@ void VoxelAPI::_setup_noises() {
 
 	_dune_noise.instantiate();
 	_dune_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
-	_dune_noise->set_frequency(0.008);
-	_dune_noise->set_fractal_octaves(2);
+	_dune_noise->set_frequency(0.016);
+	_dune_noise->set_fractal_octaves(3);
 
 	_mountain_noise.instantiate();
 	_mountain_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);

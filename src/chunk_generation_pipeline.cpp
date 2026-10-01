@@ -7,7 +7,19 @@ namespace godot {
 namespace {
 
 float ocean_influence(const float noise) {
-	const float t = Math::clamp((-noise - 0.05f) / 0.60f, 0.0f, 1.0f);
+	// Start lowering the coast while still inland, then ease into the basin.
+	const float t = Math::clamp((0.25f - noise) / 0.80f, 0.0f, 1.0f);
+	return t * t * (3.0f - 2.0f * t);
+}
+
+float ocean_sample(const TerrainSettings &settings, const int32_t x, const int32_t z, const float terrain) {
+	return settings.ocean_noise.is_valid()
+			? settings.ocean_noise->get_noise_2d(x, z) + terrain * 0.16f
+			: 0.0f;
+}
+
+float desert_coast_influence(const float desert) {
+	const float t = Math::clamp((desert - 0.34f) / 0.34f, 0.0f, 1.0f);
 	return t * t * (3.0f - 2.0f * t);
 }
 
@@ -83,10 +95,21 @@ int32_t ChunkGenerationContext::surface_height_at(const int32_t p_world_x, const
 	const float height_delta = terrain * settings.terrain_amplitude * height_scale + height_offset;
 	int32_t surface_height = settings.terrain_base_height + static_cast<int32_t>(Math::round(height_delta));
 	if (settings.ocean_noise.is_valid()) {
-		const float influence = ocean_influence(settings.ocean_noise->get_noise_2d(p_world_x, p_world_z));
-		const int32_t coast_target = desert >= 0.68f ? settings.water_level + 1 : settings.water_level - 8;
+		float influence = ocean_influence(ocean_sample(settings, p_world_x, p_world_z, terrain));
+		if (desert >= 0.68f) {
+			const float sample = ocean_sample(settings, p_world_x, p_world_z, terrain);
+			float coast_t = Math::clamp((-sample + 0.05f) / 0.65f, 0.0f, 1.0f);
+			coast_t = coast_t * coast_t * (3.0f - 2.0f * coast_t);
+			influence = coast_t;
+		}
+		const float dry_coast = desert_coast_influence(desert);
+		const float coast_target = Math::lerp(static_cast<float>(settings.water_level - 8),
+				static_cast<float>(settings.water_level + 1), dry_coast);
 		surface_height = static_cast<int32_t>(Math::round(Math::lerp(static_cast<float>(surface_height),
-				static_cast<float>(coast_target), influence)));
+				coast_target, influence)));
+		if (desert >= 0.68f && influence > 0.85f) {
+			surface_height = MAX(surface_height, settings.water_level + 1);
+		}
 	}
 	if (desert < 0.68f) {
 		if (surface_height > settings.water_level - 4 && surface_height <= settings.water_level + 2 &&
@@ -129,7 +152,8 @@ bool ChunkGenerationContext::trees_allowed_at(const int32_t p_world_x, const int
 		return false;
 	}
 	if (desert < 0.68f && surface_height <= settings.water_level + 2 &&
-			settings.ocean_noise.is_valid() && ocean_influence(settings.ocean_noise->get_noise_2d(p_world_x, p_world_z)) > 0.05f) {
+			settings.ocean_noise.is_valid() && ocean_influence(ocean_sample(settings, p_world_x, p_world_z,
+					settings.terrain_noise.is_valid() ? settings.terrain_noise->get_noise_2d(p_world_x, p_world_z) : 0.0f)) > 0.05f) {
 		return false;
 	}
 	return !settings.river_noise.is_valid() || surface_height > settings.water_level - 2 ||

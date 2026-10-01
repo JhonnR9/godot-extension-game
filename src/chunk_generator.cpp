@@ -14,16 +14,18 @@ void BiomeSelectionPass::apply(ChunkGenerationContext &context) const {
 			ColumnGenerationData &column = context.column(x, z);
 			const float desert = context.desert_weight_at(wx, wz);
 			column.desert_weight = desert;
-			column.ocean_weight = settings.ocean_noise.is_valid() ? settings.ocean_noise->get_noise_2d(wx, wz) : 0.0f;
 			column.river_weight = settings.river_noise.is_valid() ? settings.river_noise->get_noise_2d(wx, wz) : 1.0f;
 			const float terrain = settings.terrain_noise.is_valid() ? settings.terrain_noise->get_noise_2d(wx, wz) : 0.0f;
+			// High frequency detail bends the otherwise very broad ocean boundary.
+			column.ocean_weight = settings.ocean_noise.is_valid()
+					? settings.ocean_noise->get_noise_2d(wx, wz) + terrain * 0.16f : 0.0f;
 			const float mountain = settings.mountain_noise.is_valid() ? settings.mountain_noise->get_noise_2d(wx, wz) : terrain;
 			const float mountain_ridge = 1.0f - Math::abs(mountain);
 			const float dune = settings.dune_noise.is_valid() ? settings.dune_noise->get_noise_2d(wx, wz) : 0.0f;
 			const float mountain_offset = Math::pow(mountain_ridge, 2.0f) * 19.0f - 5.0f;
-			const float dune_offset = (1.0f - Math::abs(dune)) * 4.0f - 1.5f;
+			const float dune_offset = (1.0f - Math::abs(dune)) * 7.0f - 2.5f;
 			column.height_offset = Math::round(Math::lerp(mountain_offset, dune_offset, desert));
-			column.height_scale = Math::lerp(2.4f, 0.32f, desert);
+			column.height_scale = Math::lerp(2.4f, 0.48f, desert);
 			// Sea level is a world-wide fixed height. Biomes can change terrain,
 			// but must not raise the water surface above this elevation.
 			column.water_level = settings.water_level;
@@ -64,7 +66,7 @@ void VegetationGenerationPass::apply(ChunkGenerationContext &context) const {
 			const uint64_t roll = hash(wx, wz) % 1000;
 			if (column.desert_weight > 0.97f && column.biome_id == static_cast<uint16_t>(BiomeId::DESERT) &&
 					voxel::type(column.surface_block) == voxel::BlockType::SAND) {
-				if (roll >= 2) continue;
+				if (roll >= 6) continue;
 				if (y >= origin_y && y < origin_y + Chunk::SIZE_Y) {
 					const int ground_y = column.surface_height - origin_y;
 					const int plant_y = y - origin_y;
@@ -104,13 +106,26 @@ void TerrainSurfacePass::apply(ChunkGenerationContext &context) const {
 			column.surface_height = settings.terrain_base_height + column.height_offset +
 					Math::round(noise * settings.terrain_amplitude * column.height_scale);
 			const bool is_desert = column.biome_id == static_cast<uint16_t>(BiomeId::DESERT);
-			float ocean_t = Math::clamp((-column.ocean_weight - 0.05f) / 0.60f, 0.0f, 1.0f);
+			float ocean_t = Math::clamp((0.25f - column.ocean_weight) / 0.80f, 0.0f, 1.0f);
 			ocean_t = ocean_t * ocean_t * (3.0f - 2.0f * ocean_t);
-			// Apply the same broad coastal slope to every biome. Desert coastlines
-			// stay dry, so their transition eases down to just above sea level.
-			const int32_t coast_target = is_desert ? column.water_level + 1 : column.water_level - 8;
+			if (is_desert) {
+				// Keep the desert's dry shoreline transition narrow enough that the
+				// entire inland dune field does not collapse to a flat shelf.
+				float desert_coast_t = Math::clamp((-column.ocean_weight + 0.05f) / 0.65f, 0.0f, 1.0f);
+				desert_coast_t = desert_coast_t * desert_coast_t * (3.0f - 2.0f * desert_coast_t);
+				ocean_t = desert_coast_t;
+			}
+			// Blend the ocean bed and dry desert shore across the biome boundary,
+			// instead of switching the coast height at a single desert threshold.
+			float dry_coast = Math::clamp((column.desert_weight - 0.34f) / 0.34f, 0.0f, 1.0f);
+			dry_coast = dry_coast * dry_coast * (3.0f - 2.0f * dry_coast);
+			const float coast_target = Math::lerp(static_cast<float>(column.water_level - 8),
+					static_cast<float>(column.water_level + 1), dry_coast);
 			column.surface_height = Math::round(Math::lerp(static_cast<float>(column.surface_height),
-					static_cast<float>(coast_target), ocean_t));
+					coast_target, ocean_t));
+			if (is_desert && ocean_t > 0.85f) {
+				column.surface_height = MAX(column.surface_height, column.water_level + 1);
+			}
 			bool has_named_biome = false;
 			if (!is_desert && column.surface_height <= column.water_level - 4) {
 				column.biome_id = static_cast<uint16_t>(BiomeId::OCEAN);
