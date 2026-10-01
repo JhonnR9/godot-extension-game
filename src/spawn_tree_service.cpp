@@ -5,24 +5,30 @@ namespace godot {
 namespace {
 
 inline uint64_t next_rand(uint64_t &state) {
+
 	state += 0x9E3779B97F4A7C15ULL;
 	uint64_t z = state;
+
 	z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
 	z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
+
 	return z ^ (z >> 31);
 }
 
 inline uint64_t mix_bits(uint64_t value) {
 	value = (value ^ (value >> 30)) * 0xBF58476D1CE4E5B9ULL;
 	value = (value ^ (value >> 27)) * 0x94D049BB133111EBULL;
+
 	return value ^ (value >> 31);
 }
 
 inline uint64_t leaf_hash(uint64_t seed, int32_t x, int32_t y, int32_t z) {
 	uint64_t value = seed;
+
 	value ^= static_cast<uint64_t>(static_cast<int64_t>(x)) * 0x9E3779B97F4A7C15ULL;
 	value ^= static_cast<uint64_t>(static_cast<int64_t>(y)) * 0xC2B2AE3D27D4EB4FULL;
 	value ^= static_cast<uint64_t>(static_cast<int64_t>(z)) * 0x165667B19E3779F9ULL;
+
 	return mix_bits(value);
 }
 
@@ -30,48 +36,81 @@ inline uint64_t leaf_hash(uint64_t seed, int32_t x, int32_t y, int32_t z) {
 
 TreeGenerationPass::CandidateList TreeGenerationPass::_calculate_chunk_candidates(
 		const ChunkGenerationContext &context, const int32_t cx, const int32_t cz) const {
+
 	CandidateList candidates;
+
 	if (_max_trees_per_chunk <= 0) return candidates;
+
 	uint64_t rng = static_cast<uint64_t>(_seed) ^
 			(static_cast<uint64_t>(static_cast<int64_t>(cx)) * 0x9E3779B97F4A7C15ULL) ^
 			(static_cast<uint64_t>(static_cast<int64_t>(cz)) * 0xC2B2AE3D27D4EB4FULL);
+
 	next_rand(rng);
+
 	const int tree_count = static_cast<int>(next_rand(rng) % (_max_trees_per_chunk + 1));
+
 	for (int i = 0; i < tree_count; ++i) {
+
 		const int lx = static_cast<int>(next_rand(rng) % Chunk::SIZE_X);
 		const int lz = static_cast<int>(next_rand(rng) % Chunk::SIZE_Z);
+
 		const int span = _max_trunk_height - _min_trunk_height + 1;
 		const int trunk_h = _min_trunk_height + static_cast<int>(next_rand(rng) % span);
+
 		const int32_t wx = cx * Chunk::SIZE_X + lx;
 		const int32_t wz = cz * Chunk::SIZE_Z + lz;
+
 		if (!context.trees_allowed_at(wx, wz)) continue;
 		const int32_t base_y = context.surface_height_at(wx, wz) + 1;
+
 		if (base_y <= context.water_level_at(wx, wz)) continue;
 		candidates.push_back({wx, wz, base_y, trunk_h, next_rand(rng)});
+
 	}
+
 	return candidates;
 }
 
 TreeGenerationPass::CandidateList TreeGenerationPass::_get_chunk_candidates(
 		const ChunkGenerationContext &context, const int32_t cx, const int32_t cz) const {
+
 	const ChunkKey key{cx, cz};
+
 	{
 		std::lock_guard<std::mutex> lock(_cache_mutex);
 		const auto found = _candidate_cache.find(key);
-		if (found != _candidate_cache.end()) return found->second;
+		if (found != _candidate_cache.end()) {
+			_least_to_most_recent.splice(_least_to_most_recent.end(), _least_to_most_recent, found->second.recency);
+			return found->second.candidates;
+		}
 	}
+
 	// Do expensive noise sampling outside the lock; concurrent requests may race
 	// once, but only one immutable result is retained in the cache.
 	CandidateList calculated = _calculate_chunk_candidates(context, cx, cz);
+
 	std::lock_guard<std::mutex> lock(_cache_mutex);
-	const auto inserted = _candidate_cache.emplace(key, std::move(calculated));
-	if (!inserted.second) return inserted.first->second;
-	_cache_order.push_back(key);
-	while (_cache_order.size() > MAX_CACHED_CHUNKS) {
-		_candidate_cache.erase(_cache_order.front());
-		_cache_order.pop_front();
+	const auto raced = _candidate_cache.find(key);
+
+	if (raced != _candidate_cache.end()) {
+		_least_to_most_recent.splice(_least_to_most_recent.end(), _least_to_most_recent, raced->second.recency);
+		return raced->second.candidates;
 	}
-	return inserted.first->second;
+
+	_least_to_most_recent.push_back(key);
+
+	auto recency = std::prev(_least_to_most_recent.end());
+
+	const auto inserted = _candidate_cache.emplace(key, CacheEntry{std::move(calculated), recency});
+
+	while (_candidate_cache.size() > MAX_CACHED_CHUNKS) {
+
+		const ChunkKey &oldest = _least_to_most_recent.front();
+		_candidate_cache.erase(oldest);
+		_least_to_most_recent.pop_front();
+
+	}
+	return inserted.first->second.candidates;
 }
 
 void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
@@ -112,6 +151,7 @@ void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
 			const int32_t cx = context.chunk_position.x + dcx;
 			const int32_t cz = context.chunk_position.z + dcz;
 			for (const TreeCandidate &candidate : _get_chunk_candidates(context, cx, cz)) {
+
 				const int32_t wx = candidate.x;
 				const int32_t wz = candidate.z;
 				const int32_t base_y = candidate.base_y;
@@ -131,15 +171,20 @@ void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
 				for (int layer = 0; layer < 5; ++layer) {
 					const int dy = trunk_h - 2 + layer;
 					const int radius = (layer == 1 || layer == 2) ? 2 : (layer == 4 ? 0 : 1);
+
 					for (int dx = -radius; dx <= radius; ++dx) {
+
 						for (int dz = -radius; dz <= radius; ++dz) {
 							const int ax = ABS(dx);
 							const int az = ABS(dz);
+
 							if (radius == 2 && ax == 2 && az == 2) {
 								continue;
 							}
+                            
 							// Break up the outer silhouette with sparse, repeatable gaps.
 							const bool outer_edge = radius == 2 && (ax == 2 || az == 2);
+
 							if (outer_edge && (leaf_hash(shape_seed, wx + dx, base_y + dy, wz + dz) % 7 == 0)) {
 								continue;
 							}

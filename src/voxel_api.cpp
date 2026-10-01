@@ -500,6 +500,7 @@ void VoxelAPI::_apply_render_settings_fields(const Dictionary &p_settings, const
 		stream_settings.cache_radius = _cache_radius;
 		stream_settings.world_height = _world_height;
 		stream_settings.world_radius = _world_radius;
+        
 		_chunk_stream_manager->set_stream_settings(stream_settings);
 		_chunk_stream_manager->shift_chunks(_last_focos_position);
 	}
