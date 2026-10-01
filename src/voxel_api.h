@@ -62,6 +62,8 @@ private:
 	// Optimization
 	int _world_radius = 4;
 	int _world_height = 3;
+	bool _distance_fog_enabled = true;
+	int _distance_fog_start_percent = 65;
 	int _cache_radius = _world_radius + 3;
 	int _diameter     = (_cache_radius * 2) + 1; //  (2 * R + 1).
 	int _prewarm_chunk_pool = (_diameter * _diameter) * _world_height;
@@ -124,6 +126,7 @@ private:
 
 	void _setup_generation_pipeline(int64_t p_seed);
 	void _apply_render_settings_fields(const Dictionary &p_settings, bool p_refresh_active_chunks);
+	void _apply_distance_fog() const;
 	static Dictionary _normalize_render_settings(const Dictionary &p_settings);
 	static void _apply_vsync_setting(const Dictionary &p_settings);
 

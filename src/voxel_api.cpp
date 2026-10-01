@@ -5,7 +5,9 @@
 #include "save_service.h"
 #include "utils.h"
 #include <godot_cpp/classes/display_server.hpp>
+#include <godot_cpp/classes/environment.hpp>
 #include <godot_cpp/classes/resource_uid.hpp>
+#include <godot_cpp/classes/world_environment.hpp>
 #include <vector>
 
 namespace godot {
@@ -434,6 +436,8 @@ Dictionary VoxelAPI::_normalize_render_settings(const Dictionary &p_settings) {
 	Dictionary normalized;
 	normalized["render_distance"] = read_int("render_distance", 4, 2, 12);
 	normalized["vertical_render_distance"] = read_int("vertical_render_distance", 3, 1, 6);
+	normalized["distance_fog_enabled"] = bool(p_settings.get("distance_fog_enabled", true));
+	normalized["distance_fog_start_percent"] = read_int("distance_fog_start_percent", 65, 45, 75);
 	normalized["vsync"] = bool(p_settings.get("vsync", true));
 	return normalized;
 }
@@ -467,6 +471,8 @@ Dictionary VoxelAPI::get_render_settings() const {
 	Dictionary settings;
 	settings["render_distance"] = _world_radius;
 	settings["vertical_render_distance"] = _world_height;
+	settings["distance_fog_enabled"] = _distance_fog_enabled;
+	settings["distance_fog_start_percent"] = _distance_fog_start_percent;
 	if (DisplayServer *display = DisplayServer::get_singleton()) {
 		settings["vsync"] = display->window_get_vsync_mode() != DisplayServer::VSYNC_DISABLED;
 	} else {
@@ -479,6 +485,8 @@ void VoxelAPI::_apply_render_settings_fields(const Dictionary &p_settings, const
 	const Dictionary settings = _normalize_render_settings(p_settings);
 	_world_radius = settings["render_distance"];
 	_world_height = settings["vertical_render_distance"];
+	_distance_fog_enabled = settings["distance_fog_enabled"];
+	_distance_fog_start_percent = settings["distance_fog_start_percent"];
 	_cache_radius = _world_radius + 3;
 	_diameter = (_cache_radius * 2) + 1;
 	int horizontal_chunk_count = 0;
@@ -494,6 +502,7 @@ void VoxelAPI::_apply_render_settings_fields(const Dictionary &p_settings, const
 		// render settings increase; startup prewarm remains capped for load time.
 		_chunk_pool->set_prewarm(MAX(_prewarm_chunk_pool, active_chunk_estimate));
 	}
+	_apply_distance_fog();
 
 	if (p_refresh_active_chunks && _chunk_stream_manager.is_valid()) {
 		StreamSettings stream_settings{};
@@ -504,6 +513,27 @@ void VoxelAPI::_apply_render_settings_fields(const Dictionary &p_settings, const
 		_chunk_stream_manager->set_stream_settings(stream_settings);
 		_chunk_stream_manager->shift_chunks(_last_focos_position);
 	}
+}
+
+void VoxelAPI::_apply_distance_fog() const {
+	Node *parent = get_parent();
+	if (parent == nullptr) return;
+	WorldEnvironment *world_environment = Object::cast_to<WorldEnvironment>(parent->get_node_or_null("WorldEnvironment"));
+	if (world_environment == nullptr) return;
+	Ref<Environment> environment = world_environment->get_environment();
+	if (environment.is_null()) return;
+
+	environment->set_fog_enabled(_distance_fog_enabled);
+	if (!_distance_fog_enabled) return;
+	environment->set_fog_mode(Environment::FOG_MODE_DEPTH);
+	environment->set_fog_light_color(Color(0.47f, 0.54f, 0.65f, 1.0f));
+	environment->set_fog_sky_affect(1.0f);
+	const float render_distance = static_cast<float>(_world_radius * Chunk::SIZE_X);
+	const float fog_begin = MAX(8.0f, render_distance * static_cast<float>(_distance_fog_start_percent) / 100.0f);
+	const float fog_end = MAX(fog_begin + 8.0f, render_distance * 1.02f);
+	environment->set_fog_depth_begin(fog_begin);
+	environment->set_fog_depth_end(fog_end);
+	environment->set_fog_depth_curve(1.0f);
 }
 
 void VoxelAPI::set_render_settings(const Dictionary &p_settings) {
