@@ -13,6 +13,7 @@ constexpr Block BLOCK_FLAG_TRANSPARENT = Block{1u} << 11;
 constexpr Block BLOCK_FLAG_EMISSIVE    = Block{1u} << 12;
 constexpr Block BLOCK_FLAG_WATERLOG    = Block{1u} << 13;
 constexpr Block BLOCK_FLAG_CUTOUT      = Block{1u} << 14;
+constexpr Block BLOCK_FLAG_OCEAN       = Block{1u} << 15;
 constexpr int WATER_TEXTURE_LAYER = 23;
 
 constexpr uint16_t block_id(Block b) {

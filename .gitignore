@@ -69,3 +69,5 @@ build/
 *.ipch
 *.db
 *.vsidx
+
+visual_bugs/

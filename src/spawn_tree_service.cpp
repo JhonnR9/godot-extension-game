@@ -48,8 +48,13 @@ void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
 		const voxel::Block existing = context.chunk.get_block(lx, ly, lz);
 		if (voxel::is_air(existing) ||
 				(replace_leaves && voxel::type(existing) == voxel::BlockType::LEAVES) ||
+				(replace_leaves && (voxel::type(existing) == voxel::BlockType::FLOWER ||
+						voxel::type(existing) == voxel::BlockType::TALL_GRASS)) ||
 				(replace_ground && voxel::is_collidable(existing))) {
-			context.chunk.set_block(lx, ly, lz, block);
+			const GenerationLayer layer = voxel::type(block) == voxel::BlockType::LOG
+					? GenerationLayer::TREE_TRUNK
+					: GenerationLayer::TREE_FOLIAGE;
+			context.write_block(lx, ly, lz, block, layer);
 		}
 	};
 

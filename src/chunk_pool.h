@@ -24,7 +24,10 @@ public:
 private:
 	Node *_owner_node = nullptr;
 	std::vector<ChunkNode *> _pool;
-	int prewarm{ 4096 };
+	int _allocated_count = 0;
+	int _target_capacity = 0;
+	ChunkNode *_allocate_one(bool p_enable);
+	void _trim_idle_nodes();
 };
 
 } //namespace godot

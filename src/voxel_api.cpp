@@ -63,6 +63,16 @@ void VoxelAPI::_setup_noises() {
 	_mountain_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
 	_mountain_noise->set_frequency(0.006);
 	_mountain_noise->set_fractal_octaves(3);
+
+	_ocean_noise.instantiate();
+	_ocean_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
+	_ocean_noise->set_frequency(0.0015);
+	_ocean_noise->set_fractal_octaves(2);
+
+	_river_noise.instantiate();
+	_river_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
+	_river_noise->set_frequency(0.008);
+	_river_noise->set_fractal_octaves(1);
 }
 
 void VoxelAPI::_init_chunks() {
@@ -230,8 +240,54 @@ void VoxelAPI::_exit_tree() {
 }
 
 void VoxelAPI::break_block(const Vector3 &world_pos) {
-	Vector3i block_pos = voxel::world_to_block(world_pos);
+	const Vector3i block_pos = voxel::world_to_block(world_pos);
 	_chunk_repository->set_block(block_pos, 0);
+	_flow_water_into(block_pos);
+}
+
+void VoxelAPI::_flow_water_into(const Vector3i &p_target) const {
+	if (_chunk_repository.is_null() || p_target.y >= _terrain_base_height) {
+		return;
+	}
+
+	const Vector3i target_chunk_pos = voxel::block_to_chunk_coords(p_target);
+	const std::shared_ptr<Chunk> target_chunk = _chunk_repository->get_chunk(target_chunk_pos);
+	if (!target_chunk) {
+		return;
+	}
+	const Vector3i target_local = voxel::block_to_chunk_local_block(p_target);
+	if (!voxel::is_air(target_chunk->get_block(target_local.x, target_local.y, target_local.z))) {
+		return;
+	}
+
+	const Vector3i directions[] = {
+		Vector3i(1, 0, 0), Vector3i(-1, 0, 0), Vector3i(0, 0, 1),
+		Vector3i(0, 0, -1), Vector3i(0, 1, 0), Vector3i(0, -1, 0)
+	};
+	for (const Vector3i &direction : directions) {
+		const Vector3i source_pos = p_target + direction;
+		// Water spreads sideways and down, never uphill or above sea level.
+		if (source_pos.y < p_target.y || source_pos.y >= _terrain_base_height) {
+			continue;
+		}
+		const Vector3i source_chunk_pos = voxel::block_to_chunk_coords(source_pos);
+		const std::shared_ptr<Chunk> source_chunk = _chunk_repository->get_chunk(source_chunk_pos);
+		if (!source_chunk) {
+			continue;
+		}
+		const Vector3i source_local = voxel::block_to_chunk_local_block(source_pos);
+		const voxel::Block source = source_chunk->get_block(source_local.x, source_local.y, source_local.z);
+		if (voxel::type(source) != voxel::BlockType::WATER) {
+			continue;
+		}
+		voxel::Block flags = voxel::BLOCK_FLAG_TRANSPARENT;
+		if (voxel::has_flag(source, voxel::BLOCK_FLAG_OCEAN)) {
+			flags |= voxel::BLOCK_FLAG_OCEAN;
+		}
+		_chunk_repository->set_block(p_target,
+				voxel::make_block(voxel::BlockType::WATER, flags));
+		return;
+	}
 }
 
 void VoxelAPI::set_block(const Vector3 &p_world_pos, const voxel::Block &p_block) const {
@@ -261,6 +317,39 @@ bool VoxelAPI::is_water_at(const Vector3 &p_world_pos) const {
 	return voxel::type(chunk->get_block(local_pos.x, local_pos.y, local_pos.z)) == voxel::BlockType::WATER;
 }
 
+bool VoxelAPI::is_ocean_at(const Vector3 &p_world_pos) const {
+	if (_chunk_repository.is_null()) {
+		return false;
+	}
+
+	const Vector3i block_pos = voxel::world_to_block(p_world_pos);
+	const Vector3i chunk_pos = voxel::block_to_chunk_coords(block_pos);
+	const std::shared_ptr<Chunk> chunk = _chunk_repository->get_chunk(chunk_pos);
+	if (!chunk) {
+		return false;
+	}
+
+	const Vector3i local_pos = voxel::block_to_chunk_local_block(block_pos);
+	const voxel::Block block = chunk->get_block(local_pos.x, local_pos.y, local_pos.z);
+	return voxel::type(block) == voxel::BlockType::WATER && voxel::has_flag(block, voxel::BLOCK_FLAG_OCEAN);
+}
+
+int32_t VoxelAPI::get_block_type_at(const Vector3 &p_world_pos) const {
+	if (_chunk_repository.is_null()) {
+		return -1;
+	}
+
+	const Vector3i block_pos = voxel::world_to_block(p_world_pos);
+	const Vector3i chunk_pos = voxel::block_to_chunk_coords(block_pos);
+	const std::shared_ptr<Chunk> chunk = _chunk_repository->get_chunk(chunk_pos);
+	if (!chunk) {
+		return -1;
+	}
+
+	const Vector3i local_pos = voxel::block_to_chunk_local_block(block_pos);
+	return static_cast<int32_t>(voxel::type(chunk->get_block(local_pos.x, local_pos.y, local_pos.z)));
+}
+
 void VoxelAPI::set_focus_node(Node3D *p_node) {
 	_focus_node		= p_node;
 	_use_manual_pos = false;
@@ -288,6 +377,8 @@ void VoxelAPI::create_new_world(const int32_t p_seed, const String &p_name) {
 	_biome_noise->set_seed(world_model.seed + 2);
 	_dune_noise->set_seed(world_model.seed + 3);
 	_mountain_noise->set_seed(world_model.seed + 4);
+	_ocean_noise->set_seed(world_model.seed + 5);
+	_river_noise->set_seed(world_model.seed + 6);
 
 	_setup_generation_pipeline(p_seed);
 
@@ -323,6 +414,8 @@ void VoxelAPI::start_world(int64_t p_id) {
 	_biome_noise->set_seed(world_model.seed + 2);
 	_dune_noise->set_seed(world_model.seed + 3);
 	_mountain_noise->set_seed(world_model.seed + 4);
+	_ocean_noise->set_seed(world_model.seed + 5);
+	_river_noise->set_seed(world_model.seed + 6);
 	_setup_generation_pipeline(world_model.seed);
 
 	_init_chunks();
@@ -388,8 +481,19 @@ void VoxelAPI::_apply_render_settings_fields(const Dictionary &p_settings, const
 	_world_height = settings["vertical_render_distance"];
 	_cache_radius = _world_radius + 3;
 	_diameter = (_cache_radius * 2) + 1;
-	const int active_chunk_estimate = (_world_radius * 2 + 1) * (_world_radius * 2 + 1) * (_world_height * 2 + 1);
+	int horizontal_chunk_count = 0;
+	for (int x = -_world_radius; x <= _world_radius; ++x) {
+		for (int z = -_world_radius; z <= _world_radius; ++z) {
+			if (x * x + z * z <= _world_radius * _world_radius) ++horizontal_chunk_count;
+		}
+	}
+	const int active_chunk_estimate = horizontal_chunk_count * (_world_height * 2 + 1);
 	_prewarm_chunk_pool = MIN(active_chunk_estimate, 1024);
+	if (_chunk_pool.is_valid()) {
+		// The pool tracks total capacity (active and idle nodes) and grows when
+		// render settings increase; startup prewarm remains capped for load time.
+		_chunk_pool->set_prewarm(MAX(_prewarm_chunk_pool, active_chunk_estimate));
+	}
 
 	if (p_refresh_active_chunks && _chunk_stream_manager.is_valid()) {
 		StreamSettings stream_settings{};
@@ -525,8 +629,8 @@ void VoxelAPI::_setup_generation_pipeline(int64_t p_seed) {
 	pipeline->add_pass(std::make_shared<TerrainSurfacePass>());
 	pipeline->add_pass(std::make_shared<CaveCarvingPass>());
 	pipeline->add_pass(std::make_shared<WaterFillPass>());
-	pipeline->add_pass(std::make_shared<VegetationGenerationPass>(p_seed));
 	pipeline->add_pass(std::make_shared<TreeGenerationPass>(p_seed));
+	pipeline->add_pass(std::make_shared<VegetationGenerationPass>(p_seed));
 	_generation_pipeline = std::move(pipeline);
 }
 
@@ -644,6 +748,8 @@ void VoxelAPI::_queue_async_generate_chunk(const Vector3i p_pos) const {
 	settings.biome_noise = _biome_noise;
 	settings.dune_noise = _dune_noise;
 	settings.mountain_noise = _mountain_noise;
+	settings.ocean_noise = _ocean_noise;
+	settings.river_noise = _river_noise;
 
 	constexpr bool dirty	 = false;
 	const bool high_priority = _is_high_priority(p_pos, dirty);
@@ -732,6 +838,8 @@ void VoxelAPI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("break_block", "world_pos"), &VoxelAPI::break_block);
 	ClassDB::bind_method(D_METHOD("set_block", "world_pos", "block"), &VoxelAPI::set_block);
 	ClassDB::bind_method(D_METHOD("is_water_at", "world_pos"), &VoxelAPI::is_water_at);
+	ClassDB::bind_method(D_METHOD("is_ocean_at", "world_pos"), &VoxelAPI::is_ocean_at);
+	ClassDB::bind_method(D_METHOD("get_block_type_at", "world_pos"), &VoxelAPI::get_block_type_at);
 	ClassDB::bind_method(D_METHOD("save_world"), &VoxelAPI::save_world);
 	ClassDB::bind_method(D_METHOD("start_world", "id"), &VoxelAPI::start_world);
 	ClassDB::bind_method(D_METHOD("set_render_settings", "settings"), &VoxelAPI::set_render_settings);

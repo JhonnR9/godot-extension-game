@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" uid="uid://b508fktn2kxq2" path="res://scenes/settings_panel.tscn" id="10_settings"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_xo6ui"]
+radius = 0.1
 
 [sub_resource type="LabelSettings" id="LabelSettings_71j4m"]
 font = ExtResource("7_qmtj6")
@@ -35,6 +36,11 @@ adjustment_saturation = 0.88
 [node name="Player" type="CharacterBody3D" parent="." unique_id=1837014228 node_paths=PackedStringArray("head", "camera", "collision_shape", "world")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 87.2847, 0)
 script = ExtResource("1_xo6ui")
+speed = null
+fly_speed = null
+noclip_speed = null
+jump_force = null
+mouse_sensitivity = null
 head = NodePath("Head")
 camera = NodePath("Head/Camera3D")
 collision_shape = NodePath("CollisionShape3D")

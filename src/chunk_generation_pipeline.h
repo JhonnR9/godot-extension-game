@@ -21,11 +21,26 @@ struct TerrainSettings {
 	Ref<FastNoiseLite> biome_noise;
 	Ref<FastNoiseLite> dune_noise;
 	Ref<FastNoiseLite> mountain_noise;
+	Ref<FastNoiseLite> ocean_noise;
+	Ref<FastNoiseLite> river_noise;
 };
 
 enum class BiomeId : uint16_t {
 	PLAINS = 0,
-	DESERT = 1
+	DESERT = 1,
+	OCEAN = 2,
+	RIVER = 3
+};
+
+// Generation writes are ordered by ownership. A later layer can replace an
+// earlier one, while lower-priority passes cannot overwrite established features.
+enum class GenerationLayer : uint8_t {
+	TERRAIN = 1,
+	CARVING = 2,
+	WATER = 3,
+	VEGETATION = 4,
+	TREE_FOLIAGE = 5,
+	TREE_TRUNK = 6
 };
 
 // Mutable per-column input/output for generation passes. A biome-selection pass
@@ -38,6 +53,8 @@ struct ColumnGenerationData {
 	uint16_t biome_id = 0;
 	int32_t subsurface_depth = 15;
 	float desert_weight = 0.0f;
+	float ocean_weight = 0.0f;
+	float river_weight = 0.0f;
 	bool trees_allowed = true;
 	voxel::Block surface_block = 0;
 	voxel::Block subsurface_block = 0;
@@ -50,6 +67,7 @@ struct ChunkGenerationContext {
 	Chunk &chunk;
 	const TerrainSettings &settings;
 	std::vector<ColumnGenerationData> columns;
+	std::vector<uint8_t> block_write_layers;
 
 	ChunkGenerationContext(const Vector3i &p_chunk_position, Chunk &p_chunk, const TerrainSettings &p_settings);
 	ColumnGenerationData &column(int x, int z);
@@ -61,6 +79,7 @@ struct ChunkGenerationContext {
 	int32_t world_x(int local_x) const;
 	int32_t world_y(int local_y) const;
 	int32_t world_z(int local_z) const;
+	bool write_block(int x, int y, int z, voxel::Block block, GenerationLayer layer);
 };
 
 class ChunkGenerationPass {

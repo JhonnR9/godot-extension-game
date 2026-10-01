@@ -6,9 +6,6 @@ namespace godot {
 
 void BiomeSelectionPass::apply(ChunkGenerationContext &context) const {
 	const TerrainSettings &settings = context.settings;
-	if (settings.biome_noise.is_null()) {
-		return;
-	}
 
 	for (int z = 0; z < Chunk::SIZE_Z; ++z) {
 		for (int x = 0; x < Chunk::SIZE_X; ++x) {
@@ -17,6 +14,8 @@ void BiomeSelectionPass::apply(ChunkGenerationContext &context) const {
 			ColumnGenerationData &column = context.column(x, z);
 			const float desert = context.desert_weight_at(wx, wz);
 			column.desert_weight = desert;
+			column.ocean_weight = settings.ocean_noise.is_valid() ? settings.ocean_noise->get_noise_2d(wx, wz) : 0.0f;
+			column.river_weight = settings.river_noise.is_valid() ? settings.river_noise->get_noise_2d(wx, wz) : 1.0f;
 			const float terrain = settings.terrain_noise.is_valid() ? settings.terrain_noise->get_noise_2d(wx, wz) : 0.0f;
 			const float mountain = settings.mountain_noise.is_valid() ? settings.mountain_noise->get_noise_2d(wx, wz) : terrain;
 			const float mountain_ridge = 1.0f - Math::abs(mountain);
@@ -25,8 +24,9 @@ void BiomeSelectionPass::apply(ChunkGenerationContext &context) const {
 			const float dune_offset = (1.0f - Math::abs(dune)) * 4.0f - 1.5f;
 			column.height_offset = Math::round(Math::lerp(mountain_offset, dune_offset, desert));
 			column.height_scale = Math::lerp(2.4f, 0.32f, desert);
-			column.water_level = Math::round(Math::lerp(static_cast<float>(settings.water_level),
-					static_cast<float>(settings.terrain_base_height - 8), desert));
+			// Sea level is a world-wide fixed height. Biomes can change terrain,
+			// but must not raise the water surface above this elevation.
+			column.water_level = settings.water_level;
 			column.trees_allowed = desert < 0.45f;
 			if (desert > 0.68f) {
 				column.biome_id = static_cast<uint16_t>(BiomeId::DESERT);
@@ -77,11 +77,15 @@ void VegetationGenerationPass::apply(ChunkGenerationContext &context) const {
 				const int height = 1 + static_cast<int>((hash(wx ^ 0x5A5A, wz) >> 8) % 3);
 				for (int dy = 0; dy < height && y + dy < origin_y + Chunk::SIZE_Y; ++dy) {
 					if (y + dy < origin_y) continue;
-					context.chunk.set_block(x, y + dy - origin_y, z, voxel::make_block(voxel::BlockType::CACTUS));
+					context.write_block(x, y + dy - origin_y, z,
+							voxel::make_block(voxel::BlockType::CACTUS), GenerationLayer::VEGETATION);
 				}
 			} else if (column.desert_weight < 0.34f && roll < 58 && y >= origin_y && y < origin_y + Chunk::SIZE_Y) {
 				const voxel::BlockType plant = roll < 28 ? voxel::BlockType::FLOWER : voxel::BlockType::TALL_GRASS;
-				context.chunk.set_block(x, y - origin_y, z, voxel::make_block(plant, voxel::BLOCK_FLAG_CUTOUT));
+				if (voxel::is_air(context.chunk.get_block(x, y - origin_y, z))) {
+					context.write_block(x, y - origin_y, z,
+							voxel::make_block(plant, voxel::BLOCK_FLAG_CUTOUT), GenerationLayer::VEGETATION);
+				}
 			}
 		}
 	}
@@ -99,6 +103,26 @@ void TerrainSurfacePass::apply(ChunkGenerationContext &context) const {
 					: 0.0f;
 			column.surface_height = settings.terrain_base_height + column.height_offset +
 					Math::round(noise * settings.terrain_amplitude * column.height_scale);
+			const bool is_desert = column.biome_id == static_cast<uint16_t>(BiomeId::DESERT);
+			const bool is_macro_ocean = column.ocean_weight < -0.28f;
+			if (!is_desert && (is_macro_ocean || column.surface_height <= column.water_level - 4)) {
+				if (is_macro_ocean) {
+					column.surface_height = MIN(column.surface_height, column.water_level - 6);
+				}
+				column.biome_id = static_cast<uint16_t>(BiomeId::OCEAN);
+				column.surface_block = voxel::make_block(voxel::BlockType::SAND);
+				column.subsurface_block = voxel::make_block(voxel::BlockType::SAND);
+				column.subsurface_depth = 5;
+				column.trees_allowed = false;
+			} else if (!is_desert && Math::abs(column.river_weight) < 0.035f &&
+					column.surface_height <= column.water_level + 2) {
+				column.surface_height = MIN(column.surface_height, column.water_level - 2);
+				column.biome_id = static_cast<uint16_t>(BiomeId::RIVER);
+				column.surface_block = voxel::make_block(voxel::BlockType::SAND);
+				column.subsurface_block = voxel::make_block(voxel::BlockType::SAND);
+				column.subsurface_depth = 2;
+				column.trees_allowed = false;
+			}
 
 			for (int y = 0; y < Chunk::SIZE_Y; ++y) {
 				const int32_t wy = context.world_y(y);
@@ -115,7 +139,7 @@ void TerrainSurfacePass::apply(ChunkGenerationContext &context) const {
 				} else if (wy < -32) {
 					block = column.deep_stone_block;
 				}
-				context.chunk.set_block(x, y, z, block);
+				context.write_block(x, y, z, block, GenerationLayer::TERRAIN);
 			}
 		}
 	}
@@ -143,7 +167,7 @@ void CaveCarvingPass::apply(ChunkGenerationContext &context) const {
 				const float cave_mask = Math::clamp(static_cast<float>(depth) / 6.0f, 0.0f, 1.0f);
 				const float threshold = Math::lerp(1.0f, context.settings.cave_threshold, cave_mask);
 				if (cave > threshold) {
-					context.chunk.set_block(x, y, z, 0);
+					context.write_block(x, y, z, 0, GenerationLayer::CARVING);
 				}
 			}
 		}
@@ -154,12 +178,22 @@ void WaterFillPass::apply(ChunkGenerationContext &context) const {
 	for (int z = 0; z < Chunk::SIZE_Z; ++z) {
 		for (int x = 0; x < Chunk::SIZE_X; ++x) {
 			const ColumnGenerationData &column = context.column(x, z);
+			// Water bodies belong to lowland/plains terrain only. Leave the
+			// desert dry and ignore shallow one-block dips in the ground.
+			if (column.biome_id == static_cast<uint16_t>(BiomeId::DESERT) ||
+					column.surface_height >= column.water_level - 1) {
+				continue;
+			}
 			for (int y = 0; y < Chunk::SIZE_Y; ++y) {
 				const int32_t wy = context.world_y(y);
-				if (wy > column.surface_height && wy <= column.water_level &&
+				// Water occupies blocks below sea level so its top mesh lands
+				// exactly on the sea-level plane instead of one block above it.
+				if (wy > column.surface_height && wy < column.water_level &&
 						voxel::is_air(context.chunk.get_block(x, y, z))) {
-					context.chunk.set_block(x, y, z,
-							voxel::make_block(voxel::BlockType::WATER, voxel::BLOCK_FLAG_TRANSPARENT));
+					const voxel::Block water_flags = voxel::BLOCK_FLAG_TRANSPARENT |
+							(column.biome_id == static_cast<uint16_t>(BiomeId::OCEAN) ? voxel::BLOCK_FLAG_OCEAN : 0);
+					context.write_block(x, y, z,
+							voxel::make_block(voxel::BlockType::WATER, water_flags), GenerationLayer::WATER);
 				}
 			}
 		}

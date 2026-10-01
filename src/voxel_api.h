@@ -32,6 +32,8 @@ public:
 	void break_block(const Vector3 &world_pos);
 	void set_block(const Vector3 &p_world_pos, const voxel::Block &p_block) const;
 	bool is_water_at(const Vector3 &p_world_pos) const;
+	bool is_ocean_at(const Vector3 &p_world_pos) const;
+	int32_t get_block_type_at(const Vector3 &p_world_pos) const;
 	void set_focus_node(Node3D *p_node);
 	void set_focus_position(Vector3 p_pos);
 	void create_new_world(int32_t p_seed, const String &p_name);
@@ -76,6 +78,8 @@ private:
 	Ref<FastNoiseLite> _biome_noise;
 	Ref<FastNoiseLite> _dune_noise;
 	Ref<FastNoiseLite> _mountain_noise;
+	Ref<FastNoiseLite> _ocean_noise;
+	Ref<FastNoiseLite> _river_noise;
 
 	// Player position control
 	Vector3i _last_focos_position;
@@ -85,6 +89,7 @@ private:
 	void _queue_async_generate_chunk(Vector3i p_pos) const;
 	ChunkNeighbors _get_neighbors_for(Vector3i p_pos) const;
 	void _setup_noises();
+	void _flow_water_into(const Vector3i &p_target) const;
 	void _init_chunks();
 	void _remove_chunk(ChunkNode *p_chunk_node);
 	void _update_visible_chunks();

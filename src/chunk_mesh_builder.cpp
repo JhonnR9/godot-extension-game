@@ -75,7 +75,8 @@ void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
 		for (int y = 0; y < SY; y++) {
 			for (int z = 0; z < SZ; z++) {
 				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block) || _is_crossed_plant(block))
+				if (voxel::is_air(block) || _is_crossed_plant(block) ||
+						voxel::type(block) == voxel::BlockType::WATER)
 					continue;
 
 				if (_is_face_visible(neighbors, x + 1, y, z, block)) {
@@ -291,7 +292,8 @@ void ChunkMeshBuilder::_add_left_faces(const ChunkNeighbors &neighbors) {
 		for (int y = 0; y < SY; y++) {
 			for (int z = 0; z < SZ; z++) {
 				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block) || _is_crossed_plant(block))
+				if (voxel::is_air(block) || _is_crossed_plant(block) ||
+						voxel::type(block) == voxel::BlockType::WATER)
 					continue;
 
 				if (_is_face_visible(neighbors, x - 1, y, z, block)) {
@@ -400,7 +402,8 @@ void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
 		for (int x = 0; x < SX; x++) {
 			for (int z = 0; z < SZ; z++) {
 				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block) || _is_crossed_plant(block))
+				if (voxel::is_air(block) || _is_crossed_plant(block) ||
+						voxel::type(block) == voxel::BlockType::WATER)
 					continue;
 
 				if (_is_face_visible(neighbors, x, y - 1, z, block)) {
@@ -509,7 +512,8 @@ void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
 		for (int x = 0; x < SX; x++) {
 			for (int y = 0; y < SY; y++) {
 				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block) || _is_crossed_plant(block))
+				if (voxel::is_air(block) || _is_crossed_plant(block) ||
+						voxel::type(block) == voxel::BlockType::WATER)
 					continue;
 
 				if (_is_face_visible(neighbors, x, y, z + 1, block)) {
@@ -618,7 +622,8 @@ void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
 		for (int x = 0; x < SX; x++) {
 			for (int y = 0; y < SY; y++) {
 				const voxel::Block block = center->get_block(x, y, z);
-				if (voxel::is_air(block) || _is_crossed_plant(block))
+				if (voxel::is_air(block) || _is_crossed_plant(block) ||
+						voxel::type(block) == voxel::BlockType::WATER)
 					continue;
 
 				if (_is_face_visible(neighbors, x, y, z - 1, block)) {

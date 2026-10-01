@@ -23,21 +23,65 @@ var selected_block_id := 1
 var underwater_amount := 0.0
 var underwater_overlay: ColorRect
 var underwater_material: ShaderMaterial
+var ocean_ambience: AudioStreamPlayer
+var water_splash: AudioStreamPlayer
+var footstep_player: AudioStreamPlayer
+var footstep_streams: Dictionary = {}
+var footstep_timer := 0.0
+var was_underwater := false
+var ocean_audio_amount := 0.0
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	camera.current = true
 	_create_underwater_overlay()
+	_create_water_audio()
 	if world:
 		world.set_focus_node(self)
 
 func _process(delta: float) -> void:
-	var target_amount := 0.0
-	if world and camera and world.is_water_at(camera.global_position):
-		target_amount = 1.0
+	var in_water := world != null and camera != null and world.is_water_at(camera.global_position)
+	var target_amount := 1.0 if in_water else 0.0
+	if in_water and not was_underwater and water_splash:
+		water_splash.play()
+	was_underwater = in_water
+
+	var in_ocean := world != null and camera != null and world.is_ocean_at(camera.global_position)
+	ocean_audio_amount = move_toward(ocean_audio_amount, 1.0 if in_ocean else 0.0, delta * 0.35)
+	if ocean_ambience:
+		ocean_ambience.volume_db = lerp(-60.0, -17.0, ocean_audio_amount)
+
 	underwater_amount = move_toward(underwater_amount, target_amount, delta * 2.5)
 	if underwater_material:
 		underwater_material.set_shader_parameter("underwater_amount", underwater_amount)
+
+func _create_water_audio() -> void:
+	ocean_ambience = AudioStreamPlayer.new()
+	ocean_ambience.name = "OceanAmbience"
+	var ambience := load("res://audio/ocean_ambience.wav") as AudioStreamWAV
+	if ambience:
+		ambience.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		ocean_ambience.stream = ambience
+		ocean_ambience.volume_db = -60.0
+		add_child(ocean_ambience)
+		ocean_ambience.play()
+
+	water_splash = AudioStreamPlayer.new()
+	water_splash.name = "WaterSplash"
+	water_splash.stream = load("res://audio/water_splash.wav")
+	water_splash.volume_db = -5.0
+	add_child(water_splash)
+
+	footstep_player = AudioStreamPlayer.new()
+	footstep_player.name = "Footsteps"
+	footstep_player.volume_db = -7.0
+	add_child(footstep_player)
+	footstep_streams = {
+		"soft": load("res://audio/footstep_grass.wav"),
+		"stone": load("res://audio/footstep_stone.wav"),
+		"sand": load("res://audio/footstep_sand.wav"),
+		"wood": load("res://audio/footstep_wood.wav"),
+	}
 
 func _create_underwater_overlay() -> void:
 	var canvas_layer := CanvasLayer.new()
@@ -134,6 +178,30 @@ func _physics_process(delta: float) -> void:
 		velocity.y = 0
 
 	apply_floor_snap()
+	_update_footsteps(delta)
+
+func _update_footsteps(delta: float) -> void:
+	footstep_timer = maxf(0.0, footstep_timer - delta)
+	if current_mode != Mode.WALK or not is_on_floor() or world == null or footstep_timer > 0.0:
+		return
+	if Vector2(velocity.x, velocity.z).length() < 0.6:
+		return
+
+	var ground_type := world.get_block_type_at(global_position + Vector3.DOWN * 1.02)
+	var sound_key := "soft"
+	match ground_type:
+		3, 5:
+			sound_key = "stone"
+		11, 12:
+			sound_key = "sand"
+		4, 8:
+			sound_key = "wood"
+	var sound := footstep_streams.get(sound_key) as AudioStream
+	if sound and footstep_player:
+		footstep_player.stream = sound
+		footstep_player.pitch_scale = randf_range(0.92, 1.08)
+		footstep_player.play()
+	footstep_timer = clampf(0.5 - Vector2(velocity.x, velocity.z).length() * 0.025, 0.3, 0.5)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
