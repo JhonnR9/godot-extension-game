@@ -26,7 +26,8 @@ void VoxelMesher::add_quad(
 		const Vector3 &normal,
 		const int tex_layer,
 		const Vector2 &tile_scale,
-		bool swap_uvs
+		bool swap_uvs,
+		bool collidable
 		) {
 	const int start = static_cast<int>(_vertices.size());
 
@@ -61,13 +62,15 @@ void VoxelMesher::add_quad(
 	_indices.append(start + 3);
 	_indices.append(start + 2);
 
-	_collision_faces.append(v0);
-	_collision_faces.append(v2);
-	_collision_faces.append(v1);
+	if (collidable) {
+		_collision_faces.append(v0);
+		_collision_faces.append(v2);
+		_collision_faces.append(v1);
 
-	_collision_faces.append(v0);
-	_collision_faces.append(v3);
-	_collision_faces.append(v2);
+		_collision_faces.append(v0);
+		_collision_faces.append(v3);
+		_collision_faces.append(v2);
+	}
 }
 
 

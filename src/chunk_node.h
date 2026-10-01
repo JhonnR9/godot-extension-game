@@ -30,6 +30,7 @@ private:
 
 	Ref<ConcavePolygonShape3D> _shape;
 	Ref<Material> _material;
+	Ref<Material> _water_material;
 
 	void _setup();
 
@@ -37,6 +38,9 @@ public:
 	void set_collision_faces(const PackedVector3Array&collision_faces);
 	Ref<Material> get_material() {
 		return _material;
+	}
+	Ref<Material> get_water_material() {
+		return _water_material;
 	}
 	void disable();
 	void enable();

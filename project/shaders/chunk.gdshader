@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode blend_mix, depth_draw_opaque, cull_back;
+render_mode depth_draw_opaque, cull_back;
 
 uniform sampler2DArray albedo_array : source_color, filter_nearest;
 
@@ -13,5 +13,7 @@ void fragment() {
     vec4 tex = texture(albedo_array, uvw);
 
     ALBEDO = tex.rgb;
-	
+    // Alpha scissor keeps leaf pixels crisp while the rest of the chunk stays opaque.
+    ALPHA = tex.a;
+    ALPHA_SCISSOR_THRESHOLD = 0.5;
 }

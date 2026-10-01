@@ -35,7 +35,8 @@ enum class BlockType : uint16_t {
 	IRON_ORE,
 	DIAMOND_ORE,
 	LOG,
-	LEAVES
+	LEAVES,
+	WATER
 };
 }
 

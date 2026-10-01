@@ -23,7 +23,8 @@ public:
 			const Vector3 &normal,
 			int tex_layer,
 			const Vector2 &tile_scale,
-			bool swap_uvs = false);
+			bool swap_uvs = false,
+			bool collidable = true);
 
 	[[nodiscard]] Array build_arrays() const;
 	[[nodiscard]] PackedVector3Array get_collision_faces() const;

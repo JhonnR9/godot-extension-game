@@ -363,24 +363,32 @@ func _run():
 	print("")
 	print("Salvando: ", OUTPUT_PATH)
 
-	var save_error := ResourceSaver.save(
-		tex_array,
-		OUTPUT_PATH
-	)
+	var resource_text := "[gd_resource type=\"Texture2DArray\" format=4 uid=\"uid://bjx6v2kqe3jyk\"]\n\n"
+	var image_refs := PackedStringArray()
+	for i in range(images.size()):
+		var image: Image = images[i]
+		var subresource_id := "Image_layer_%d" % i
+		var encoded_data := Marshalls.raw_to_base64(image.get_data())
+		resource_text += "[sub_resource type=\"Image\" id=\"%s\"]\n" % subresource_id
+		resource_text += "data = {\n"
+		resource_text += "\"data\": PackedByteArray(\"%s\"),\n" % encoded_data
+		resource_text += "\"format\": \"RGBA8\",\n"
+		resource_text += "\"height\": %d,\n" % image.get_height()
+		resource_text += "\"mipmaps\": false,\n"
+		resource_text += "\"width\": %d\n" % image.get_width()
+		resource_text += "}\n\n"
+		image_refs.append("SubResource(\"%s\")" % subresource_id)
 
-
-	if save_error != OK:
+	resource_text += "[resource]\n_images = Array[Image]([%s])\n" % ", ".join(image_refs)
+	var resource_file := FileAccess.open(OUTPUT_PATH, FileAccess.WRITE)
+	if resource_file == null:
 
 		printerr(
 			"ERRO ao salvar Texture2DArray."
 		)
-
-		printerr(
-			"Código: ",
-			save_error
-		)
-
 		return
+	resource_file.store_string(resource_text)
+	resource_file.close()
 
 
 	print(

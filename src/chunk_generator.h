@@ -16,6 +16,7 @@ struct TerrainSettings {
 	int terrain_base_height;
 	float terrain_amplitude;
 	float cave_threshold;
+	int water_level = 24;
 	NoiseSet noise_set;
 };
 

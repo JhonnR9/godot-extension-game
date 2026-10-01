@@ -220,7 +220,13 @@ void VoxelAPI::break_block(const Vector3 &world_pos) {
 
 void VoxelAPI::set_block(const Vector3 &p_world_pos, const voxel::Block &p_block) const {
 	Vector3i block_pos = voxel::world_to_block(p_world_pos);
-	_chunk_repository->set_block(block_pos, p_block);
+	voxel::Block block = p_block;
+	if (voxel::type(block) == voxel::BlockType::WATER) {
+		block = voxel::make_block(voxel::BlockType::WATER, voxel::BLOCK_FLAG_TRANSPARENT);
+	} else if (!voxel::is_air(block) && (block & (voxel::BLOCK_FLAG_SOLID | voxel::BLOCK_FLAG_TRANSPARENT)) == 0) {
+		block = voxel::make_block(voxel::type(block));
+	}
+	_chunk_repository->set_block(block_pos, block);
 }
 
 void VoxelAPI::set_focus_node(Node3D *p_node) {
@@ -475,7 +481,14 @@ void VoxelAPI::_finalize_chunk(const MeshResult &res) {
 	_rendered_chunks[res.pos] = chunk_node;
 
 	chunk_node->set_mesh(res.mesh);
-	chunk_node->set_surface_override_material(0, chunk_node->get_material());
+	chunk_node->set_material_override(Ref<Material>());
+	for (int surface = 0; surface < res.mesh->get_surface_count(); ++surface) {
+		Array arrays = res.mesh->surface_get_arrays(surface);
+		PackedFloat32Array layers = arrays[Mesh::ARRAY_CUSTOM0];
+		const bool is_water_surface = !layers.is_empty() && layers[0] >= voxel::WATER_TEXTURE_LAYER;
+		chunk_node->set_surface_override_material(surface,
+				is_water_surface ? chunk_node->get_water_material() : chunk_node->get_material());
+	}
 	chunk_node->set_collision_faces(res.collision_faces);
 	chunk_node->set_global_position(voxel::chunk_coords_to_world(res.pos));
 

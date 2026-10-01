@@ -21,7 +21,9 @@ Chunk ChunkGenerator::generate(const Vector3i chunk_pos,const TerrainSettings &t
 
 				voxel::Block block = 0;
 
-				if (world_y <= terrain_height) {
+				if (world_y > terrain_height && world_y <= terrain_settings.water_level) {
+					block = voxel::make_block(voxel::BlockType::WATER, voxel::BLOCK_FLAG_TRANSPARENT);
+				} else if (world_y <= terrain_height) {
 					float cave = cave_noise->get_noise_3d(world_x, world_y, world_z);
 
 					int depth = terrain_height - world_y;
@@ -31,13 +33,13 @@ Chunk ChunkGenerator::generate(const Vector3i chunk_pos,const TerrainSettings &t
 
 						if (cave <= adjusted_threshold) {
 							if (depth == 0) {
-								block = static_cast<uint32_t>(voxel::BlockType::GRASS);
+								block = voxel::make_block(voxel::BlockType::GRASS);
 
 							} else if (depth <= 15) {
-								block = static_cast<uint32_t>(voxel::BlockType::DIRT);
+								block = voxel::make_block(voxel::BlockType::DIRT);
 
 							} else {
-								block = static_cast<uint32_t>(world_y < -32 ? voxel::BlockType::DEEPSLATE : voxel::BlockType::STONE);
+								block = voxel::make_block(world_y < -32 ? voxel::BlockType::DEEPSLATE : voxel::BlockType::STONE);
 							}
 						}
 				}

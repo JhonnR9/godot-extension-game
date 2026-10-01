@@ -107,7 +107,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event is InputEventKey and event.pressed and not event.is_echo():
 		if event.keycode >= KEY_0 and event.keycode <= KEY_9:
-			selected_block_id = event.keycode - KEY_0
+			selected_block_id = 10 if event.keycode == KEY_0 else event.keycode - KEY_0
 
 	if event is InputEventMouseButton and event.pressed:
 		var fov := camera.fov

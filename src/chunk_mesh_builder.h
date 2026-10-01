@@ -47,7 +47,9 @@ struct TextureKeyHasher {
 };
 
 class ChunkMeshBuilder {
-	VoxelMesher mesher;
+	VoxelMesher opaque_mesher;
+	VoxelMesher transparent_mesher;
+	VoxelMesher &_get_mesher(voxel::Block block);
 	void _add_right_faces(const ChunkNeighbors &neighbors);
 	void _add_up_faces(const ChunkNeighbors &neighbors);
 	void _add_left_faces(const ChunkNeighbors &neighbors);
@@ -62,6 +64,8 @@ class ChunkMeshBuilder {
 	static voxel::BlockType map_string_to_type(const String &name);
 
 	HashMap<TextureKey, int, TextureKeyHasher> texture_map;
+	static voxel::Block _get_block(const ChunkNeighbors &neighbors, int x, int y, int z);
+	static bool _is_face_visible(const ChunkNeighbors &neighbors, int x, int y, int z, voxel::Block current_block);
 
 public:
 	ChunkMeshBuilder();
@@ -70,7 +74,7 @@ public:
 	static bool _is_air(const ChunkNeighbors &n, int x, int y, int z);
 
 	PackedVector3Array get_last_collision_faces() const {
-		return mesher.get_collision_faces();
+		return opaque_mesher.get_collision_faces();
 	}
 };
 } // namespace godot

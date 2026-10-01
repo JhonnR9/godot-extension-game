@@ -60,10 +60,22 @@ void ChunkNode::_setup() {
         override_material = fallback_mat;
     }
 
-    set_material_override(override_material);
     _material = override_material;
 
-    set_material_override(override_material);
+    Ref<Shader> water_shader = ResourceLoader::get_singleton()->load("res://shaders/water.gdshader");
+    if (water_shader.is_valid()) {
+        Ref<ShaderMaterial> water_mat;
+        water_mat.instantiate();
+        water_mat->set_shader(water_shader);
+        _water_material = water_mat;
+    } else {
+        ERR_PRINT("Error: water shader not found");
+        _water_material = _material;
+    }
+
+    // Surface materials are selected per mesh surface; a global override would
+    // force opaque terrain and cutout foliage through the water material too.
+    set_material_override(Ref<Material>());
 }
 
 void ChunkNode::set_collision_faces( const PackedVector3Array &collision_faces) {

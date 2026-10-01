@@ -7,31 +7,45 @@
 
 namespace godot {
 bool ChunkMeshBuilder::_is_air(const ChunkNeighbors &n, int x, int y, int z) {
+	return voxel::is_air(_get_block(n, x, y, z));
+}
+
+voxel::Block ChunkMeshBuilder::_get_block(const ChunkNeighbors &n, int x, int y, int z) {
 	if (x >= Chunk::MIN_X && x <= Chunk::MAX_X &&
 		y >= Chunk::MIN_Y && y <= Chunk::MAX_Y &&
 		z >= Chunk::MIN_Z && z <= Chunk::MAX_Z) {
-		return voxel::is_air(n.center->get_block(x, y, z));
+		return n.center->get_block(x, y, z);
 	}
 
 	if (x < Chunk::MIN_X) {
-		return n.left ? voxel::is_air(n.left->get_block(Chunk::MAX_X, y, z)) : true;
+		return n.left ? n.left->get_block(Chunk::MAX_X, y, z) : voxel::Block{0};
 	}
 	if (x > Chunk::MAX_X) {
-		return n.right ? voxel::is_air(n.right->get_block(Chunk::MIN_X, y, z)) : true;
+		return n.right ? n.right->get_block(Chunk::MIN_X, y, z) : voxel::Block{0};
 	}
 
 	if (y < Chunk::MIN_Y) {
-		return n.bottom ? voxel::is_air(n.bottom->get_block(x, Chunk::MAX_Y, z)) : true;
+		return n.bottom ? n.bottom->get_block(x, Chunk::MAX_Y, z) : voxel::Block{0};
 	}
 	if (y > Chunk::MAX_Y) {
-		return n.top ? voxel::is_air(n.top->get_block(x, Chunk::MIN_Y, z)) : true;
+		return n.top ? n.top->get_block(x, Chunk::MIN_Y, z) : voxel::Block{0};
 	}
 
 	if (z < Chunk::MIN_Z) {
-		return n.back ? voxel::is_air(n.back->get_block(x, y, Chunk::MAX_Z)) : true;
+		return n.back ? n.back->get_block(x, y, Chunk::MAX_Z) : voxel::Block{0};
 	}
 
-	return n.front ? voxel::is_air(n.front->get_block(x, y, Chunk::MIN_Z)) : true;
+	return n.front ? n.front->get_block(x, y, Chunk::MIN_Z) : voxel::Block{0};
+}
+
+bool ChunkMeshBuilder::_is_face_visible(const ChunkNeighbors &n, int x, int y, int z, const voxel::Block current_block) {
+	const voxel::Block neighbor = _get_block(n, x, y, z);
+	return voxel::is_air(neighbor) ||
+			(voxel::is_collidable(current_block) && voxel::is_transparent(neighbor));
+}
+
+VoxelMesher &ChunkMeshBuilder::_get_mesher(const voxel::Block block) {
+	return voxel::is_transparent(block) ? transparent_mesher : opaque_mesher;
 }
 
 void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
@@ -58,7 +72,7 @@ void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
 				if (voxel::is_air(block))
 					continue;
 
-				if (_is_air(neighbors, x + 1, y, z)) {
+				if (_is_face_visible(neighbors, x + 1, y, z, block)) {
 					mask[y][z] = true;
 				}
 			}
@@ -126,12 +140,13 @@ void ChunkMeshBuilder::_add_right_faces(const ChunkNeighbors &neighbors) {
 
 				int tex_layer = _get_tex_layer(CubeFace::R, type);
 
-				mesher.add_quad(
+				_get_mesher(block).add_quad(
 						v0, v1, v2, v3,
 						Vector3(1, 0, 0),
 						tex_layer,
 						Vector2(quad_h, quad_w),
-						true
+						true,
+						voxel::is_collidable(block)
 						);
 			}
 		}
@@ -164,7 +179,7 @@ void ChunkMeshBuilder::_add_up_faces(const ChunkNeighbors &neighbors) {
 				if (voxel::is_air(block))
 					continue;
 
-				if (_is_air(neighbors, x, y + 1, z)) {
+				if (_is_face_visible(neighbors, x, y + 1, z, block)) {
 					mask[x][z] = true;
 				}
 			}
@@ -234,11 +249,13 @@ void ChunkMeshBuilder::_add_up_faces(const ChunkNeighbors &neighbors) {
 
 				int tex_layer = _get_tex_layer(CubeFace::U, type);
 
-				mesher.add_quad(
+				_get_mesher(block).add_quad(
 						v0, v1, v2, v3,
 						Vector3(0, 1, 0),
 						tex_layer,
-						Vector2((float)quad_h, (float)quad_w)
+						Vector2((float)quad_h, (float)quad_w),
+						false,
+						voxel::is_collidable(block)
 						);
 			}
 		}
@@ -271,7 +288,7 @@ void ChunkMeshBuilder::_add_left_faces(const ChunkNeighbors &neighbors) {
 				if (voxel::is_air(block))
 					continue;
 
-				if (_is_air(neighbors, x - 1, y, z)) {
+				if (_is_face_visible(neighbors, x - 1, y, z, block)) {
 					mask[y][z] = true;
 				}
 			}
@@ -341,11 +358,13 @@ void ChunkMeshBuilder::_add_left_faces(const ChunkNeighbors &neighbors) {
 
 				int tex_layer = _get_tex_layer(CubeFace::L, type);
 
-				mesher.add_quad(
+				_get_mesher(block).add_quad(
 						v0, v1, v2, v3,
 						Vector3(-1, 0, 0),
 						tex_layer,
-						Vector2((float)quad_w, (float)quad_h)
+						Vector2((float)quad_w, (float)quad_h),
+						false,
+						voxel::is_collidable(block)
 						);
 			}
 		}
@@ -378,7 +397,7 @@ void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
 				if (voxel::is_air(block))
 					continue;
 
-				if (_is_air(neighbors, x, y - 1, z)) {
+				if (_is_face_visible(neighbors, x, y - 1, z, block)) {
 					mask[x][z] = true;
 				}
 			}
@@ -448,12 +467,13 @@ void ChunkMeshBuilder::_add_down_faces(const ChunkNeighbors &neighbors) {
 
 				int tex_layer = _get_tex_layer(CubeFace::D, type);
 
-				mesher.add_quad(
+				_get_mesher(block).add_quad(
 						v0, v1, v2, v3,
 						Vector3(0, -1, 0),
 						tex_layer,
 						Vector2((float)quad_h, (float)quad_w),
-						true
+						true,
+						voxel::is_collidable(block)
 						);
 			}
 		}
@@ -486,7 +506,7 @@ void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
 				if (voxel::is_air(block))
 					continue;
 
-				if (_is_air(neighbors, x, y, z + 1)) {
+				if (_is_face_visible(neighbors, x, y, z + 1, block)) {
 					mask[x][y] = true;
 				}
 			}
@@ -556,11 +576,13 @@ void ChunkMeshBuilder::_add_front_faces(const ChunkNeighbors &neighbors) {
 
 				int tex_layer = _get_tex_layer(CubeFace::F, type);
 
-				mesher.add_quad(
+				_get_mesher(block).add_quad(
 						v0, v1, v2, v3,
 						Vector3(0, 0, 1),
 						tex_layer,
-						Vector2((float)quad_w, (float)quad_h)
+						Vector2((float)quad_w, (float)quad_h),
+						false,
+						voxel::is_collidable(block)
 						);
 			}
 		}
@@ -593,7 +615,7 @@ void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
 				if (voxel::is_air(block))
 					continue;
 
-				if (_is_air(neighbors, x, y, z - 1)) {
+				if (_is_face_visible(neighbors, x, y, z - 1, block)) {
 					mask[x][y] = true;
 				}
 			}
@@ -663,11 +685,13 @@ void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
 
 				int tex_layer = _get_tex_layer(CubeFace::B, type);
 
-				mesher.add_quad(
+				_get_mesher(block).add_quad(
 						v0, v1, v2, v3,
 						Vector3(0, 0, -1),
 						tex_layer,
-						Vector2((float)quad_w, (float)quad_h)
+						Vector2((float)quad_w, (float)quad_h),
+						false,
+						voxel::is_collidable(block)
 						);
 			}
 		}
@@ -675,6 +699,10 @@ void ChunkMeshBuilder::_add_back_faces(const ChunkNeighbors &neighbors) {
 }
 
 int ChunkMeshBuilder::_get_tex_layer(const CubeFace &face, const voxel::BlockType &type) {
+	if (type == voxel::BlockType::WATER) {
+		return voxel::WATER_TEXTURE_LAYER;
+	}
+
 	if (TextureKey key = { type, face }; texture_map.has(key)) {
 		return texture_map[key];
 	}
@@ -751,7 +779,8 @@ ChunkMeshBuilder::ChunkMeshBuilder() {
 }
 
 Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
-	mesher.clear();
+	opaque_mesher.clear();
+	transparent_mesher.clear();
 
 	_add_up_faces(neighbors);
 	_add_left_faces(neighbors);
@@ -760,15 +789,11 @@ Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
 	_add_front_faces(neighbors);
 	_add_back_faces(neighbors);
 
-	Array arrays = mesher.build_arrays();
-
-	if (arrays.is_empty()) {
-		return Ref<ArrayMesh>();
-	}
-
-	PackedVector3Array verts = arrays[Mesh::ARRAY_VERTEX];
-
-	if (verts.is_empty()) {
+	Array opaque_arrays = opaque_mesher.build_arrays();
+	Array transparent_arrays = transparent_mesher.build_arrays();
+	const bool has_opaque = !PackedVector3Array(opaque_arrays[Mesh::ARRAY_VERTEX]).is_empty();
+	const bool has_transparent = !PackedVector3Array(transparent_arrays[Mesh::ARRAY_VERTEX]).is_empty();
+	if (!has_opaque && !has_transparent) {
 		return Ref<ArrayMesh>();
 	}
 
@@ -782,7 +807,12 @@ Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
 			Mesh::ARRAY_FORMAT_INDEX |
 			(Mesh::ARRAY_CUSTOM_R_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT);
 
-	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays, Array(), Dictionary(), format);
+	if (has_opaque) {
+		mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, opaque_arrays, Array(), Dictionary(), format);
+	}
+	if (has_transparent) {
+		mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, transparent_arrays, Array(), Dictionary(), format);
+	}
 
 	return mesh;
 }
