@@ -8,7 +8,7 @@
 #include "chunk_streaming_manager.h"
 #include "crosshair.h"
 #include "grid_inventory.h"
-#include "inventory_manager.h"
+#include "inventory_service.h"
 #include "godot_cpp/classes/engine.hpp"
 #include "player.h"
 #include "item_view.h"
@@ -23,7 +23,7 @@
 using namespace godot;
 
 static SaveService *save_service_singleton;
-static InventoryManager *inventory_manager_singleton;
+static InventoryService *inventory_service_singleton;
 
 void initialize_gdextension_types(ModuleInitializationLevel p_level)
 {
@@ -47,10 +47,10 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	GDREGISTER_CLASS(Crosshair);
 	GDREGISTER_CLASS(ChunkRegionAsyncLoader);
 	GDREGISTER_CLASS(ItemView);
+	GDREGISTER_CLASS(InventoryService);
+	inventory_service_singleton = memnew(InventoryService);
+	Engine::get_singleton()->register_singleton("InventoryService", inventory_service_singleton);
 	GDREGISTER_CLASS(GridInventory);
-	GDREGISTER_CLASS(InventoryManager);
-	inventory_manager_singleton = memnew(InventoryManager);
-	Engine::get_singleton()->register_singleton("InventoryManager", InventoryManager::get_singleton());
 
 }
 
@@ -61,8 +61,8 @@ void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {
 
 	Engine::get_singleton()->unregister_singleton("SaveService");
 	memdelete(save_service_singleton);
-	Engine::get_singleton()->unregister_singleton("InventoryManager");
-	memdelete(inventory_manager_singleton);
+	Engine::get_singleton()->unregister_singleton("InventoryService");
+	memdelete(inventory_service_singleton);
 }
 
 extern "C"

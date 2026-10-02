@@ -11,7 +11,7 @@ var resize_handle: Label
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	custom_minimum_size = Vector2(280, 180)
+	custom_minimum_size = Vector2(160, 180)
 	$Margin/Content/TitleBar.gui_input.connect(_title_input)
 	$Margin/Content/TitleBar/Close.pressed.connect(hide)
 	resize_handle = Label.new()

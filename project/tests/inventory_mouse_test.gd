@@ -1,5 +1,8 @@
 extends "res://tests/biome_registry_test.gd"
 
+var manager: Node:
+	get: return root.get_node("InventoryManager")
+
 func click_at(point: Vector2) -> void:
 	var motion := InputEventMouseMotion.new()
 	motion.position = point
@@ -54,14 +57,14 @@ func run() -> void:
 	player.set_physics_process(false)
 	var ui = player.get_node("InventoryCanvas/InventoryUI")
 	for frame in range(4): await process_frame
-	check(not InventoryManager.is_mouse_unlocked(), "Starts controlling character")
+	check(not manager.is_mouse_unlocked(), "Starts controlling character")
 	var key := InputEventKey.new()
 	key.physical_keycode = KEY_F1
 	key.pressed = true
 	check(key.is_action_pressed("unlock_mouse") and not key.is_action_pressed("save"), "F1 has one dedicated action")
 	root.push_input(key, true)
 	await process_frame
-	check(InventoryManager.is_mouse_unlocked(), "F1 unlocks mouse")
+	check(manager.is_mouse_unlocked(), "F1 unlocks mouse")
 	check(not ui.inventory_panel.visible and not ui.creative_panel.visible, "Unlock does not force windows open")
 	await click_at(ui.get_node("Launchers/Inventory").global_position + Vector2(24, 22))
 	await click_at(ui.get_node("Launchers/Creative").global_position + Vector2(24, 22))
@@ -83,7 +86,7 @@ func run() -> void:
 	check(player.velocity == Vector3.ZERO, "Free mouse stops character movement")
 	root.push_input(key, true)
 	await process_frame
-	check(not InventoryManager.is_mouse_unlocked(), "Second F1 returns character control")
+	check(not manager.is_mouse_unlocked(), "Second F1 returns character control")
 	check(ui.inventory_panel.visible and ui.creative_panel.visible, "Windows remain open while playing")
 	check(ui.creative_panel.get_rect() == rect, "F1 retains chosen window placement")
 	for control in ui.find_children("*", "Control", true, false):
@@ -95,7 +98,7 @@ func run() -> void:
 	player._physics_process(0.016)
 	Input.action_release("move_forward")
 	check(player.velocity.length() > 0, "Character moves with windows still open")
-	InventoryManager.set_mouse_unlocked(true)
+	manager.set_mouse_unlocked(true)
 	ui.collect_block(block_id("fern"))
 	var source: Control = ui.hotbar_grid.get_child(0)
 	var point := source.global_position + source.size / 2
@@ -116,10 +119,10 @@ func run() -> void:
 	root.push_input(drag_motion, true)
 	await process_frame
 	check(root.gui_is_dragging(), "Actual item drag starts")
-	InventoryManager.set_mouse_unlocked(false)
+	manager.set_mouse_unlocked(false)
 	await process_frame
 	check(ui.hotbar_grid.get_item_at(Vector2i.ZERO) != null, "F1 cancels drag without losing item")
-	InventoryManager.set_mouse_unlocked(true)
+	manager.set_mouse_unlocked(true)
 	ui._load_window_layout()
 	check(ui.creative_panel.get_rect() == rect, "Window placement is saved")
 	if DisplayServer.get_name() != "headless":
@@ -128,7 +131,7 @@ func run() -> void:
 		root.get_texture().get_image().save_png("/tmp/inventory_windows.png")
 	player.free()
 	await process_frame
-	check(not InventoryManager.is_mouse_unlocked(), "Teardown clears interaction state")
+	check(not manager.is_mouse_unlocked(), "Teardown clears interaction state")
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	print("Inventory mouse tests: ", failures, " failures.")
 	quit(1 if failures else 0)

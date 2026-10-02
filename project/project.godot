@@ -22,6 +22,8 @@ config/icon="res://icon.svg"
 [autoload]
 
 BlockIconCache="*res://scripts/block_icon_cache.gd"
+InventorySession="*res://scripts/inventory_session.gd"
+InventoryManager="*res://scripts/inventory_manager.gd"
 GameSession="*uid://cdf5is5g74nyt"
 AudioSettings="*res://scripts/audio_settings.gd"
 DisplaySettings="*res://scripts/display_settings.gd"

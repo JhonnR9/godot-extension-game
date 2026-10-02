@@ -7,6 +7,9 @@ const BLOCK_REGISTRY_PATH := "res://data/block_registry.generated.json"
 var blocks: Array[Dictionary] = []
 var mouse_unlocked := false
 var layout_initialized := false
+var inventory_ids: Dictionary = {}
+var reflow_queued := false
+var drag_controller: Node
 @onready var inventory_panel: PanelContainer = $InventoryPanel
 
 @onready var creative_panel: PanelContainer = $CreativePanel
@@ -15,11 +18,6 @@ var layout_initialized := false
 @onready var inventory_scroll: ScrollContainer = $InventoryPanel/Margin/Content/InventoryScroll
 @onready var inventory_grid = $InventoryPanel/Margin/Content/InventoryScroll/Center/InventoryGrid
 @onready var creative_tab: Button = $Launchers/Creative
-@onready var inventory_tab: Button = $InventoryPanel/Margin/Content/Tabs/InventoryTab
-@onready var craft_tab: Button = $InventoryPanel/Margin/Content/Tabs/CraftTab
-@onready var craft_scroll: ScrollContainer = $InventoryPanel/Margin/Content/CraftScroll
-@onready var craft_grid = $InventoryPanel/Margin/Content/CraftScroll/Center/Recipe/CraftGrid
-@onready var craft_result: Button = $InventoryPanel/Margin/Content/CraftScroll/Center/Recipe/Result
 @onready var hint: Label = $InventoryPanel/Margin/Content/Hint
 @onready var hotbar_panel: PanelContainer = $HotbarPanel
 @onready var hotbar_grid = $HotbarPanel/Margin/HotbarGrid
@@ -33,43 +31,36 @@ func _ready() -> void:
 	inventory_panel.hide()
 	inventory_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	_load_blocks()
+	drag_controller = preload("res://scripts/inventory_drag_controller.gd").new()
+	add_child(drag_controller)
+	inventory_ids = InventorySession.get_player_ids()
 
 	var creative_rows := maxi(2, ceili(float(blocks.size()) / CREATIVE_COLUMNS))
-	_configure_grid(creative_grid, creative_rows, CREATIVE_COLUMNS, Vector2i(50, 50), true)
+	_configure_grid(creative_grid, creative_rows, CREATIVE_COLUMNS, Vector2i(50, 50), InventorySession.get_creative_inventory_id())
 	creative_grid.set_show_item_count(false)
 	creative_grid.set_interaction_enabled(false)
-	for index in range(blocks.size()):
-		creative_grid.set_item_at(_make_block_item(blocks[index]), Vector2i(index % CREATIVE_COLUMNS, floori(float(index) / CREATIVE_COLUMNS)))
 
-	_configure_grid(hotbar_grid, 1, 9, Vector2i(SLOT_SIZE, SLOT_SIZE), false)
+	_configure_grid(hotbar_grid, 1, 9, Vector2i(SLOT_SIZE, SLOT_SIZE), inventory_ids.hotbar)
 	hotbar_grid.set_show_item_count(true)
 	hotbar_grid.set_interaction_enabled(false)
-	_configure_grid(inventory_grid, 3, 9, Vector2i(SLOT_SIZE, SLOT_SIZE), false)
+	_configure_grid(inventory_grid, 3, 9, Vector2i(SLOT_SIZE, SLOT_SIZE), inventory_ids.storage)
 	inventory_grid.set_show_item_count(true)
 	inventory_grid.set_interaction_enabled(false)
-	_configure_grid(craft_grid, 2, 2, Vector2i(SLOT_SIZE, SLOT_SIZE), false)
-	craft_grid.set_interaction_enabled(false)
-	craft_grid.item_changed.connect(_update_craft_result)
-	craft_tab.pressed.connect(select_craft_tab)
-	craft_result.pressed.connect(_craft)
-	_update_craft_result()
 	creative_tab.pressed.connect(toggle_creative_window)
 	$Launchers/Inventory.pressed.connect(toggle_inventory_window)
 	creative_panel.layout_changed.connect(_save_window_layout)
 	inventory_panel.layout_changed.connect(_save_window_layout)
-	inventory_tab.pressed.connect(select_inventory_tab.bind(false))
-	select_inventory_tab(false)
+	inventory_scroll.show()
+	InventorySession.world_inventory_loaded.connect(_bind_player_inventories)
+	creative_scroll.resized.connect(_queue_reflow)
+	inventory_scroll.resized.connect(_queue_reflow)
+	creative_panel.resized.connect(_queue_reflow)
+	inventory_panel.resized.connect(_queue_reflow)
 	resized.connect(_update_layout)
 	_update_layout()
 	_load_window_layout()
 	set_mouse_unlocked(false)
-
-func select_inventory_tab(_creative: bool = false) -> void:
-	craft_scroll.hide()
-	inventory_scroll.show()
-	craft_tab.add_theme_stylebox_override("normal", _make_slot_style(false))
-	inventory_tab.add_theme_stylebox_override("normal", _make_slot_style(true))
-	hint.text = "Drag items to your inventory or hotbar"
+	_queue_reflow()
 
 func toggle_inventory_window() -> void:
 	if not mouse_unlocked: return
@@ -85,11 +76,12 @@ func set_mouse_unlocked(unlocked: bool) -> void:
 	mouse_unlocked = unlocked
 	if not unlocked:
 		get_viewport().gui_cancel_drag()
+		drag_controller.cancel_drag()
 		creative_panel.finish_gesture()
 		inventory_panel.finish_gesture()
 	for panel in [creative_panel, inventory_panel]: panel.interaction_enabled = unlocked
 	_set_mouse_filters(self, unlocked)
-	for grid in [creative_grid, inventory_grid, hotbar_grid, craft_grid]:
+	for grid in [creative_grid, inventory_grid, hotbar_grid]:
 		grid.set_interaction_enabled(unlocked)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$Launchers/MouseHint.text = "F1 · Control character" if unlocked else "F1 · Unlock mouse"
@@ -119,55 +111,39 @@ func _load_window_layout() -> void:
 			panel.position = Vector2(float(rect[0]), float(rect[1]))
 		panel.clamp_to_screen()
 
-func select_craft_tab() -> void:
-	select_inventory_tab(false)
-	inventory_scroll.hide()
-	inventory_tab.add_theme_stylebox_override("normal", _make_slot_style(false))
-	craft_scroll.show()
-	craft_tab.add_theme_stylebox_override("normal", _make_slot_style(true))
-	hint.text = "1 raw log → 4 planks · Click to craft"
+func _bind_player_inventories(_world_id: int = 0) -> void:
+	inventory_ids = InventorySession.get_player_ids()
+	drag_controller.bind_grid(hotbar_grid, inventory_ids.hotbar)
+	drag_controller.bind_grid(inventory_grid, inventory_ids.storage)
+	InventoryManager.select_hotbar_slot(InventorySession.selected_slot)
+	_queue_reflow()
 
-func _update_craft_result(_cell = null, _item = null) -> void:
-	var result = craft_grid.get_craft_result()
-	craft_result.disabled = result == null
-	craft_result.icon = BlockIconCache.get_icon(result.get_id()) if result != null else null
-	craft_result.text = "4" if result != null else ""
-	craft_result.tooltip_text = ("Craft 4 × " + result.get_name()) if result != null else "Place one raw log in any slot"
+func _queue_reflow() -> void:
+	if reflow_queued: return
+	reflow_queued = true
+	call_deferred("_reflow_windows")
 
-func _craft() -> void:
-	var crafted: bool = craft_grid.craft_into(inventory_grid)
-	if crafted:
-		for row in range(inventory_grid.get_rows()):
-			for column in range(inventory_grid.get_columns()):
-				var cell := Vector2i(column, row)
-				var item = inventory_grid.get_item_at(cell)
-				if item != null and item.get_icon() == null:
-					item.set_icon(BlockIconCache.get_icon(item.get_id()))
-					inventory_grid.set_item_at(item, cell)
-	_update_craft_result()
-	if not crafted:
-		craft_result.tooltip_text = "Inventory full — free space for 4 items"
+func _reflow_windows() -> void:
+	reflow_queued = false
+	for pair in [[creative_grid, creative_scroll], [inventory_grid, inventory_scroll]]:
+		var grid = pair[0]
+		var scroll: ScrollContainer = pair[1]
+		# Reserve a scrollbar width consistently to avoid column oscillation.
+		var width := maxf(0, scroll.size.x - 18.0)
+		var slot: Vector2i = grid.get_slot_size()
+		var columns := maxi(2, floori((width - 8 + SLOT_GAP) / float(slot.x + SLOT_GAP)))
+		columns = mini(columns, grid.get_slot_count())
+		if columns != grid.get_columns(): grid.set_columns(columns)
+	_set_mouse_filters(self, mouse_unlocked)
+	for grid in [creative_grid, inventory_grid, hotbar_grid]: grid.set_interaction_enabled(mouse_unlocked)
 
 func _resize_slots(grid: Control, side: int) -> void:
-	if grid.get_slot_size() == Vector2i(side, side):
-		return
-	var items: Array = []
-	for row in range(grid.get_rows()):
-		for column in range(grid.get_columns()):
-			items.append(grid.get_item_at(Vector2i(column, row)))
-	grid.set_slot_size(Vector2i(side, side))
-	for index in range(items.size()):
-		if items[index] != null:
-			grid.set_item_at(items[index], Vector2i(index % grid.get_columns(), index / grid.get_columns()))
+	if grid.get_slot_size() != Vector2i(side, side): grid.set_slot_size(Vector2i(side, side))
 
 func _update_layout() -> void:
 	var available_width := maxf(240.0, size.x - 32.0)
 	var hotbar_side := clampi(floori((available_width - 36.0 - 8 * SLOT_GAP) / 9.0), 20, SLOT_SIZE)
-	var creative_side := clampi(floori((available_width - 48.0 - 7 * SLOT_GAP) / CREATIVE_COLUMNS), 20, 50)
 	_resize_slots(hotbar_grid, hotbar_side)
-	_resize_slots(creative_grid, creative_side)
-	_resize_slots(inventory_grid, hotbar_side)
-	_resize_slots(craft_grid, hotbar_side)
 	var hotbar_size: Vector2 = hotbar_grid.get_combined_minimum_size() + Vector2(20, 18)
 	hotbar_panel.offset_left = -hotbar_size.x / 2.0
 	hotbar_panel.offset_right = hotbar_size.x / 2.0
@@ -201,13 +177,13 @@ func _load_blocks() -> void:
 			"flags": block.get("flags", []),
 		})
 
-func _configure_grid(grid: Control, rows: int, columns: int, slot_size: Vector2i, creative_source: bool) -> void:
+func _configure_grid(grid: Control, rows: int, columns: int, slot_size: Vector2i, uuid: String) -> void:
 	grid.set_rows(rows)
 	grid.set_columns(columns)
 	grid.set_slot_size(slot_size)
 	grid.set_slot_margin(Vector2i(SLOT_GAP, SLOT_GAP))
 	grid.set_grid_padding(Vector2i(4, 4))
-	grid.set_creative_source(creative_source)
+	drag_controller.bind_grid(grid, uuid)
 	grid.set_item_frame(_make_slot_style(false))
 	grid.set_item_frame_hover(_make_slot_style(false, true))
 	grid.set_item_frame_selected(_make_slot_style(true))
@@ -225,9 +201,7 @@ func collect_block(block_id: int) -> bool:
 	var block := _block_by_id(block_id)
 	if block.is_empty():
 		return false
-	var item = _make_block_item(block)
-	item.set_item_amount(1)
-	return hotbar_grid.add_item(item) or inventory_grid.add_item(item)
+	return InventoryService.add_items(inventory_ids.hotbar, block_id, 1) or InventoryService.add_items(inventory_ids.storage, block_id, 1)
 
 func _block_by_id(block_id: int) -> Dictionary:
 	for block in blocks:
@@ -254,43 +228,8 @@ func _make_slot_style(selected: bool, hovered: bool = false) -> StyleBoxFlat:
 	return style
 
 func serialize_inventory() -> Dictionary:
-	return {
-		"hotbar": _serialize_grid(hotbar_grid),
-		"storage": _serialize_grid(inventory_grid),
-		"craft": _serialize_grid(craft_grid),
-		"selected_slot": InventoryManager.get_selected_hotbar_slot(),
-	}
-
-func _serialize_grid(grid: Control) -> Array:
-	var slots: Array = []
-	for row in range(grid.get_rows()):
-		for column in range(grid.get_columns()):
-			var item = grid.get_item_at(Vector2i(column, row))
-			if item != null:
-				slots.append({"id": item.get_id(), "amount": item.get_item_amount()})
-			else:
-				slots.append(null)
-	return slots
+	return InventorySession.serialize_player()
 
 func restore_inventory(data: Dictionary) -> void:
-	_restore_grid(hotbar_grid, data.get("hotbar", []))
-	_restore_grid(inventory_grid, data.get("storage", []))
-	_restore_grid(craft_grid, data.get("craft", []))
-	InventoryManager.select_hotbar_slot(clampi(int(data.get("selected_slot", 0)), 0, 8))
-
-func _restore_grid(grid: Control, saved: Variant) -> void:
-	for row in range(grid.get_rows()):
-		for column in range(grid.get_columns()):
-			var cell := Vector2i(column, row)
-			grid.clear_item_at(cell)
-			var index: int = row * grid.get_columns() + column
-			if not saved is Array or index >= saved.size() or not saved[index] is Dictionary:
-				continue
-			var entry: Dictionary = saved[index]
-			var block := _block_by_id(int(entry.get("id", 0)))
-			var amount := int(entry.get("amount", 0))
-			if block.is_empty() or amount <= 0:
-				continue
-			var item = _make_block_item(block)
-			item.set_item_amount(clampi(amount, 1, 99))
-			grid.set_item_at(item, cell)
+	InventorySession.restore_player(data)
+	_bind_player_inventories()

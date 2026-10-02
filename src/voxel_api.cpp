@@ -408,6 +408,7 @@ void VoxelAPI::create_new_world(const int32_t p_seed, const String &p_name) {
 	_river_noise->set_seed(world_model.seed + 6);
 
 	_setup_generation_pipeline(p_seed);
+	emit_signal("world_opened", id);
 
 	_set_day_hour(8.0);
 	_init_chunks();
@@ -444,13 +445,10 @@ void VoxelAPI::start_world(int64_t p_id) {
 	_ocean_noise->set_seed(world_model.seed + 5);
 	_river_noise->set_seed(world_model.seed + 6);
 	_setup_generation_pipeline(world_model.seed);
-
+	emit_signal("world_opened", p_id);
 
 	if (_focus_node) {
 		const Dictionary player_data = SaveService::get_singleton()->load_world_section(p_id, "player");
-		if (_focus_node->has_method("restore_inventory")) {
-			_focus_node->call("restore_inventory", player_data.get("inventory", Dictionary()));
-		}
 		const Array saved_position = player_data.get("position", Array());
 		if (saved_position.size() >= 3) {
 			_focus_node->set_global_position(Vector3(
@@ -957,6 +955,8 @@ void VoxelAPI::save_world_final() const {
 			WARN_PRINT("Could not save world time.");
 	}
 
+	const_cast<VoxelAPI *>(this)->emit_signal("world_saving", _disk_repository->get_current_world_id());
+
 	if (_focus_node && SaveService::get_singleton()) {
 		const Vector3 position = _focus_node->get_global_position();
 		Array serialized_position;
@@ -1064,6 +1064,8 @@ Dictionary VoxelAPI::get_pipeline_stats() const {
     return stats;
 }
 void VoxelAPI::_bind_methods() {
+	ADD_SIGNAL(MethodInfo("world_opened", PropertyInfo(Variant::INT, "world_id")));
+	ADD_SIGNAL(MethodInfo("world_saving", PropertyInfo(Variant::INT, "world_id")));
     ClassDB::bind_method(D_METHOD("set_biome_registry_path", "path"), &VoxelAPI::set_biome_registry_path);
     ClassDB::bind_method(D_METHOD("get_biome_registry_path"), &VoxelAPI::get_biome_registry_path);
     ADD_PROPERTY(PropertyInfo(Variant::STRING, "biome_registry_path", PROPERTY_HINT_FILE, "*.json"), "set_biome_registry_path", "get_biome_registry_path");

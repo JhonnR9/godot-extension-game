@@ -3,6 +3,9 @@ extends SceneTree
 class TestPlayer extends Node:
 	var inventory_open := false
 
+var manager: Node:
+	get: return root.get_node("InventoryManager")
+
 var failures := 0
 
 func check(condition: bool, message: String) -> void:
@@ -27,15 +30,15 @@ func run() -> void:
 	root.add_child(player)
 	var ui = load("res://scenes/inventory_ui.tscn").instantiate()
 	root.add_child(ui)
-	InventoryManager.setup(player, ui)
+	manager.setup(player, ui)
 	for frame in range(4): await process_frame
 	for index in range(9):
 		check(ui.hotbar_grid.get_item_at(Vector2i(index, 0)) == null, "Hotbar starts prefilled.")
-	check(InventoryManager.get_selected_block_id() == 0, "Empty hotbar still selects a block.")
+	check(manager.get_selected_block_id() == 0, "Empty hotbar still selects a block.")
 	check(ui.hotbar_grid.get_child_count() == 9, "Hotbar has extra slot-number labels.")
-	InventoryManager.open_inventory()
+	manager.open_inventory()
 	for frame in range(4): await process_frame
-	check(InventoryManager.is_mouse_unlocked() and ui.inventory_panel.visible, "Player inventory did not open.")
+	check(manager.is_mouse_unlocked() and ui.inventory_panel.visible, "Player inventory did not open.")
 	ui.creative_panel.size = Vector2(500, 220)
 	ui.toggle_creative_window()
 	await process_frame
@@ -47,7 +50,7 @@ func run() -> void:
 	check(ui.creative_grid.size.x <= ui.creative_scroll.size.x, "Creative content does not fit window width.")
 	check(ui.creative_scroll.get_v_scroll_bar().visible, "Creative inventory does not show its scrollbar.")
 	for index in range(ui.blocks.size()):
-		var item = ui.creative_grid.get_item_at(Vector2i(index % 8, index / 8))
+		var item = ui.creative_grid.get_item_at(Vector2i(index % ui.creative_grid.get_columns(), index / ui.creative_grid.get_columns()))
 		check(item != null and item.get_id() == ui.blocks[index].id, "Creative block missing.")
 	var slot: Control = ui.creative_grid.get_child(0)
 	var item = ui.creative_grid.get_item_at(Vector2i.ZERO)
@@ -69,7 +72,8 @@ func run() -> void:
 	# Exercise actual drag forwarding to an empty hotbar slot.
 	var copy = item.duplicate_item()
 	var preview := Control.new()
-	slot.force_drag({"item": copy, "source": ui.creative_grid, "source_cell": Vector2i.ZERO, "creative_source": true}, preview)
+	ui.creative_grid.drag_started.emit(0)
+	slot.force_drag({"inventory_drag": ui.drag_controller.active.token}, preview)
 	var target: Control = ui.hotbar_grid.get_child(0)
 	var drop_position := target.global_position + target.size / 2.0
 	await move_mouse(drop_position)
@@ -80,34 +84,23 @@ func run() -> void:
 	root.push_input(release, true)
 	for frame in range(4): await process_frame
 	check(ui.hotbar_grid.get_item_at(Vector2i.ZERO) != null, "Creative drag did not fill hotbar.")
-	check(InventoryManager.get_selected_block_id() == item.get_id(), "Selected block was not updated after drop.")
-	check(ui.creative_grid.get_item_at(Vector2i.ZERO) == item, "Creative source was consumed.")
+	check(manager.get_selected_block_id() == item.get_id(), "Selected block was not updated after drop.")
+	check(ui.creative_grid.get_item_at(Vector2i.ZERO).get_id() == item.get_id(), "Creative source was consumed.")
 	check(ui.hotbar_grid.get_item_at(Vector2i.ZERO).get_item_amount() == 99, "Creative should grant 99 items.")
 	var count_label = ui.hotbar_grid.get_child(0).find_children("*", "Label", true, false)
 	check(count_label.size() == 1 and count_label[0].text == "99", "Hotbar stack count missing.")
-	# Click the icon to switch views without changing the creative game mode.
-	var tab_position: Vector2 = ui.inventory_tab.global_position + ui.inventory_tab.size / 2.0
-	await move_mouse(tab_position)
-	for pressed in [true, false]:
-		var click := InputEventMouseButton.new()
-		click.button_index = MOUSE_BUTTON_LEFT
-		click.pressed = pressed
-		click.position = tab_position
-		root.push_input(click, true)
-		await process_frame
-	check(ui.inventory_scroll.visible and ui.creative_scroll.visible, "Independent inventory windows were hidden by tabs.")
 	check(ui.inventory_grid.get_child_count() == 27, "Normal inventory should have 27 slots.")
 	# Merging into a nearly full stack preserves the remainder in the source.
 	ui.inventory_panel.move_to_front()
 	await process_frame
 	var small = item.duplicate_item()
 	small.set_item_amount(90)
-	ui.inventory_grid.set_item_at(small, Vector2i.ZERO)
+	InventoryService.set_stack(ui.inventory_ids.storage, 0, item.get_id(), 90)
 	var incoming = item.duplicate_item()
 	incoming.set_item_amount(20)
-	ui.hotbar_grid.set_item_at(incoming, Vector2i.ZERO)
-	ui.hotbar_grid.clear_item_at(Vector2i.ZERO)
-	ui.hotbar_grid.get_child(0).force_drag({"item": incoming, "source": ui.hotbar_grid, "source_cell": Vector2i.ZERO, "creative_source": false}, Control.new())
+	InventoryService.set_stack(ui.inventory_ids.hotbar, 0, item.get_id(), 20)
+	ui.hotbar_grid.drag_started.emit(0)
+	ui.hotbar_grid.get_child(0).force_drag({"inventory_drag": ui.drag_controller.active.token}, Control.new())
 	var storage_slot: Control = ui.inventory_grid.get_child(0)
 	var storage_position := storage_slot.global_position + storage_slot.size / 2.0
 	await move_mouse(storage_position)
@@ -118,26 +111,23 @@ func run() -> void:
 	check(ui.hotbar_grid.get_item_at(Vector2i.ZERO).get_item_amount() == 11, "Partial merge lost remaining items.")
 	var extra = item.duplicate_item()
 	extra.set_item_amount(200)
-	check(extra.get_item_amount() == 99, "ItemView did not enforce stack limit.")
+	check(extra.get_item_amount() == 200, "Presentation object should not enforce game stack rules.")
 	small = item.duplicate_item()
 	small.set_item_amount(90)
-	ui.inventory_grid.set_item_at(small, Vector2i(1, 0))
+	InventoryService.set_stack(ui.inventory_ids.storage, 1, item.get_id(), 90)
 	extra.set_item_amount(20)
-	check(ui.inventory_grid.add_item(extra), "Stack insertion failed.")
+	check(InventoryService.add_items(ui.inventory_ids.storage, item.get_id(), 20), "Stack insertion failed.")
 	check(ui.inventory_grid.get_item_at(Vector2i(1, 0)).get_item_amount() == 99 and ui.inventory_grid.get_item_at(Vector2i(2, 0)).get_item_amount() == 11, "Insertion failed to split overflow.")
-	check(not ui.inventory_grid.add_item_at(extra, Vector2i.ZERO), "Full slot accepted overflowing items.")
+	check(not InventoryService.set_stack(ui.inventory_ids.storage, 0, item.get_id(), 119), "Full slot accepted overflowing items.")
 	# A full inventory rejects insertion without modifying any stack.
-	for row in range(3):
-		for column in range(9):
-			ui.inventory_grid.set_item_at(item.duplicate_item(), Vector2i(column, row))
-	check(not ui.inventory_grid.add_item(extra), "Full inventory accepted extra items.")
-	for row in range(3):
-		for column in range(9):
-			check(ui.inventory_grid.get_item_at(Vector2i(column, row)).get_item_amount() == 99, "Rejected insertion changed a stack.")
-	ui.select_inventory_tab(true)
+	for index in range(27):
+		InventoryService.set_stack(ui.inventory_ids.storage, index, item.get_id(), 99)
+	check(not InventoryService.add_items(ui.inventory_ids.storage, item.get_id(), 20), "Full inventory accepted extra items.")
+	for index in range(27):
+		check(InventoryService.get_stack(ui.inventory_ids.storage, index).amount == 99, "Rejected insertion changed a stack.")
 	check(count_label[0].z_index > 0, "Stack quantity renders behind item icon.")
 	# Round-trip through the world's existing level.json section, preserving other fields.
-	InventoryManager.select_hotbar_slot(3)
+	manager.select_hotbar_slot(3)
 	var saved: Dictionary = ui.serialize_inventory()
 	var world_id := int(SaveService.create_world(42, "Inventory persistence test"))
 	check(SaveService.save_world_section(world_id, "player", {"position": [1, 2, 3], "inventory": saved}), "Inventory save failed.")
@@ -160,11 +150,11 @@ func run() -> void:
 	check(ui.creative_panel.size.x <= 480, "Creative window cannot shrink to viewport.")
 	var retained = ui.hotbar_grid.get_item_at(Vector2i.ZERO)
 	check(retained != null and retained.get_id() == item.get_id(), "Resizing lost hotbar item.")
-	ui.hotbar_grid.clear_item_at(Vector2i.ZERO)
+	InventoryService.set_stack(ui.inventory_ids.hotbar, 0, 0, 0)
 	check(ui.hotbar_grid.get_child(0).tooltip_text.is_empty(), "Empty slot retains item tooltip.")
-	InventoryManager.close_inventory()
+	manager.close_inventory()
 	check(not ui.inventory_panel.visible and not ui.creative_panel.visible, "Inventory did not close.")
-	InventoryManager.set_mouse_unlocked(false)
+	manager.set_mouse_unlocked(false)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	ui.free()
 	player.free()

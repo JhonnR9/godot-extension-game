@@ -5,7 +5,6 @@
 [ext_resource type="Texture2D" path="res://textures/ui/creative.svg" id="2_creative"]
 [ext_resource type="Texture2D" path="res://textures/ui/inventory.svg" id="3_inventory"]
 
-[ext_resource type="Texture2D" path="res://textures/ui/craft.svg" id="4_craft"]
 
 [ext_resource type="Script" path="res://scripts/floating_inventory_panel.gd" id="5_floating"]
 
@@ -51,9 +50,14 @@ mouse_filter = 0
 
 [node name="Title" type="Label" parent="CreativePanel/Margin/Content/TitleBar"]
 layout_mode = 2
+size_flags_horizontal = 1
+mouse_filter = 2
+text = "Creative"
+
+[node name="Spacer" type="Control" parent="CreativePanel/Margin/Content/TitleBar"]
+layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
-text = "Creative inventory"
 
 [node name="Close" type="Button" parent="CreativePanel/Margin/Content/TitleBar"]
 layout_mode = 2
@@ -95,36 +99,22 @@ mouse_filter = 0
 
 [node name="Title" type="Label" parent="InventoryPanel/Margin/Content/TitleBar"]
 layout_mode = 2
+size_flags_horizontal = 1
+mouse_filter = 2
+text = "Inventory"
+
+[node name="Spacer" type="Control" parent="InventoryPanel/Margin/Content/TitleBar"]
+layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
-text = "Player inventory"
 
 [node name="Close" type="Button" parent="InventoryPanel/Margin/Content/TitleBar"]
 layout_mode = 2
 text = "×"
 
-[node name="Tabs" type="HBoxContainer" parent="InventoryPanel/Margin/Content"]
-layout_mode = 2
-alignment = 0
-theme_override_constants/separation = 8
-
-[node name="InventoryTab" type="Button" parent="InventoryPanel/Margin/Content/Tabs"]
-custom_minimum_size = Vector2(48, 44)
-layout_mode = 2
-tooltip_text = "Inventory"
-icon = ExtResource("3_inventory")
-icon_alignment = 1
-
-[node name="CraftTab" type="Button" parent="InventoryPanel/Margin/Content/Tabs"]
-custom_minimum_size = Vector2(48, 44)
-layout_mode = 2
-tooltip_text = "Crafting"
-icon = ExtResource("4_craft")
-icon_alignment = 1
-
 [node name="Hint" type="Label" parent="InventoryPanel/Margin/Content" unique_id=1989051617]
 layout_mode = 2
-text = "Drag items to your inventory or hotbar"
+text = "Drag items"
 horizontal_alignment = 1
 
 [node name="InventoryScroll" type="ScrollContainer" parent="InventoryPanel/Margin/Content"]
@@ -141,38 +131,6 @@ size_flags_horizontal = 3
 [node name="InventoryGrid" type="GridInventory" parent="InventoryPanel/Margin/Content/InventoryScroll/Center"]
 layout_mode = 2
 size_flags_horizontal = 4
-
-[node name="CraftScroll" type="ScrollContainer" parent="InventoryPanel/Margin/Content"]
-visible = false
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 1
-
-[node name="Center" type="CenterContainer" parent="InventoryPanel/Margin/Content/CraftScroll"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
-[node name="Recipe" type="HBoxContainer" parent="InventoryPanel/Margin/Content/CraftScroll/Center"]
-layout_mode = 2
-theme_override_constants/separation = 24
-
-[node name="CraftGrid" type="GridInventory" parent="InventoryPanel/Margin/Content/CraftScroll/Center/Recipe"]
-layout_mode = 2
-
-[node name="Arrow" type="Label" parent="InventoryPanel/Margin/Content/CraftScroll/Center/Recipe"]
-layout_mode = 2
-text = "→"
-vertical_alignment = 1
-theme_override_font_sizes/font_size = 28
-
-[node name="Result" type="Button" parent="InventoryPanel/Margin/Content/CraftScroll/Center/Recipe"]
-custom_minimum_size = Vector2(72, 64)
-layout_mode = 2
-size_flags_vertical = 4
-expand_icon = true
-theme_override_constants/icon_max_width = 44
-tooltip_text = "Place one raw log in any slot"
 
 [node name="HotbarPanel" type="PanelContainer" parent="." unique_id=1029529787]
 layout_mode = 0
