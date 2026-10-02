@@ -56,6 +56,9 @@ func rebuild() -> bool:
 		elif image.get_size() != reference_size:
 			push_error("All block textures must use the same dimensions. Mismatch: " + path)
 			return false
+		if image.generate_mipmaps() != OK:
+			push_error("Could not generate block texture mipmaps: " + path)
+			return false
 		texture_images.append(image)
 
 	if texture_images.is_empty():
@@ -218,7 +221,7 @@ func _write_texture_array(images: Array[Image]) -> bool:
 		var subresource_id := "Image_layer_%d" % index
 		resource_text += "[sub_resource type=\"Image\" id=\"%s\"]\n" % subresource_id
 		resource_text += "data = {\n\"data\": PackedByteArray(\"%s\"),\n" % Marshalls.raw_to_base64(image.get_data())
-		resource_text += "\"format\": \"RGBA8\",\n\"height\": %d,\n\"mipmaps\": false,\n\"width\": %d\n}\n\n" % [image.get_height(), image.get_width()]
+		resource_text += "\"format\": \"RGBA8\",\n\"height\": %d,\n\"mipmaps\": %s,\n\"width\": %d\n}\n\n" % [image.get_height(), str(image.has_mipmaps()), image.get_width()]
 		image_refs.append("SubResource(\"%s\")" % subresource_id)
 	resource_text += "[resource]\n_images = Array[Image]([%s])\n" % ", ".join(image_refs)
 	var resource_file := FileAccess.open(ARRAY_PATH, FileAccess.WRITE)

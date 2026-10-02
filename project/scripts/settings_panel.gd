@@ -6,25 +6,37 @@ signal close_requested
 
 @export var world_api: VoxelAPI
 
-@onready var render_distance: HSlider = $Center/Panel/Margin/Content/Scroll/Options/RenderDistanceRow/RenderDistance
-@onready var render_distance_value: Label = $Center/Panel/Margin/Content/Scroll/Options/RenderDistanceRow/RenderDistanceValue
-@onready var vertical_distance: HSlider = $Center/Panel/Margin/Content/Scroll/Options/VerticalDistanceRow/VerticalDistance
-@onready var vertical_distance_value: Label = $Center/Panel/Margin/Content/Scroll/Options/VerticalDistanceRow/VerticalDistanceValue
-@onready var distance_fog: CheckButton = $Center/Panel/Margin/Content/Scroll/Options/DistanceFogRow/DistanceFog
-@onready var fog_start: HSlider = $Center/Panel/Margin/Content/Scroll/Options/FogStartRow/FogStart
-@onready var fog_start_value: Label = $Center/Panel/Margin/Content/Scroll/Options/FogStartRow/FogStartValue
-@onready var vsync: OptionButton = $Center/Panel/Margin/Content/Scroll/Options/VSyncRow/VSync
-@onready var graphics_hint: Label = $Center/Panel/Margin/Content/Scroll/Options/GraphicsHint
-@onready var antialiasing: OptionButton = $Center/Panel/Margin/Content/Scroll/Options/AntialiasingRow/Antialiasing
-@onready var upscaling: OptionButton = $Center/Panel/Margin/Content/Scroll/Options/UpscalingRow/Upscaling
-@onready var ssao: CheckButton = $Center/Panel/Margin/Content/Scroll/Options/SsaoRow/Ssao
-@onready var master_volume: HSlider = $Center/Panel/Margin/Content/Scroll/Options/MasterVolumeRow/MasterVolume
-@onready var music_volume: HSlider = $Center/Panel/Margin/Content/Scroll/Options/MusicVolumeRow/MusicVolume
-@onready var sfx_volume: HSlider = $Center/Panel/Margin/Content/Scroll/Options/SfxVolumeRow/SfxVolume
-@onready var window_mode: OptionButton = $Center/Panel/Margin/Content/Scroll/Options/WindowModeRow/WindowMode
-@onready var resolution: OptionButton = $Center/Panel/Margin/Content/Scroll/Options/ResolutionRow/Resolution
+@onready var render_distance: HSlider = $Center/Panel/Margin/Content/Categories/Graphics/Options/RenderDistanceRow/RenderDistance
+@onready var render_distance_value: Label = $Center/Panel/Margin/Content/Categories/Graphics/Options/RenderDistanceRow/RenderDistanceValue
+@onready var vertical_distance: HSlider = $Center/Panel/Margin/Content/Categories/Graphics/Options/VerticalDistanceRow/VerticalDistance
+@onready var vertical_distance_value: Label = $Center/Panel/Margin/Content/Categories/Graphics/Options/VerticalDistanceRow/VerticalDistanceValue
+@onready var distance_fog: CheckButton = $Center/Panel/Margin/Content/Categories/Graphics/Options/DistanceFogRow/DistanceFog
+@onready var fog_start: HSlider = $Center/Panel/Margin/Content/Categories/Graphics/Options/FogStartRow/FogStart
+@onready var fog_start_value: Label = $Center/Panel/Margin/Content/Categories/Graphics/Options/FogStartRow/FogStartValue
+@onready var vsync: OptionButton = $Center/Panel/Margin/Content/Categories/Display/Options/VSyncRow/VSync
+@onready var graphics_hint: Label = $Center/Panel/Margin/Content/Categories/Graphics/Options/GraphicsHint
+@onready var antialiasing: OptionButton = $Center/Panel/Margin/Content/Categories/Graphics/Options/AntialiasingRow/Antialiasing
+@onready var upscaling: OptionButton = $Center/Panel/Margin/Content/Categories/Graphics/Options/UpscalingRow/Upscaling
+@onready var ssao: CheckButton = $Center/Panel/Margin/Content/Categories/Graphics/Options/SsaoRow/Ssao
+@onready var master_volume: HSlider = $Center/Panel/Margin/Content/Categories/Audio/Options/MasterVolumeRow/MasterVolume
+@onready var music_volume: HSlider = $Center/Panel/Margin/Content/Categories/Audio/Options/MusicVolumeRow/MusicVolume
+@onready var sfx_volume: HSlider = $Center/Panel/Margin/Content/Categories/Audio/Options/SfxVolumeRow/SfxVolume
+@onready var window_mode: OptionButton = $Center/Panel/Margin/Content/Categories/Display/Options/WindowModeRow/WindowMode
+@onready var resolution: OptionButton = $Center/Panel/Margin/Content/Categories/Display/Options/ResolutionRow/Resolution
 
 var available_resolutions: Array[Vector2i] = []
+var _caller: Control
+var _return_focus: Control
+
+func open_from(caller: Control, api: VoxelAPI = null, return_focus: Control = null) -> void:
+	_caller = caller
+	_return_focus = return_focus
+	configure(api)
+	if is_instance_valid(_caller):
+		_caller.hide()
+	show()
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	$Center/Panel/Margin/Content/Categories.get_tab_bar().grab_focus()
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -151,9 +163,9 @@ func _on_sfx_volume_changed(value: float) -> void:
 	_update_audio_value_labels()
 
 func _update_audio_value_labels() -> void:
-	$Center/Panel/Margin/Content/Scroll/Options/MasterVolumeRow/Value.text = "%d%%" % int(master_volume.value)
-	$Center/Panel/Margin/Content/Scroll/Options/MusicVolumeRow/Value.text = "%d%%" % int(music_volume.value)
-	$Center/Panel/Margin/Content/Scroll/Options/SfxVolumeRow/Value.text = "%d%%" % int(sfx_volume.value)
+	$Center/Panel/Margin/Content/Categories/Audio/Options/MasterVolumeRow/Value.text = "%d%%" % int(master_volume.value)
+	$Center/Panel/Margin/Content/Categories/Audio/Options/MusicVolumeRow/Value.text = "%d%%" % int(music_volume.value)
+	$Center/Panel/Margin/Content/Categories/Audio/Options/SfxVolumeRow/Value.text = "%d%%" % int(sfx_volume.value)
 
 func _load_display_settings() -> void:
 	available_resolutions = DisplaySettings.get_available_resolutions()
@@ -191,10 +203,17 @@ func _apply_settings(_index: int = -1) -> void:
 	else:
 		VoxelAPI.set_default_render_settings(settings)
 
-func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("ui_cancel"):
-		_on_back_pressed()
+func _input(event: InputEvent) -> void:
+	if is_visible_in_tree() and event.is_action_pressed("ui_cancel") and not event.is_echo():
 		get_viewport().set_input_as_handled()
+		_on_back_pressed()
 
 func _on_back_pressed() -> void:
+	hide()
+	if is_instance_valid(_caller):
+		_caller.show()
+	if is_instance_valid(_return_focus) and _return_focus.is_visible_in_tree():
+		_return_focus.grab_focus()
+	_caller = null
+	_return_focus = null
 	close_requested.emit()

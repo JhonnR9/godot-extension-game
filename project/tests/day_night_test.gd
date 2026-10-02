@@ -39,6 +39,10 @@ func _run() -> void:
 	sun._process(420.0)
 	assert(is_equal_approx(sun.hora, 6.0))
 	sun.set_hour(8.0)
+	var previous_angle: float = sun.rotation_degrees.x
+	sun._process(1.0 / 60.0)
+	assert(sun.rotation_degrees.x < previous_angle)
+	sun.set_hour(8.0)
 	sun._process(1200.0 * 3)
 	assert(is_equal_approx(sun.hora, 8.0))
 	# Twilight is continuous on either side of the horizon, with no hard flash.

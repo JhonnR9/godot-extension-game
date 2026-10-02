@@ -2,6 +2,10 @@
 
 [ext_resource type="Script" uid="uid://brf1ydpfj7f13" path="res://scripts/settings_panel.gd" id="1_settings"]
 
+[sub_resource type="Theme" id="Theme_settings"]
+default_font_size = 18
+Label/font_sizes/font_size = 18
+
 [node name="SettingsPanel" type="Control" unique_id=1420122520]
 layout_mode = 3
 anchors_preset = 15
@@ -9,6 +13,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = SubResource("Theme_settings")
 script = ExtResource("1_settings")
 
 [node name="Backdrop" type="ColorRect" parent="." unique_id=1087823945]
@@ -27,15 +32,15 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -300.0
+offset_left = -360.0
 offset_top = -280.0
-offset_right = 300.0
+offset_right = 360.0
 offset_bottom = 280.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Panel" type="PanelContainer" parent="Center" unique_id=1081915164]
-custom_minimum_size = Vector2(600, 560)
+custom_minimum_size = Vector2(720, 560)
 layout_mode = 2
 
 [node name="Margin" type="MarginContainer" parent="Center/Panel" unique_id=1579961521]
@@ -49,58 +54,129 @@ theme_override_constants/margin_bottom = 24
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Scroll" type="ScrollContainer" parent="Center/Panel/Margin/Content"]
-custom_minimum_size = Vector2(540, 450)
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-
-[node name="Options" type="VBoxContainer" parent="Center/Panel/Margin/Content/Scroll" unique_id=302505444]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 10
-
-[node name="Title" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options" unique_id=864662593]
+[node name="Title" type="Label" parent="Center/Panel/Margin/Content"]
 layout_mode = 2
 text = "Settings"
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 28
 
-[node name="WindowModeRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Scroll/Options" unique_id=907270100]
+[node name="SaveHint" type="Label" parent="Center/Panel/Margin/Content"]
+layout_mode = 2
+text = "Changes are saved automatically."
+
+[node name="Categories" type="TabContainer" parent="Center/Panel/Margin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Display" type="ScrollContainer" parent="Center/Panel/Margin/Content/Categories"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Options" type="VBoxContainer" parent="Center/Panel/Margin/Content/Categories/Display"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="WindowModeRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Categories/Display/Options" unique_id=907270100]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/WindowModeRow" unique_id=907270101]
-custom_minimum_size = Vector2(165, 0)
+[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Categories/Display/Options/WindowModeRow" unique_id=907270101]
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "Window mode"
 
-[node name="WindowMode" type="OptionButton" parent="Center/Panel/Margin/Content/Scroll/Options/WindowModeRow" unique_id=907270102]
+[node name="WindowMode" type="OptionButton" parent="Center/Panel/Margin/Content/Categories/Display/Options/WindowModeRow" unique_id=907270102]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="ResolutionRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Scroll/Options" unique_id=907270103]
+[node name="ResolutionRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Categories/Display/Options" unique_id=907270103]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/ResolutionRow" unique_id=907270104]
-custom_minimum_size = Vector2(165, 0)
+[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Categories/Display/Options/ResolutionRow" unique_id=907270104]
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "Window resolution"
 
-[node name="Resolution" type="OptionButton" parent="Center/Panel/Margin/Content/Scroll/Options/ResolutionRow" unique_id=907270105]
+[node name="Resolution" type="OptionButton" parent="Center/Panel/Margin/Content/Categories/Display/Options/ResolutionRow" unique_id=907270105]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="RenderDistanceRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Scroll/Options" unique_id=1981992443]
+[node name="VSyncRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Categories/Display/Options" unique_id=359239709]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/RenderDistanceRow" unique_id=112717775]
-custom_minimum_size = Vector2(165, 0)
+[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Categories/Display/Options/VSyncRow" unique_id=448525755]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "VSync"
+
+[node name="VSync" type="OptionButton" parent="Center/Panel/Margin/Content/Categories/Display/Options/VSyncRow" unique_id=327050059]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Graphics" type="ScrollContainer" parent="Center/Panel/Margin/Content/Categories"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Options" type="VBoxContainer" parent="Center/Panel/Margin/Content/Categories/Graphics"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="GraphicsHint" type="Label" parent="Center/Panel/Margin/Content/Categories/Graphics/Options"]
+layout_mode = 2
+text = "Some graphics options are unavailable in this renderer."
+
+[node name="AntialiasingRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Categories/Graphics/Options"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/AntialiasingRow"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "Antialiasing"
+
+[node name="Antialiasing" type="OptionButton" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/AntialiasingRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="UpscalingRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Categories/Graphics/Options"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/UpscalingRow"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "3D resolution"
+
+[node name="Upscaling" type="OptionButton" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/UpscalingRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SsaoRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Categories/Graphics/Options"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/SsaoRow"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "SSAO (screen shadows)"
+
+[node name="Ssao" type="CheckButton" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/SsaoRow"]
+layout_mode = 2
+text = "Enabled"
+
+[node name="RenderDistanceRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Categories/Graphics/Options" unique_id=1981992443]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/RenderDistanceRow" unique_id=112717775]
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "Render distance"
 
-[node name="RenderDistance" type="HSlider" parent="Center/Panel/Margin/Content/Scroll/Options/RenderDistanceRow" unique_id=1812837821]
+[node name="RenderDistance" type="HSlider" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/RenderDistanceRow" unique_id=1812837821]
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 4.0
@@ -109,22 +185,22 @@ value = 4.0
 tick_count = 11
 ticks_on_borders = true
 
-[node name="RenderDistanceValue" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/RenderDistanceRow" unique_id=1559594884]
+[node name="RenderDistanceValue" type="Label" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/RenderDistanceRow" unique_id=1559594884]
 custom_minimum_size = Vector2(65, 0)
 layout_mode = 2
 text = "4 chunks"
 horizontal_alignment = 2
 
-[node name="VerticalDistanceRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Scroll/Options" unique_id=277335358]
+[node name="VerticalDistanceRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Categories/Graphics/Options" unique_id=277335358]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/VerticalDistanceRow" unique_id=1862093215]
-custom_minimum_size = Vector2(165, 0)
+[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/VerticalDistanceRow" unique_id=1862093215]
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "Vertical render distance"
 
-[node name="VerticalDistance" type="HSlider" parent="Center/Panel/Margin/Content/Scroll/Options/VerticalDistanceRow" unique_id=96024702]
+[node name="VerticalDistance" type="HSlider" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/VerticalDistanceRow" unique_id=96024702]
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 2.0
@@ -133,36 +209,36 @@ value = 2.0
 tick_count = 6
 ticks_on_borders = true
 
-[node name="VerticalDistanceValue" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/VerticalDistanceRow" unique_id=427619393]
+[node name="VerticalDistanceValue" type="Label" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/VerticalDistanceRow" unique_id=427619393]
 custom_minimum_size = Vector2(65, 0)
 layout_mode = 2
 text = "3 chunks"
 horizontal_alignment = 2
 
-[node name="DistanceFogRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Scroll/Options" unique_id=1705130963]
+[node name="DistanceFogRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Categories/Graphics/Options" unique_id=1705130963]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/DistanceFogRow" unique_id=1787287509]
-custom_minimum_size = Vector2(165, 0)
+[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/DistanceFogRow" unique_id=1787287509]
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "Distance fog"
 
-[node name="DistanceFog" type="CheckButton" parent="Center/Panel/Margin/Content/Scroll/Options/DistanceFogRow" unique_id=1576594550]
+[node name="DistanceFog" type="CheckButton" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/DistanceFogRow" unique_id=1576594550]
 layout_mode = 2
 button_pressed = true
 text = "Enabled"
 
-[node name="FogStartRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Scroll/Options" unique_id=1765319712]
+[node name="FogStartRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Categories/Graphics/Options" unique_id=1765319712]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/FogStartRow" unique_id=1296562124]
-custom_minimum_size = Vector2(165, 0)
+[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/FogStartRow" unique_id=1296562124]
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "Fog starts at"
 
-[node name="FogStart" type="HSlider" parent="Center/Panel/Margin/Content/Scroll/Options/FogStartRow" unique_id=1504153048]
+[node name="FogStart" type="HSlider" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/FogStartRow" unique_id=1504153048]
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 45.0
@@ -172,137 +248,82 @@ value = 65.0
 tick_count = 7
 ticks_on_borders = true
 
-[node name="FogStartValue" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/FogStartRow" unique_id=1381845791]
+[node name="FogStartValue" type="Label" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/FogStartRow" unique_id=1381845791]
 custom_minimum_size = Vector2(65, 0)
 layout_mode = 2
 text = "65%"
 horizontal_alignment = 2
 
-[node name="VSyncRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Scroll/Options" unique_id=359239709]
+[node name="Audio" type="ScrollContainer" parent="Center/Panel/Margin/Content/Categories"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Options" type="VBoxContainer" parent="Center/Panel/Margin/Content/Categories/Audio"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="MasterVolumeRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Categories/Audio/Options" unique_id=1325077104]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/VSyncRow" unique_id=448525755]
+[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Categories/Audio/Options/MasterVolumeRow" unique_id=1325077105]
 custom_minimum_size = Vector2(220, 0)
-layout_mode = 2
-text = "VSync"
-
-[node name="VSync" type="OptionButton" parent="Center/Panel/Margin/Content/Scroll/Options/VSyncRow" unique_id=327050059]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="GraphicsTitle" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options"]
-layout_mode = 2
-text = "Graphics"
-
-[node name="GraphicsHint" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options"]
-layout_mode = 2
-text = "FSR and SSAO require Forward+; Mobile runs faster."
-
-[node name="AntialiasingRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Scroll/Options"]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/AntialiasingRow"]
-custom_minimum_size = Vector2(165, 0)
-layout_mode = 2
-text = "Antialiasing"
-
-[node name="Antialiasing" type="OptionButton" parent="Center/Panel/Margin/Content/Scroll/Options/AntialiasingRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="UpscalingRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Scroll/Options"]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/UpscalingRow"]
-custom_minimum_size = Vector2(165, 0)
-layout_mode = 2
-text = "3D resolution"
-
-[node name="Upscaling" type="OptionButton" parent="Center/Panel/Margin/Content/Scroll/Options/UpscalingRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="SsaoRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Scroll/Options"]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/SsaoRow"]
-custom_minimum_size = Vector2(165, 0)
-layout_mode = 2
-text = "SSAO (screen shadows)"
-
-[node name="Ssao" type="CheckButton" parent="Center/Panel/Margin/Content/Scroll/Options/SsaoRow"]
-layout_mode = 2
-text = "Enabled"
-
-[node name="AudioTitle" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options" unique_id=1536224495]
-layout_mode = 2
-text = "Audio"
-
-[node name="MasterVolumeRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Scroll/Options" unique_id=1325077104]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/MasterVolumeRow" unique_id=1325077105]
-custom_minimum_size = Vector2(165, 0)
 layout_mode = 2
 text = "Master volume"
 
-[node name="MasterVolume" type="HSlider" parent="Center/Panel/Margin/Content/Scroll/Options/MasterVolumeRow" unique_id=1325077106]
+[node name="MasterVolume" type="HSlider" parent="Center/Panel/Margin/Content/Categories/Audio/Options/MasterVolumeRow" unique_id=1325077106]
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
 max_value = 100.0
 value = 100.0
 
-[node name="Value" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/MasterVolumeRow" unique_id=1325077107]
+[node name="Value" type="Label" parent="Center/Panel/Margin/Content/Categories/Audio/Options/MasterVolumeRow" unique_id=1325077107]
 custom_minimum_size = Vector2(65, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 2
 
-[node name="MusicVolumeRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Scroll/Options" unique_id=1325077108]
+[node name="MusicVolumeRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Categories/Audio/Options" unique_id=1325077108]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/MusicVolumeRow" unique_id=1325077109]
-custom_minimum_size = Vector2(165, 0)
+[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Categories/Audio/Options/MusicVolumeRow" unique_id=1325077109]
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "Music"
 
-[node name="MusicVolume" type="HSlider" parent="Center/Panel/Margin/Content/Scroll/Options/MusicVolumeRow" unique_id=1325077110]
+[node name="MusicVolume" type="HSlider" parent="Center/Panel/Margin/Content/Categories/Audio/Options/MusicVolumeRow" unique_id=1325077110]
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
 max_value = 100.0
 value = 100.0
 
-[node name="Value" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/MusicVolumeRow" unique_id=1325077111]
+[node name="Value" type="Label" parent="Center/Panel/Margin/Content/Categories/Audio/Options/MusicVolumeRow" unique_id=1325077111]
 custom_minimum_size = Vector2(65, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 2
 
-[node name="SfxVolumeRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Scroll/Options" unique_id=1325077112]
+[node name="SfxVolumeRow" type="HBoxContainer" parent="Center/Panel/Margin/Content/Categories/Audio/Options" unique_id=1325077112]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/SfxVolumeRow" unique_id=1325077113]
-custom_minimum_size = Vector2(165, 0)
+[node name="Label" type="Label" parent="Center/Panel/Margin/Content/Categories/Audio/Options/SfxVolumeRow" unique_id=1325077113]
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "Effects"
 
-[node name="SfxVolume" type="HSlider" parent="Center/Panel/Margin/Content/Scroll/Options/SfxVolumeRow" unique_id=1325077114]
+[node name="SfxVolume" type="HSlider" parent="Center/Panel/Margin/Content/Categories/Audio/Options/SfxVolumeRow" unique_id=1325077114]
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
 max_value = 100.0
 value = 100.0
 
-[node name="Value" type="Label" parent="Center/Panel/Margin/Content/Scroll/Options/SfxVolumeRow" unique_id=1325077115]
+[node name="Value" type="Label" parent="Center/Panel/Margin/Content/Categories/Audio/Options/SfxVolumeRow" unique_id=1325077115]
 custom_minimum_size = Vector2(65, 0)
 layout_mode = 2
 text = "100%"

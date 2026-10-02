@@ -6,12 +6,12 @@ func _ready() -> void:
 	visible = false
 
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	$"../SettingsPanel".configure(get_node("../../VoxelAPI"))
-	$"../SettingsPanel".close_requested.connect(_on_settings_closed)
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
+	if $"../SettingsPanel".visible:
+		return
+	if event.is_action_pressed("ui_cancel") and not event.is_echo():
 		toggle_pause()
 		get_viewport().set_input_as_handled()
 
@@ -42,9 +42,4 @@ func _on_button_pressed() -> void:
 	toggle_pause()
 
 func _on_settings_pressed() -> void:
-	visible = false
-	$"../SettingsPanel".show()
-
-func _on_settings_closed() -> void:
-	$"../SettingsPanel".hide()
-	visible = true
+	$"../SettingsPanel".open_from(self, get_node("../../VoxelAPI"), $VBoxContainer/Settings)

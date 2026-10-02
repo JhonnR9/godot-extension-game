@@ -45,6 +45,7 @@ func set_hour(value: float) -> void:
 	var offset := fposmod(hora - 6.0, 24.0)
 	var phase := offset / 12.0 * daylight_span if offset < 12.0 else daylight_span + (offset - 12.0) / 12.0 * (1.0 - daylight_span)
 	tempo = phase * maxf(duracao_dia, 60.0)
+	_update_light_direction()
 	_update_lighting()
 
 func _process(delta: float) -> void:
@@ -53,22 +54,27 @@ func _process(delta: float) -> void:
 	tempo = fposmod(tempo + delta, duration)
 	var phase := tempo / duration
 	hora = fposmod(6.0 + (phase / daylight_span * 12.0 if phase < daylight_span else 12.0 + (phase - daylight_span) / (1.0 - daylight_span) * 12.0), 24.0)
+	# Shadow direction must move every frame, independently of the sky refresh.
+	_update_light_direction()
 	_visual_timer += delta
 	# Avoid rebuilding sky/environment parameters on every render frame.
 	if _visual_timer >= 0.1:
 		_visual_timer = fmod(_visual_timer, 0.1)
 		_update_lighting()
 
+func _update_light_direction() -> void:
+	# At noon the sun points down, rather than lighting the terrain from below.
+	rotation_degrees = Vector3(-(hora - 6.0) * 15.0, -25.0, 0.0)
+	if _moon != null:
+		_moon.global_rotation = global_rotation + Vector3(PI, 0.0, 0.0)
+
 func _update_lighting() -> void:
 	var elevation := sin((hora - 6.0) / 24.0 * TAU)
 	var daylight := smoothstep(-0.08, 0.28, elevation)
 	var twilight := smoothstep(-0.20, -0.01, elevation) * (1.0 - smoothstep(0.02, 0.45, elevation))
-	# At noon the sun points down, rather than lighting the terrain from below.
-	rotation_degrees = Vector3(-(hora - 6.0) * 15.0, -25.0, 0.0)
 	light_energy = smoothstep(-0.02, 0.35, elevation) * 1.05
 	light_color = Color(1.0, 0.96, 0.88).lerp(Color(1.0, 0.57, 0.30), twilight * 0.8)
 	if _moon != null:
-		_moon.global_rotation = global_rotation + Vector3(PI, 0.0, 0.0)
 		_moon.light_energy = smoothstep(0.05, 0.55, -elevation) * luz_da_lua
 	RenderingServer.global_shader_parameter_set("world_daylight", daylight)
 	if _environment == null:

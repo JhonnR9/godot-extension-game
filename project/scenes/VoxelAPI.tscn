@@ -178,6 +178,7 @@ environment = SubResource("Environment_a202f")
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=747512165]
 transform = Transform3D(0.29083142, -0.7403626, 0.6060366, 0.9564279, 0.2420135, -0.16332595, -0.025748607, 0.6271307, 0.77848834, 0, 15.588827, 0)
 shadow_enabled = true
+directional_shadow_blend_splits = true
 script = ExtResource("9_715aw")
 
 [connection signal="pressed" from="CanvasLayer/Pause/VBoxContainer/Button" to="CanvasLayer/Pause" method="_on_button_pressed"]
