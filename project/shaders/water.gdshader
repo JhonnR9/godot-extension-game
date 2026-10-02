@@ -64,7 +64,7 @@ void fragment() {
 
 	float wave_noise = value_noise(water_uv * 2.0);
 	float wave_intensity = smoothstep(WDFreq, WDSize, wave_noise);
-	float water_light = mix(0.12, 1.0, world_daylight);
+	float water_light = mix(0.055, 1.0, world_daylight);
 	vec3 lit_water_color = waterColor.rgb * water_light;
 	vec3 animated_water = (waterColor.rgb + wave_intensity * vec3(WDBrightness * 0.12)) * water_light;
 

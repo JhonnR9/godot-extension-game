@@ -1,4 +1,5 @@
 #include "voxel_api.h"
+#include <cmath>
 #include "terrain_sampler.h"
 #include "ChunkDiskRepository.h"
 #include "chunk_model.h"
@@ -404,6 +405,7 @@ void VoxelAPI::create_new_world(const int32_t p_seed, const String &p_name) {
 
 	_setup_generation_pipeline(p_seed);
 
+	_set_day_hour(8.0);
 	_init_chunks();
 }
 
@@ -452,6 +454,11 @@ void VoxelAPI::start_world(int64_t p_id) {
 	}
 
 
+	const Dictionary world_data = SaveService::get_singleton()->load_world_section(p_id, "world");
+	const Variant saved_hour = world_data.get("hour", 8.0);
+	const double hour = saved_hour.get_type() == Variant::INT || saved_hour.get_type() == Variant::FLOAT
+			? double(saved_hour) : 8.0;
+	_set_day_hour(std::isfinite(hour) ? hour : 8.0);
 	_init_chunks();
 }
 
@@ -593,6 +600,24 @@ void VoxelAPI::_process_models() {
 		_queue_region_load(voxel::chunk_to_region_coords(ready_model.key));
 		_chunk_repository->add_chunk(ready_model.key, ready_model.value);
 	}
+
+	// A previously absent diagonal can enter the streaming radius later.
+	// Refresh already visible meshes that baked AO against that missing data.
+	HashSet<Vector3i> ao_updates;
+	for (const auto &ready_model : ready_models) {
+		for (int z = -1; z <= 1; ++z) {
+			for (int y = -1; y <= 1; ++y) {
+				for (int x = -1; x <= 1; ++x) {
+					if (ABS(x) + ABS(y) + ABS(z) < 2) continue;
+					const Vector3i pos = ready_model.key + Vector3i(x, y, z);
+					const auto neighbour = _chunk_repository->get_chunk(pos);
+					if (neighbour && neighbour->stage == ChunkStage::RENDERED)
+						ao_updates.insert(pos);
+				}
+			}
+		}
+	}
+	for (const Vector3i &pos : ao_updates) _rebuild_chunk(pos);
 }
 
 void VoxelAPI::_ensure_region_loaded_for_chunk(const Vector3i &chunk_pos) {
@@ -848,9 +873,33 @@ void VoxelAPI::_queue_async_generate_chunk(const Vector3i p_pos) const {
 	_model_generator->_queue_async_generate_chunk_model(p_pos, settings, _generation_pipeline, high_priority);
 }
 
+void VoxelAPI::_set_day_hour(double hour) const {
+	Node *parent = get_parent();
+	Node *sun = parent ? parent->get_node_or_null("DirectionalLight3D") : nullptr;
+	if (sun && sun->has_method("set_hour")) sun->call("set_hour", hour);
+}
+
+double VoxelAPI::_get_day_hour() const {
+	Node *parent = get_parent();
+	Node *sun = parent ? parent->get_node_or_null("DirectionalLight3D") : nullptr;
+	if (sun && sun->has_method("set_hour")) {
+		const Variant hour = sun->get("hora");
+		if (hour.get_type() == Variant::FLOAT || hour.get_type() == Variant::INT)
+			return double(hour);
+	}
+	return 8.0;
+}
+
 void VoxelAPI::save_world_final() const {
 	if (_disk_repository.is_null() || _disk_repository->get_current_world_id() == 0)
 		return;
+
+	if (SaveService *service = SaveService::get_singleton()) {
+		Dictionary world_data;
+		world_data["hour"] = _get_day_hour();
+		if (!service->save_world_section(_disk_repository->get_current_world_id(), "world", world_data))
+			WARN_PRINT("Could not save world time.");
+	}
 
 	if (_focus_node && SaveService::get_singleton()) {
 		const Vector3 position = _focus_node->get_global_position();
@@ -886,13 +935,17 @@ void VoxelAPI::save_world_final() const {
 
 ChunkNeighbors VoxelAPI::_get_neighbors_for(const Vector3i p_pos) const {
 	ChunkNeighbors n;
-	n.center = _chunk_repository->get_chunk(p_pos);
-	n.right	 = _chunk_repository->get_chunk(p_pos + voxel::DIR_RIGHT);
-	n.left	 = _chunk_repository->get_chunk(p_pos + voxel::DIR_LEFT);
-	n.top	 = _chunk_repository->get_chunk(p_pos + voxel::DIR_UP);
-	n.bottom = _chunk_repository->get_chunk(p_pos + voxel::DIR_DOWN);
-	n.front	 = _chunk_repository->get_chunk(p_pos + voxel::DIR_FRONT);
-	n.back	 = _chunk_repository->get_chunk(p_pos + voxel::DIR_BACK);
+	for (int z = -1; z <= 1; ++z)
+		for (int y = -1; y <= 1; ++y)
+			for (int x = -1; x <= 1; ++x)
+				n.halo[ChunkNeighbors::halo_index(x, y, z)] = _chunk_repository->get_chunk(p_pos + Vector3i(x, y, z));
+	n.center = n.halo[ChunkNeighbors::halo_index(0, 0, 0)];
+	n.right = n.halo[ChunkNeighbors::halo_index(1, 0, 0)];
+	n.left = n.halo[ChunkNeighbors::halo_index(-1, 0, 0)];
+	n.top = n.halo[ChunkNeighbors::halo_index(0, 1, 0)];
+	n.bottom = n.halo[ChunkNeighbors::halo_index(0, -1, 0)];
+	n.front = n.halo[ChunkNeighbors::halo_index(0, 0, 1)];
+	n.back = n.halo[ChunkNeighbors::halo_index(0, 0, -1)];
 	return n;
 }
 
@@ -919,6 +972,20 @@ void VoxelAPI::_try_build_mesh_with_neighbors(const Vector3i p_pos) const {
 	if (!neighbors.right || !neighbors.left || missing_top || missing_bottom || !neighbors.front || !neighbors.back) {
 		chunk->stage = ChunkStage::WAITING_NEIGHBORS;
 		return;
+	}
+
+	// Wait for active diagonal neighbours too, so AO never bakes a temporary
+	// gap while their terrain is still being generated.
+	for (int z = -1; z <= 1; ++z) {
+		for (int y = -1; y <= 1; ++y) {
+			for (int x = -1; x <= 1; ++x) {
+				if (!neighbors.halo[ChunkNeighbors::halo_index(x, y, z)] &&
+						_chunk_stream_manager->is_chunk_active(p_pos + Vector3i(x, y, z))) {
+					chunk->stage = ChunkStage::WAITING_NEIGHBORS;
+					return;
+				}
+			}
+		}
 	}
 
 	chunk->stage = ChunkStage::QUEUED_MESH;

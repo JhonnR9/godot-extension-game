@@ -32,6 +32,7 @@ func toggle_pause() -> void:
 
 
 func _on_back_to_main_menu_pressed() -> void:
+	$"../../VoxelAPI".save_world()
 	get_tree().paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")

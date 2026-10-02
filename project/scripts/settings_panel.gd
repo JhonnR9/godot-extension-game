@@ -1,22 +1,28 @@
 extends Control
 
+const GraphicsOptions = preload("res://scripts/graphics_settings.gd")
+
 signal close_requested
 
 @export var world_api: VoxelAPI
 
-@onready var render_distance: HSlider = $Center/Panel/Margin/Options/RenderDistanceRow/RenderDistance
-@onready var render_distance_value: Label = $Center/Panel/Margin/Options/RenderDistanceRow/RenderDistanceValue
-@onready var vertical_distance: HSlider = $Center/Panel/Margin/Options/VerticalDistanceRow/VerticalDistance
-@onready var vertical_distance_value: Label = $Center/Panel/Margin/Options/VerticalDistanceRow/VerticalDistanceValue
-@onready var distance_fog: CheckButton = $Center/Panel/Margin/Options/DistanceFogRow/DistanceFog
-@onready var fog_start: HSlider = $Center/Panel/Margin/Options/FogStartRow/FogStart
-@onready var fog_start_value: Label = $Center/Panel/Margin/Options/FogStartRow/FogStartValue
-@onready var vsync: OptionButton = $Center/Panel/Margin/Options/VSyncRow/VSync
-@onready var master_volume: HSlider = $Center/Panel/Margin/Options/MasterVolumeRow/MasterVolume
-@onready var music_volume: HSlider = $Center/Panel/Margin/Options/MusicVolumeRow/MusicVolume
-@onready var sfx_volume: HSlider = $Center/Panel/Margin/Options/SfxVolumeRow/SfxVolume
-@onready var window_mode: OptionButton = $Center/Panel/Margin/Options/WindowModeRow/WindowMode
-@onready var resolution: OptionButton = $Center/Panel/Margin/Options/ResolutionRow/Resolution
+@onready var render_distance: HSlider = $Center/Panel/Margin/Content/Scroll/Options/RenderDistanceRow/RenderDistance
+@onready var render_distance_value: Label = $Center/Panel/Margin/Content/Scroll/Options/RenderDistanceRow/RenderDistanceValue
+@onready var vertical_distance: HSlider = $Center/Panel/Margin/Content/Scroll/Options/VerticalDistanceRow/VerticalDistance
+@onready var vertical_distance_value: Label = $Center/Panel/Margin/Content/Scroll/Options/VerticalDistanceRow/VerticalDistanceValue
+@onready var distance_fog: CheckButton = $Center/Panel/Margin/Content/Scroll/Options/DistanceFogRow/DistanceFog
+@onready var fog_start: HSlider = $Center/Panel/Margin/Content/Scroll/Options/FogStartRow/FogStart
+@onready var fog_start_value: Label = $Center/Panel/Margin/Content/Scroll/Options/FogStartRow/FogStartValue
+@onready var vsync: OptionButton = $Center/Panel/Margin/Content/Scroll/Options/VSyncRow/VSync
+@onready var graphics_hint: Label = $Center/Panel/Margin/Content/Scroll/Options/GraphicsHint
+@onready var antialiasing: OptionButton = $Center/Panel/Margin/Content/Scroll/Options/AntialiasingRow/Antialiasing
+@onready var upscaling: OptionButton = $Center/Panel/Margin/Content/Scroll/Options/UpscalingRow/Upscaling
+@onready var ssao: CheckButton = $Center/Panel/Margin/Content/Scroll/Options/SsaoRow/Ssao
+@onready var master_volume: HSlider = $Center/Panel/Margin/Content/Scroll/Options/MasterVolumeRow/MasterVolume
+@onready var music_volume: HSlider = $Center/Panel/Margin/Content/Scroll/Options/MusicVolumeRow/MusicVolume
+@onready var sfx_volume: HSlider = $Center/Panel/Margin/Content/Scroll/Options/SfxVolumeRow/SfxVolume
+@onready var window_mode: OptionButton = $Center/Panel/Margin/Content/Scroll/Options/WindowModeRow/WindowMode
+@onready var resolution: OptionButton = $Center/Panel/Margin/Content/Scroll/Options/ResolutionRow/Resolution
 
 var available_resolutions: Array[Vector2i] = []
 
@@ -26,6 +32,27 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	vsync.add_item("Off", 0)
 	vsync.add_item("On", 1)
+	antialiasing.add_item("Off", GraphicsOptions.AA_OFF)
+	if DisplaySettings.graphics.supports_fxaa():
+		antialiasing.add_item("FXAA", GraphicsOptions.AA_FXAA)
+	antialiasing.add_item("MSAA 2×", GraphicsOptions.AA_MSAA_2X)
+	antialiasing.add_item("MSAA 4×", GraphicsOptions.AA_MSAA_4X)
+	upscaling.add_item("Native", GraphicsOptions.UPSCALE_NATIVE)
+	if DisplaySettings.graphics.supports_fsr1():
+		upscaling.add_item("FSR 1 Quality", GraphicsOptions.UPSCALE_FSR1_QUALITY)
+		upscaling.add_item("FSR 1 Balanced", GraphicsOptions.UPSCALE_FSR1_BALANCED)
+		upscaling.add_item("FSR 1 Performance", GraphicsOptions.UPSCALE_FSR1_PERFORMANCE)
+	if DisplaySettings.graphics.supports_fsr2():
+		upscaling.add_item("FSR 2 Quality", GraphicsOptions.UPSCALE_FSR2_QUALITY)
+		upscaling.add_item("FSR 2 Balanced", GraphicsOptions.UPSCALE_FSR2_BALANCED)
+		upscaling.add_item("FSR 2 Performance", GraphicsOptions.UPSCALE_FSR2_PERFORMANCE)
+	graphics_hint.visible = not DisplaySettings.graphics.supports_fsr2()
+	upscaling.disabled = not DisplaySettings.graphics.supports_fsr1()
+	if upscaling.disabled:
+		upscaling.tooltip_text = "FSR 1 and FSR 2 need the Forward+ renderer."
+	ssao.disabled = not DisplaySettings.graphics.supports_ssao()
+	if ssao.disabled:
+		ssao.tooltip_text = "SSAO requires Forward+ or Compatibility; voxel AO remains active."
 	window_mode.add_item("Windowed", 0)
 	window_mode.add_item("Fullscreen", 1)
 	render_distance.value_changed.connect(_on_render_slider_changed)
@@ -33,12 +60,15 @@ func _ready() -> void:
 	distance_fog.toggled.connect(_on_fog_toggled)
 	fog_start.value_changed.connect(_on_fog_start_changed)
 	vsync.item_selected.connect(_apply_settings)
+	antialiasing.item_selected.connect(func(_index: int): DisplaySettings.graphics.set_aa_mode(antialiasing.get_selected_id()))
+	upscaling.item_selected.connect(func(_index: int): DisplaySettings.graphics.set_upscale_mode(upscaling.get_selected_id()))
+	ssao.toggled.connect(DisplaySettings.graphics.set_ssao_enabled)
 	master_volume.value_changed.connect(_on_master_volume_changed)
 	music_volume.value_changed.connect(_on_music_volume_changed)
 	sfx_volume.value_changed.connect(_on_sfx_volume_changed)
 	window_mode.item_selected.connect(_on_window_mode_selected)
 	resolution.item_selected.connect(_on_resolution_selected)
-	$Center/Panel/Margin/Options/Buttons/Back.pressed.connect(_on_back_pressed)
+	$Center/Panel/Margin/Content/Buttons/Back.pressed.connect(_on_back_pressed)
 	_load_settings()
 
 func configure(api: VoxelAPI = null) -> void:
@@ -65,6 +95,9 @@ func _load_settings() -> void:
 	vertical_distance.set_block_signals(false)
 	_update_value_labels()
 	_select_id(vsync, 1 if bool(settings.get("vsync", true)) else 0)
+	_select_id(antialiasing, DisplaySettings.graphics.aa_mode)
+	_select_id(upscaling, DisplaySettings.graphics.upscale_mode)
+	ssao.set_pressed_no_signal(DisplaySettings.graphics.ssao_enabled and DisplaySettings.graphics.supports_ssao())
 	master_volume.set_block_signals(true)
 	music_volume.set_block_signals(true)
 	sfx_volume.set_block_signals(true)
@@ -118,18 +151,18 @@ func _on_sfx_volume_changed(value: float) -> void:
 	_update_audio_value_labels()
 
 func _update_audio_value_labels() -> void:
-	$Center/Panel/Margin/Options/MasterVolumeRow/Value.text = "%d%%" % int(master_volume.value)
-	$Center/Panel/Margin/Options/MusicVolumeRow/Value.text = "%d%%" % int(music_volume.value)
-	$Center/Panel/Margin/Options/SfxVolumeRow/Value.text = "%d%%" % int(sfx_volume.value)
+	$Center/Panel/Margin/Content/Scroll/Options/MasterVolumeRow/Value.text = "%d%%" % int(master_volume.value)
+	$Center/Panel/Margin/Content/Scroll/Options/MusicVolumeRow/Value.text = "%d%%" % int(music_volume.value)
+	$Center/Panel/Margin/Content/Scroll/Options/SfxVolumeRow/Value.text = "%d%%" % int(sfx_volume.value)
 
 func _load_display_settings() -> void:
 	available_resolutions = DisplaySettings.get_available_resolutions()
 	resolution.clear()
 	var selected_index := 0
 	for index in range(available_resolutions.size()):
-		var size := available_resolutions[index]
-		resolution.add_item("%d × %d" % [size.x, size.y], index)
-		if size == DisplaySettings.windowed_resolution:
+		var resolution_size := available_resolutions[index]
+		resolution.add_item("%d × %d" % [resolution_size.x, resolution_size.y], index)
+		if resolution_size == DisplaySettings.windowed_resolution:
 			selected_index = index
 	resolution.select(selected_index)
 	resolution.disabled = DisplaySettings.is_fullscreen()

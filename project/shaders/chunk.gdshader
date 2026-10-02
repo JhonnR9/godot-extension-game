@@ -1,6 +1,10 @@
 shader_type spatial;
 render_mode depth_draw_opaque, cull_back;
 
+// Voxel AO is baked into vertex alpha, independently of biome tint.
+uniform float ao_strength : hint_range(0.0, 1.0, 0.05) = 0.35;
+uniform float ao_light_affect : hint_range(0.0, 1.0, 0.05) = 0.25;
+
 uniform sampler2DArray albedo_array : source_color, filter_nearest;
 
 // Only these atlas layers may emit. Saturated foliage and tinted rock do not.
@@ -27,6 +31,8 @@ void fragment() {
     vec4 tex = texture(albedo_array, uvw);
 
     ALBEDO = tex.rgb * COLOR.rgb;
+    AO = mix(1.0, clamp(COLOR.a, 0.0, 1.0), ao_strength);
+    AO_LIGHT_AFFECT = ao_light_affect;
     EMISSION = vec3(0.0);
     // Analytical color masks in linear space leave the neutral host rock dark.
     // No extra texture fetch, light node, or additional material surface.

@@ -97,7 +97,6 @@ save={
 occlusion_culling/bvh_build_quality=0
 rendering_device/vsync/swapchain_image_count=2
 textures/canvas_textures/default_texture_filter=0
-renderer/rendering_method="mobile"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/ssao/quality=3
 occlusion_culling/use_occlusion_culling=true

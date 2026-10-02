@@ -23,10 +23,13 @@ const STANDARD_RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(3840, 2160),
 ]
 
+var graphics = preload("res://scripts/graphics_settings.gd").new()
+
 var windowed_resolution := Vector2i(1280, 720)
 var window_mode := DisplayServer.WINDOW_MODE_FULLSCREEN
 
 func _ready() -> void:
+	add_child(graphics)
 	window_mode = DisplayServer.window_get_mode()
 	if not is_fullscreen():
 		windowed_resolution = DisplayServer.window_get_size()
@@ -89,7 +92,8 @@ func _apply_windowed_resolution() -> void:
 	var screen_position := DisplayServer.screen_get_position(screen)
 	var screen_size := DisplayServer.screen_get_size(screen)
 	if screen_size.x > 0 and screen_size.y > 0:
-		DisplayServer.window_set_position(screen_position + (screen_size - windowed_resolution) / 2)
+		var centered_offset := Vector2i(Vector2(screen_size - windowed_resolution) * 0.5)
+		DisplayServer.window_set_position(screen_position + centered_offset)
 
 func _load_settings() -> void:
 	var config := ConfigFile.new()

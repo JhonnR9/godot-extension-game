@@ -26,9 +26,9 @@ func get_icon(block_id: int) -> Texture2D:
 
 func _resource_hash(path: String) -> String:
 	# Exported text resources may be converted into binary resources.
-	var remap := ConfigFile.new()
-	if remap.load(path + ".remap") == OK or remap.load(path + ".import") == OK:
-		path = str(remap.get_value("remap", "path", path))
+	var import_config := ConfigFile.new()
+	if import_config.load(path + ".remap") == OK or import_config.load(path + ".import") == OK:
+		path = str(import_config.get_value("remap", "path", path))
 	return FileAccess.get_sha256(path)
 
 func prepare(blocks: Array, cache_path: String = CACHE_PATH) -> Dictionary:

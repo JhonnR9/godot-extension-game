@@ -66,6 +66,8 @@ private:
 	int64_t _world_seed = 0;
 
 	void save_world_final() const;
+	void _set_day_hour(double hour) const;
+	double _get_day_hour() const;
 
 	// Optimization
 	int _world_radius = 4;

@@ -11,12 +11,18 @@
 
 #include <godot_cpp/classes/array_mesh.hpp>
 #include <memory>
+#include <array>
 #include <string>
 #include <unordered_map>
 #include <godot_cpp/classes/texture2d_array.hpp>
 
 namespace godot {
 struct ChunkNeighbors {
+	// Full one-chunk halo for corner AO (including diagonal neighbours).
+	std::array<std::shared_ptr<Chunk>, 27> halo{};
+	static constexpr int halo_index(int x, int y, int z) {
+		return (x + 1) + (y + 1) * 3 + (z + 1) * 9;
+	}
 	std::shared_ptr<Chunk> center;
 
 	std::shared_ptr<Chunk> right;

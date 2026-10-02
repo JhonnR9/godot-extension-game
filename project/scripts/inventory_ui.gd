@@ -201,7 +201,10 @@ func _serialize_grid(grid: Control) -> Array:
 	for row in range(grid.get_rows()):
 		for column in range(grid.get_columns()):
 			var item = grid.get_item_at(Vector2i(column, row))
-			slots.append({"id": item.get_id(), "amount": item.get_item_amount()} if item != null else null)
+			if item != null:
+				slots.append({"id": item.get_id(), "amount": item.get_item_amount()})
+			else:
+				slots.append(null)
 	return slots
 
 func restore_inventory(data: Dictionary) -> void:

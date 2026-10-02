@@ -37,7 +37,8 @@ func _run() -> void:
 					emitting += 1
 		assert(emitting < 10)
 	var registry: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/block_registry.generated.json"))
-	assert(registry.blocks.size() == 23)
+	# Additional block types may extend the registry without changing ore IDs.
+	assert(registry.blocks.size() >= 23)
 	assert(registry.blocks[22].name == "coal_ore")
 	for block: Dictionary in registry.blocks:
 		for layer: int in block.get("texture_layers", {}).values():

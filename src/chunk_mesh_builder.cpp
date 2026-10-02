@@ -18,25 +18,12 @@ voxel::Block ChunkMeshBuilder::_get_block(const ChunkNeighbors &n, int x, int y,
 		return n.center->get_block(x, y, z);
 	}
 
-	if (x < Chunk::MIN_X) {
-		return n.left ? n.left->get_block(Chunk::MAX_X, y, z) : voxel::Block{0};
-	}
-	if (x > Chunk::MAX_X) {
-		return n.right ? n.right->get_block(Chunk::MIN_X, y, z) : voxel::Block{0};
-	}
-
-	if (y < Chunk::MIN_Y) {
-		return n.bottom ? n.bottom->get_block(x, Chunk::MAX_Y, z) : voxel::Block{0};
-	}
-	if (y > Chunk::MAX_Y) {
-		return n.top ? n.top->get_block(x, Chunk::MIN_Y, z) : voxel::Block{0};
-	}
-
-	if (z < Chunk::MIN_Z) {
-		return n.back ? n.back->get_block(x, y, Chunk::MAX_Z) : voxel::Block{0};
-	}
-
-	return n.front ? n.front->get_block(x, y, Chunk::MIN_Z) : voxel::Block{0};
+	const int dx = x < 0 ? -1 : (x >= Chunk::SIZE_X ? 1 : 0);
+	const int dy = y < 0 ? -1 : (y >= Chunk::SIZE_Y ? 1 : 0);
+	const int dz = z < 0 ? -1 : (z >= Chunk::SIZE_Z ? 1 : 0);
+	const auto &chunk = n.halo[ChunkNeighbors::halo_index(dx, dy, dz)];
+	return chunk ? chunk->get_block(x - dx * Chunk::SIZE_X,
+			y - dy * Chunk::SIZE_Y, z - dz * Chunk::SIZE_Z) : voxel::Block{0};
 }
 
 bool ChunkMeshBuilder::_is_face_visible(const ChunkNeighbors &n, int x, int y, int z, const voxel::Block current_block) {
@@ -63,6 +50,7 @@ void ChunkMeshBuilder::_add_faces(const ChunkNeighbors &neighbors, const CubeFac
 	const int width = y_face ? Chunk::SIZE_Z : (x_face ? Chunk::SIZE_Z : Chunk::SIZE_X);
 	const int height = x_face ? Chunk::SIZE_Y : (y_face ? Chunk::SIZE_X : Chunk::SIZE_Y);
 	std::vector<uint8_t> mask(static_cast<size_t>(width * height));
+	std::vector<std::array<float, 4>> ao(static_cast<size_t>(width * height));
 	std::vector<uint8_t> visited(static_cast<size_t>(width * height));
 
 	auto index = [width](const int u, const int v) { return static_cast<size_t>(v * width + u); };
@@ -80,6 +68,30 @@ void ChunkMeshBuilder::_add_faces(const ChunkNeighbors &neighbors, const CubeFac
 		return _is_face_visible(neighbors, u, v, depth - 1, block);
 	};
 
+	// AO samples the air-side layer of each face; transparent/cutout blocks
+	// do not cast a solid cube's occlusion over their neighbours.
+	const int outward = (face == CubeFace::R || face == CubeFace::U || face == CubeFace::F) ? 1 : -1;
+	auto occludes = [&](int depth, int u, int v) {
+		const auto block = x_face ? _get_block(neighbors, depth, v, u) :
+				(y_face ? _get_block(neighbors, v, depth, u) : _get_block(neighbors, u, v, depth));
+		return voxel::is_collidable(block) && !voxel::is_cutout(block);
+	};
+	auto face_ao = [&](int depth, int u, int v) {
+		std::array<float, 4> result{};
+		const int du[4] = {-1, 1, 1, -1};
+		const int dv[4] = {-1, -1, 1, 1};
+		for (int corner = 0; corner < 4; ++corner) {
+			const bool side_u = occludes(depth + outward, u + du[corner], v);
+			const bool side_v = occludes(depth + outward, u, v + dv[corner]);
+			const bool diagonal = occludes(depth + outward, u + du[corner], v + dv[corner]);
+			result[corner] = side_u && side_v ? 0.0f : 1.0f - float(side_u + side_v + diagonal) / 3.0f;
+		}
+		return result;
+	};
+	auto uniform_ao = [](const std::array<float, 4> &value) {
+		return value[0] == value[1] && value[0] == value[2] && value[0] == value[3];
+	};
+
 	for (int depth = 0; depth < depth_count; ++depth) {
 		std::fill(mask.begin(), mask.end(), 0);
 		std::fill(visited.begin(), visited.end(), 0);
@@ -89,6 +101,7 @@ void ChunkMeshBuilder::_add_faces(const ChunkNeighbors &neighbors, const CubeFac
 				if (voxel::is_air(block) || _is_crossed_plant(block) ||
 						(face != CubeFace::U && voxel::type(block) == voxel::block_ids::water)) continue;
 				mask[index(u, v)] = neighbor_is_visible(depth, u, v, block);
+				if (mask[index(u, v)]) ao[index(u, v)] = face_ao(depth, u, v);
 			}
 		}
 
@@ -100,16 +113,16 @@ void ChunkMeshBuilder::_add_faces(const ChunkNeighbors &neighbors, const CubeFac
 				const uint16_t type = voxel::type(block);
 				int quad_w = 1;
 				int quad_h = 1;
-				while (u + quad_w < width) {
+				while (uniform_ao(ao[cell]) && u + quad_w < width) {
 					const size_t next = index(u + quad_w, v);
-					if (!mask[next] || visited[next] || voxel::type(block_at(depth, u + quad_w, v)) != type) break;
+					if (!mask[next] || visited[next] || voxel::type(block_at(depth, u + quad_w, v)) != type || ao[next] != ao[cell]) break;
 					++quad_w;
 				}
-				bool can_expand = true;
+				bool can_expand = uniform_ao(ao[cell]);
 				while (v + quad_h < height && can_expand) {
 					for (int k = 0; k < quad_w; ++k) {
 						const size_t next = index(u + k, v + quad_h);
-						if (!mask[next] || visited[next] || voxel::type(block_at(depth, u + k, v + quad_h)) != type) {
+						if (!mask[next] || visited[next] || voxel::type(block_at(depth, u + k, v + quad_h)) != type || ao[next] != ao[cell]) {
 							can_expand = false;
 						break;
 						}
@@ -148,8 +161,16 @@ void ChunkMeshBuilder::_add_faces(const ChunkNeighbors &neighbors, const CubeFac
 					v2 = Vector3(u, v + quad_h, depth); v3 = Vector3(u + quad_w, v + quad_h, depth);
 					normal = Vector3(0, 0, -1); uv_scale = Vector2(quad_w, quad_h);
 				}
+				const auto &corners = ao[cell];
+				std::array<float, 4> vertex_ao = corners;
+				if (face == CubeFace::R || face == CubeFace::D)
+					vertex_ao = {corners[0], corners[3], corners[2], corners[1]};
+				else if (face == CubeFace::U)
+					vertex_ao = {corners[1], corners[2], corners[3], corners[0]};
+				else if (face == CubeFace::B)
+					vertex_ao = {corners[1], corners[0], corners[3], corners[2]};
 				_get_mesher(block).add_quad(v0, v1, v2, v3, normal,
-						_get_tex_layer(face, type), uv_scale, swap_uvs, voxel::is_collidable(block), _get_block_tint(type));
+						_get_tex_layer(face, type), uv_scale, swap_uvs, voxel::is_collidable(block), _get_block_tint(type), vertex_ao);
 			}
 		}
 	}

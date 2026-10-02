@@ -2,6 +2,7 @@
 #define VOXEL_MESHER_H
 
 #include "voxel_types.h"
+#include <array>
 
 #include <godot_cpp/variant/color.hpp>
 #include <godot_cpp/variant/packed_color_array.hpp>
@@ -26,7 +27,8 @@ public:
 			const Vector2 &tile_scale,
 			bool swap_uvs = false,
 			bool collidable = true,
-			const Color &tint = Color(1.0f, 1.0f, 1.0f, 1.0f));
+			const Color &tint = Color(1.0f, 1.0f, 1.0f, 1.0f),
+			const std::array<float, 4> &ao = {1.0f, 1.0f, 1.0f, 1.0f});
 
 	[[nodiscard]] Array build_arrays() const;
 	[[nodiscard]] PackedVector3Array get_collision_faces() const;

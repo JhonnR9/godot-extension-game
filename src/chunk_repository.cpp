@@ -19,22 +19,11 @@ bool ChunkRepository::is_chunk_dirty(const Vector3i &p_pos) {
 void ChunkRepository::_update_dirty_chunks(const Vector3i &p_local_pos, const Vector3i &p_chunk_pos) {
 	std::lock_guard lock(_dirty_chunks_mutex);
 
-	_dirty_chunks.insert(p_chunk_pos);
-
-	if (p_local_pos.x == Chunk::MIN_X)
-		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_LEFT);
-	if (p_local_pos.x == Chunk::MAX_X)
-		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_RIGHT);
-
-	if (p_local_pos.y == Chunk::MIN_Y)
-		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_DOWN);
-	if (p_local_pos.y == Chunk::MAX_Y)
-		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_UP);
-
-	if (p_local_pos.z == Chunk::MIN_Z)
-		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_BACK);
-	if (p_local_pos.z == Chunk::MAX_Z)
-		_dirty_chunks.insert(p_chunk_pos + voxel::DIR_FRONT);
+	// Corner AO also depends on edge/corner-adjacent chunks.
+	for (int z = (p_local_pos.z == Chunk::MIN_Z ? -1 : 0); z <= (p_local_pos.z == Chunk::MAX_Z ? 1 : 0); ++z)
+		for (int y = (p_local_pos.y == Chunk::MIN_Y ? -1 : 0); y <= (p_local_pos.y == Chunk::MAX_Y ? 1 : 0); ++y)
+			for (int x = (p_local_pos.x == Chunk::MIN_X ? -1 : 0); x <= (p_local_pos.x == Chunk::MAX_X ? 1 : 0); ++x)
+				_dirty_chunks.insert(p_chunk_pos + Vector3i(x, y, z));
 
 	_dirty_regions.insert(voxel::chunk_to_region_coords(p_chunk_pos));
 }

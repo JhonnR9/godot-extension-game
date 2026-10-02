@@ -29,7 +29,8 @@ void VoxelMesher::add_quad(
 		const Vector2 &tile_scale,
 		bool swap_uvs,
 		bool collidable,
-		const Color &tint
+		const Color &tint,
+		const std::array<float, 4> &ao
 		) {
 	const int start = static_cast<int>(_vertices.size());
 
@@ -42,7 +43,8 @@ void VoxelMesher::add_quad(
 	for (int i = 0; i < 4; i++) {
 		_normals.append(normal);
 		_tex_layer.append(static_cast<float>(tex_layer));
-		_colors.append(tint);
+		// Alpha carries ambient visibility; texture alpha still controls cutouts.
+		_colors.append(Color(tint.r, tint.g, tint.b, ao[i]));
 	}
 
 	if (swap_uvs) {
@@ -57,13 +59,14 @@ void VoxelMesher::add_quad(
 		_uvs.append(Vector2(0.0f, 0.0f));
 	}
 
-	_indices.append(start);
-	_indices.append(start + 2);
-	_indices.append(start + 1);
-
-	_indices.append(start);
-	_indices.append(start + 3);
-	_indices.append(start + 2);
+	// Choose the diagonal that avoids a bright crease across occluded corners.
+	if (ao[0] + ao[2] > ao[1] + ao[3]) {
+		_indices.append(start); _indices.append(start + 3); _indices.append(start + 1);
+		_indices.append(start + 1); _indices.append(start + 3); _indices.append(start + 2);
+	} else {
+		_indices.append(start); _indices.append(start + 2); _indices.append(start + 1);
+		_indices.append(start); _indices.append(start + 3); _indices.append(start + 2);
+	}
 
 	if (collidable) {
 		_collision_faces.append(v0);
