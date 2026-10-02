@@ -4,6 +4,7 @@ render_mode unshaded, blend_mix, depth_draw_opaque, cull_back;
 global uniform float world_daylight;
 
 uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_nearest;
+uniform sampler2D depth_texture : hint_depth_texture, repeat_disable, filter_nearest;
 
 group_uniforms water;
 uniform vec4 waterColor : source_color = vec4(0.117, 0.27, 0.58, 1.0);
@@ -43,6 +44,17 @@ float value_noise(vec2 p) {
 	return mix(mix(a, b, local.x), mix(c, d, local.x), local.y);
 }
 
+float scene_view_depth(vec2 uv, mat4 inverse_projection) {
+	float depth = textureLod(depth_texture, uv, 0.0).r;
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+	vec3 ndc = vec3(uv, depth) * 2.0 - 1.0;
+#else
+	vec3 ndc = vec3(uv * 2.0 - 1.0, depth);
+#endif
+	vec4 view = inverse_projection * vec4(ndc, 1.0);
+	return -view.z / view.w;
+}
+
 void fragment() {
 	vec2 base_uv = world_position.xz * tiling;
 	float distortion_noise = value_noise(base_uv * 1.7 + offSetSpeed * TIME);
@@ -56,9 +68,20 @@ void fragment() {
 	vec3 lit_water_color = waterColor.rgb * water_light;
 	vec3 animated_water = (waterColor.rgb + wave_intensity * vec3(WDBrightness * 0.12)) * water_light;
 
-	vec2 background_uv = SCREEN_UV;
-	background_uv.x += (distortion_noise - 0.5) * backGroundDirX;
-	background_uv.y += (distortion_noise - 0.5) * backGroundDirY;
+	float water_depth = -VERTEX.z;
+	float scene_depth = scene_view_depth(SCREEN_UV, INV_PROJECTION_MATRIX);
+	// Fade refraction where the water meets opaque geometry. Never pull a
+	// foreground trunk/shore pixel across its silhouette into the water.
+	float contact_fade = smoothstep(0.0, 0.75, scene_depth - water_depth);
+	vec2 offset = (distortion_noise - 0.5) * vec2(backGroundDirX, backGroundDirY) * contact_fade;
+	vec2 half_pixel = 0.5 / vec2(textureSize(screen_texture, 0));
+	vec2 background_uv = clamp(SCREEN_UV + offset, half_pixel, vec2(1.0) - half_pixel);
+	vec2 midpoint_uv = mix(SCREEN_UV, background_uv, 0.5);
+	float refracted_depth = scene_view_depth(background_uv, INV_PROJECTION_MATRIX);
+	float midpoint_depth = scene_view_depth(midpoint_uv, INV_PROJECTION_MATRIX);
+	if (min(refracted_depth, midpoint_depth) <= water_depth + 0.02) {
+		background_uv = SCREEN_UV;
+	}
 	vec3 refracted_background = texture(screen_texture, background_uv).rgb;
 	vec3 water_color = mix(refracted_background, animated_water, 0.2);
 	water_color = mix(water_color, lit_water_color, colorCorection);

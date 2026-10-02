@@ -2,6 +2,11 @@
 
 [ext_resource type="Script" uid="uid://cj70hciq8ecqy" path="res://scripts/inventory_ui.gd" id="1_inventory_ui"]
 
+[ext_resource type="Texture2D" path="res://textures/ui/creative.svg" id="2_creative"]
+[ext_resource type="Texture2D" path="res://textures/ui/inventory.svg" id="3_inventory"]
+
+[ext_resource type="Texture2D" path="res://textures/ui/craft.svg" id="4_craft"]
+
 [node name="InventoryUI" type="Control" unique_id=137748071]
 layout_mode = 3
 anchors_preset = 15
@@ -37,14 +42,35 @@ theme_override_constants/margin_bottom = 10
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Title" type="Label" parent="CreativePanel/Margin/Content" unique_id=2134923103]
+[node name="Tabs" type="HBoxContainer" parent="CreativePanel/Margin/Content"]
 layout_mode = 2
-text = "Inventário criativo"
-horizontal_alignment = 1
+alignment = 0
+theme_override_constants/separation = 8
+
+[node name="CreativeTab" type="Button" parent="CreativePanel/Margin/Content/Tabs"]
+custom_minimum_size = Vector2(48, 44)
+layout_mode = 2
+tooltip_text = "Creative"
+icon = ExtResource("2_creative")
+icon_alignment = 1
+
+[node name="InventoryTab" type="Button" parent="CreativePanel/Margin/Content/Tabs"]
+custom_minimum_size = Vector2(48, 44)
+layout_mode = 2
+tooltip_text = "Inventory"
+icon = ExtResource("3_inventory")
+icon_alignment = 1
+
+[node name="CraftTab" type="Button" parent="CreativePanel/Margin/Content/Tabs"]
+custom_minimum_size = Vector2(48, 44)
+layout_mode = 2
+tooltip_text = "Crafting"
+icon = ExtResource("4_craft")
+icon_alignment = 1
 
 [node name="Hint" type="Label" parent="CreativePanel/Margin/Content" unique_id=1989051617]
 layout_mode = 2
-text = "Arraste os blocos para a hotbar"
+text = "Drag items to your inventory or hotbar"
 horizontal_alignment = 1
 
 [node name="CreativeScroll" type="ScrollContainer" parent="CreativePanel/Margin/Content"]
@@ -61,6 +87,53 @@ use_top_left = false
 [node name="CreativeGrid" type="GridInventory" parent="CreativePanel/Margin/Content/CreativeScroll/Center" unique_id=2043662853]
 layout_mode = 2
 size_flags_horizontal = 4
+
+[node name="InventoryScroll" type="ScrollContainer" parent="CreativePanel/Margin/Content"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
+
+[node name="Center" type="CenterContainer" parent="CreativePanel/Margin/Content/InventoryScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="InventoryGrid" type="GridInventory" parent="CreativePanel/Margin/Content/InventoryScroll/Center"]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="CraftScroll" type="ScrollContainer" parent="CreativePanel/Margin/Content"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Center" type="CenterContainer" parent="CreativePanel/Margin/Content/CraftScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Recipe" type="HBoxContainer" parent="CreativePanel/Margin/Content/CraftScroll/Center"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="CraftGrid" type="GridInventory" parent="CreativePanel/Margin/Content/CraftScroll/Center/Recipe"]
+layout_mode = 2
+
+[node name="Arrow" type="Label" parent="CreativePanel/Margin/Content/CraftScroll/Center/Recipe"]
+layout_mode = 2
+text = "→"
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 28
+
+[node name="Result" type="Button" parent="CreativePanel/Margin/Content/CraftScroll/Center/Recipe"]
+custom_minimum_size = Vector2(72, 64)
+layout_mode = 2
+size_flags_vertical = 4
+expand_icon = true
+theme_override_constants/icon_max_width = 44
+tooltip_text = "Place one raw log in any slot"
 
 [node name="HotbarPanel" type="PanelContainer" parent="." unique_id=1029529787]
 layout_mode = 0

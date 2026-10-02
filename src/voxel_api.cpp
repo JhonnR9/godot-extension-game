@@ -428,6 +428,9 @@ void VoxelAPI::start_world(int64_t p_id) {
 
 	if (_focus_node) {
 		const Dictionary player_data = SaveService::get_singleton()->load_world_section(p_id, "player");
+		if (_focus_node->has_method("restore_inventory")) {
+			_focus_node->call("restore_inventory", player_data.get("inventory", Dictionary()));
+		}
 		const Array saved_position = player_data.get("position", Array());
 		if (saved_position.size() >= 3) {
 			_focus_node->set_global_position(Vector3(
@@ -857,6 +860,9 @@ void VoxelAPI::save_world_final() const {
 		serialized_position.push_back(position.z);
 		Dictionary player_data;
 		player_data["position"] = serialized_position;
+		if (_focus_node->has_method("serialize_inventory")) {
+			player_data["inventory"] = _focus_node->call("serialize_inventory");
+		}
 		player_data["yaw"] = _focus_node->get_rotation().y;
 		if (Node *head_node = _focus_node->get_node_or_null("Head")) {
 			if (Node3D *head = Object::cast_to<Node3D>(head_node)) {
@@ -865,7 +871,7 @@ void VoxelAPI::save_world_final() const {
 		}
 		if (!SaveService::get_singleton()->save_world_section(
 				_disk_repository->get_current_world_id(), "player", player_data)) {
-			WARN_PRINT("Could not save player position.");
+			WARN_PRINT("Could not save player state.");
 		}
 	}
 

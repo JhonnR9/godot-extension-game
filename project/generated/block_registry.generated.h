@@ -35,6 +35,9 @@ inline constexpr std::uint16_t snow = 25;
 inline constexpr std::uint16_t ice = 26;
 inline constexpr std::uint16_t pine_log = 27;
 inline constexpr std::uint16_t pine_leaves = 28;
+inline constexpr std::uint16_t oak_planks = 29;
+inline constexpr std::uint16_t palm_planks = 30;
+inline constexpr std::uint16_t pine_planks = 31;
 }
 
 inline constexpr std::uint32_t default_block_flags(std::uint16_t id) {
@@ -68,6 +71,9 @@ inline constexpr std::uint32_t default_block_flags(std::uint16_t id) {
 		case block_ids::ice: return 1024u;
 		case block_ids::pine_log: return 1024u;
 		case block_ids::pine_leaves: return 17408u;
+		case block_ids::oak_planks: return 1024u;
+		case block_ids::palm_planks: return 1024u;
+		case block_ids::pine_planks: return 1024u;
 		default: return 0u;
 	}
 }
@@ -102,6 +108,9 @@ inline constexpr std::uint16_t block_id_from_name(std::string_view name) {
 	if (name == "ice") return block_ids::ice;
 	if (name == "pine_log") return block_ids::pine_log;
 	if (name == "pine_leaves") return block_ids::pine_leaves;
+	if (name == "oak_planks") return block_ids::oak_planks;
+	if (name == "palm_planks") return block_ids::palm_planks;
+	if (name == "pine_planks") return block_ids::pine_planks;
 	return 0xffff;
 }
 
@@ -126,25 +135,28 @@ inline constexpr int texture_layer_from_name(std::string_view name) {
 	if (name == "oak_leaves_top") return 17;
 	if (name == "oak_log_side") return 18;
 	if (name == "oak_log_top") return 19;
-	if (name == "oak_wood_bottom") return 20;
-	if (name == "oak_wood_side") return 21;
-	if (name == "oak_wood_top") return 22;
-	if (name == "palm_leaves") return 23;
-	if (name == "palm_log_side") return 24;
-	if (name == "palm_log_top") return 25;
-	if (name == "pine_leaves") return 26;
-	if (name == "pine_log_side") return 27;
-	if (name == "poppy_side") return 28;
-	if (name == "sand_side") return 29;
-	if (name == "sandstone_side") return 30;
-	if (name == "short_grass_side") return 31;
-	if (name == "snow") return 32;
-	if (name == "stone") return 33;
-	if (name == "tallgrass_side") return 34;
+	if (name == "oak_planks") return 20;
+	if (name == "oak_wood_bottom") return 21;
+	if (name == "oak_wood_side") return 22;
+	if (name == "oak_wood_top") return 23;
+	if (name == "palm_leaves") return 24;
+	if (name == "palm_log_side") return 25;
+	if (name == "palm_log_top") return 26;
+	if (name == "palm_planks") return 27;
+	if (name == "pine_leaves") return 28;
+	if (name == "pine_log_side") return 29;
+	if (name == "pine_planks") return 30;
+	if (name == "poppy_side") return 31;
+	if (name == "sand_side") return 32;
+	if (name == "sandstone_side") return 33;
+	if (name == "short_grass_side") return 34;
+	if (name == "snow") return 35;
+	if (name == "stone") return 36;
+	if (name == "tallgrass_side") return 37;
 	return -1;
 }
 
-inline constexpr int WATER_TEXTURE_LAYER = 35;
+inline constexpr int WATER_TEXTURE_LAYER = 38;
 }
 
 #endif

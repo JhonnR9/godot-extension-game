@@ -78,9 +78,9 @@
 			"id": 3,
 			"name": "stone",
 			"texture_layers": {
-				"bottom": 33,
-				"side": 33,
-				"top": 33
+				"bottom": 36,
+				"side": 36,
+				"top": 36
 			},
 			"textures": {
 				"side": "stone"
@@ -102,9 +102,9 @@
 			"id": 4,
 			"name": "oak_wood",
 			"texture_layers": {
-				"bottom": 20,
-				"side": 21,
-				"top": 22
+				"bottom": 21,
+				"side": 22,
+				"top": 23
 			},
 			"textures": {
 				"bottom": "oak_wood_bottom",
@@ -128,9 +128,9 @@
 			"id": 5,
 			"name": "deepslate",
 			"texture_layers": {
-				"bottom": 33,
-				"side": 33,
-				"top": 33
+				"bottom": 36,
+				"side": 36,
+				"top": 36
 			},
 			"textures": {
 				"side": "stone"
@@ -272,9 +272,9 @@
 			"id": 11,
 			"name": "sand",
 			"texture_layers": {
-				"bottom": 29,
-				"side": 29,
-				"top": 29
+				"bottom": 32,
+				"side": 32,
+				"top": 32
 			},
 			"textures": {
 				"side": "sand_side"
@@ -296,9 +296,9 @@
 			"id": 12,
 			"name": "sandstone",
 			"texture_layers": {
-				"bottom": 30,
-				"side": 30,
-				"top": 30
+				"bottom": 33,
+				"side": 33,
+				"top": 33
 			},
 			"textures": {
 				"side": "sandstone_side"
@@ -370,9 +370,9 @@
 			"id": 15,
 			"name": "tall_grass",
 			"texture_layers": {
-				"bottom": 34,
-				"side": 34,
-				"top": 34
+				"bottom": 37,
+				"side": 37,
+				"top": 37
 			},
 			"textures": {
 				"side": "tallgrass_side"
@@ -394,9 +394,9 @@
 			"id": 16,
 			"name": "bedrock",
 			"texture_layers": {
-				"bottom": 33,
-				"side": 33,
-				"top": 33
+				"bottom": 36,
+				"side": 36,
+				"top": 36
 			},
 			"textures": {
 				"side": "stone"
@@ -469,9 +469,9 @@
 			"id": 19,
 			"name": "poppy",
 			"texture_layers": {
-				"bottom": 28,
-				"side": 28,
-				"top": 28
+				"bottom": 31,
+				"side": 31,
+				"top": 31
 			},
 			"textures": {
 				"side": "poppy_side"
@@ -494,9 +494,9 @@
 			"id": 20,
 			"name": "short_grass",
 			"texture_layers": {
-				"bottom": 31,
-				"side": 31,
-				"top": 31
+				"bottom": 34,
+				"side": 34,
+				"top": 34
 			},
 			"textures": {
 				"side": "short_grass_side"
@@ -567,9 +567,9 @@
 			"id": 23,
 			"name": "palm_log",
 			"texture_layers": {
-				"bottom": 25,
-				"side": 24,
-				"top": 25
+				"bottom": 26,
+				"side": 25,
+				"top": 26
 			},
 			"textures": {
 				"bottom": "palm_log_top",
@@ -594,9 +594,9 @@
 			"id": 24,
 			"name": "palm_leaves",
 			"texture_layers": {
-				"bottom": 23,
-				"side": 23,
-				"top": 23
+				"bottom": 24,
+				"side": 24,
+				"top": 24
 			},
 			"textures": {
 				"side": "palm_leaves"
@@ -618,9 +618,9 @@
 			"id": 25,
 			"name": "snow",
 			"texture_layers": {
-				"bottom": 32,
-				"side": 32,
-				"top": 32
+				"bottom": 35,
+				"side": 35,
+				"top": 35
 			},
 			"textures": {
 				"side": "snow"
@@ -667,7 +667,7 @@
 			"name": "pine_log",
 			"texture_layers": {
 				"bottom": 19,
-				"side": 27,
+				"side": 29,
 				"top": 19
 			},
 			"textures": {
@@ -693,12 +693,90 @@
 			"id": 28,
 			"name": "pine_leaves",
 			"texture_layers": {
-				"bottom": 26,
-				"side": 26,
-				"top": 26
+				"bottom": 28,
+				"side": 28,
+				"top": 28
 			},
 			"textures": {
 				"side": "pine_leaves"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "building",
+			"display_name": "Oak Planks",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 29,
+			"name": "oak_planks",
+			"texture_layers": {
+				"bottom": 20,
+				"side": 20,
+				"top": 20
+			},
+			"textures": {
+				"bottom": "oak_planks",
+				"side": "oak_planks",
+				"top": "oak_planks"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "building",
+			"display_name": "Palm Planks",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 30,
+			"name": "palm_planks",
+			"texture_layers": {
+				"bottom": 27,
+				"side": 27,
+				"top": 27
+			},
+			"textures": {
+				"bottom": "palm_planks",
+				"side": "palm_planks",
+				"top": "palm_planks"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "building",
+			"display_name": "Pine Planks",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 31,
+			"name": "pine_planks",
+			"texture_layers": {
+				"bottom": 30,
+				"side": 30,
+				"top": 30
+			},
+			"textures": {
+				"bottom": "pine_planks",
+				"side": "pine_planks",
+				"top": "pine_planks"
 			},
 			"tint": [
 				1.0,
@@ -729,22 +807,25 @@
 		"oak_leaves_top": 17,
 		"oak_log_side": 18,
 		"oak_log_top": 19,
-		"oak_wood_bottom": 20,
-		"oak_wood_side": 21,
-		"oak_wood_top": 22,
-		"palm_leaves": 23,
-		"palm_log_side": 24,
-		"palm_log_top": 25,
-		"pine_leaves": 26,
-		"pine_log_side": 27,
-		"poppy_side": 28,
-		"sand_side": 29,
-		"sandstone_side": 30,
-		"short_grass_side": 31,
-		"snow": 32,
-		"stone": 33,
-		"tallgrass_side": 34
+		"oak_planks": 20,
+		"oak_wood_bottom": 21,
+		"oak_wood_side": 22,
+		"oak_wood_top": 23,
+		"palm_leaves": 24,
+		"palm_log_side": 25,
+		"palm_log_top": 26,
+		"palm_planks": 27,
+		"pine_leaves": 28,
+		"pine_log_side": 29,
+		"pine_planks": 30,
+		"poppy_side": 31,
+		"sand_side": 32,
+		"sandstone_side": 33,
+		"short_grass_side": 34,
+		"snow": 35,
+		"stone": 36,
+		"tallgrass_side": 37
 	},
 	"version": 1,
-	"water_texture_layer": 35
+	"water_texture_layer": 38
 }

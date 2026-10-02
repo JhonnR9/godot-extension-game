@@ -259,10 +259,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			InventoryManager.select_hotbar_slot(InventoryManager.get_selected_hotbar_slot() + 1)
+			InventoryManager.select_hotbar_slot(InventoryManager.get_selected_hotbar_slot() - 1)
 			return
 		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			InventoryManager.select_hotbar_slot(InventoryManager.get_selected_hotbar_slot() - 1)
+			InventoryManager.select_hotbar_slot(InventoryManager.get_selected_hotbar_slot() + 1)
 			return
 
 		if event.button_index == MOUSE_BUTTON_LEFT:
@@ -290,3 +290,9 @@ func raycast_block(distance: float) -> Dictionary:
 	query.exclude = [get_rid()]
 	var space_state := get_world_3d().direct_space_state
 	return space_state.intersect_ray(query)
+
+func serialize_inventory() -> Dictionary:
+	return $InventoryCanvas/InventoryUI.serialize_inventory()
+
+func restore_inventory(data: Dictionary) -> void:
+	$InventoryCanvas/InventoryUI.restore_inventory(data)

@@ -47,7 +47,7 @@ func run() -> void:
 		check(item != null and item.get_id() == ui.blocks[index].id, "Creative block missing.")
 	var slot: Control = ui.creative_grid.get_child(0)
 	var item = ui.creative_grid.get_item_at(Vector2i.ZERO)
-	check(slot.tooltip_text.contains(item.get_name()) and slot.tooltip_text.contains("ID: %s" % item.get_id()) and slot.tooltip_text.contains("Categoria: " + item.get_category()), "C++ tooltip metadata missing.")
+	check(slot.tooltip_text.contains(item.get_name()) and slot.tooltip_text.contains("ID: %s" % item.get_id()) and slot.tooltip_text.contains("Category: " + item.get_category()), "C++ tooltip metadata missing.")
 	check(item.duplicate_item().get_category() == item.get_category(), "Dragged copy loses category.")
 	# Wheel input over a slot must propagate to the enclosing ScrollContainer.
 	await move_mouse(slot.global_position + slot.size / 2.0)
@@ -78,6 +78,74 @@ func run() -> void:
 	check(ui.hotbar_grid.get_item_at(Vector2i.ZERO) != null, "Creative drag did not fill hotbar.")
 	check(InventoryManager.get_selected_block_id() == item.get_id(), "Selected block was not updated after drop.")
 	check(ui.creative_grid.get_item_at(Vector2i.ZERO) == item, "Creative source was consumed.")
+	check(ui.hotbar_grid.get_item_at(Vector2i.ZERO).get_item_amount() == 99, "Creative should grant 99 items.")
+	var count_label = ui.hotbar_grid.get_child(0).find_children("*", "Label", true, false)
+	check(count_label.size() == 1 and count_label[0].text == "99", "Hotbar stack count missing.")
+	# Click the icon to switch views without changing the creative game mode.
+	var tab_position: Vector2 = ui.inventory_tab.global_position + ui.inventory_tab.size / 2.0
+	await move_mouse(tab_position)
+	for pressed in [true, false]:
+		var click := InputEventMouseButton.new()
+		click.button_index = MOUSE_BUTTON_LEFT
+		click.pressed = pressed
+		click.position = tab_position
+		root.push_input(click, true)
+		await process_frame
+	check(ui.inventory_scroll.visible and not ui.creative_scroll.visible, "Inventory icon did not switch tabs.")
+	check(ui.inventory_grid.get_child_count() == 27, "Normal inventory should have 27 slots.")
+	# Merging into a nearly full stack preserves the remainder in the source.
+	var small = item.duplicate_item()
+	small.set_item_amount(90)
+	ui.inventory_grid.set_item_at(small, Vector2i.ZERO)
+	var incoming = item.duplicate_item()
+	incoming.set_item_amount(20)
+	ui.hotbar_grid.set_item_at(incoming, Vector2i.ZERO)
+	ui.hotbar_grid.clear_item_at(Vector2i.ZERO)
+	ui.hotbar_grid.get_child(0).force_drag({"item": incoming, "source": ui.hotbar_grid, "source_cell": Vector2i.ZERO, "creative_source": false}, Control.new())
+	var storage_slot: Control = ui.inventory_grid.get_child(0)
+	var storage_position := storage_slot.global_position + storage_slot.size / 2.0
+	await move_mouse(storage_position)
+	release.position = storage_position
+	root.push_input(release, true)
+	for frame in range(4): await process_frame
+	check(ui.inventory_grid.get_item_at(Vector2i.ZERO).get_item_amount() == 99, "Merged stack exceeds or misses limit.")
+	check(ui.hotbar_grid.get_item_at(Vector2i.ZERO).get_item_amount() == 11, "Partial merge lost remaining items.")
+	var extra = item.duplicate_item()
+	extra.set_item_amount(200)
+	check(extra.get_item_amount() == 99, "ItemView did not enforce stack limit.")
+	small = item.duplicate_item()
+	small.set_item_amount(90)
+	ui.inventory_grid.set_item_at(small, Vector2i(1, 0))
+	extra.set_item_amount(20)
+	check(ui.inventory_grid.add_item(extra), "Stack insertion failed.")
+	check(ui.inventory_grid.get_item_at(Vector2i(1, 0)).get_item_amount() == 99 and ui.inventory_grid.get_item_at(Vector2i(2, 0)).get_item_amount() == 11, "Insertion failed to split overflow.")
+	check(not ui.inventory_grid.add_item_at(extra, Vector2i.ZERO), "Full slot accepted overflowing items.")
+	# A full inventory rejects insertion without modifying any stack.
+	for row in range(3):
+		for column in range(9):
+			ui.inventory_grid.set_item_at(item.duplicate_item(), Vector2i(column, row))
+	check(not ui.inventory_grid.add_item(extra), "Full inventory accepted extra items.")
+	for row in range(3):
+		for column in range(9):
+			check(ui.inventory_grid.get_item_at(Vector2i(column, row)).get_item_amount() == 99, "Rejected insertion changed a stack.")
+	ui.select_inventory_tab(true)
+	check(count_label[0].z_index > 0, "Stack quantity renders behind item icon.")
+	# Round-trip through the world's existing level.json section, preserving other fields.
+	InventoryManager.select_hotbar_slot(3)
+	var saved: Dictionary = ui.serialize_inventory()
+	var world_id := int(SaveService.create_world(42, "Inventory persistence test"))
+	check(SaveService.save_world_section(world_id, "player", {"position": [1, 2, 3], "inventory": saved}), "Inventory save failed.")
+	ui.restore_inventory({})
+	check(ui.hotbar_grid.get_item_at(Vector2i.ZERO) == null and ui.inventory_grid.get_item_at(Vector2i.ZERO) == null, "Legacy save retained previous world's items.")
+	var player_data: Dictionary = SaveService.load_world_section(world_id, "player")
+	ui.restore_inventory(player_data.inventory)
+	check(ui.serialize_inventory() == saved, "Saved inventory did not restore exactly.")
+	check(player_data.position.size() == 3 and Vector3(player_data.position[0], player_data.position[1], player_data.position[2]) == Vector3(1, 2, 3), "Inventory save lost player position.")
+	check(ui.hotbar_grid.get_item_at(Vector2i.ZERO).get_icon() != null, "Loaded item icon missing.")
+	ui.restore_inventory({"hotbar": [{"id": 999999, "amount": 99}, {"id": item.get_id(), "amount": 999}], "selected_slot": 900})
+	check(ui.hotbar_grid.get_item_at(Vector2i.ZERO) == null, "Unknown saved item ID accepted.")
+	check(ui.hotbar_grid.get_item_at(Vector2i(1, 0)).get_item_amount() == 99, "Loaded stack exceeds limit.")
+	ui.restore_inventory(saved)
 	# Smaller windows keep the panels on screen and retain manually added items.
 	root.size = Vector2i(480, 360)
 	for frame in range(6): await process_frame

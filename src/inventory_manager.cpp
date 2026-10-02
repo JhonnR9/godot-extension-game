@@ -44,6 +44,7 @@ void InventoryManager::setup(Node *player, Control *ui) {
 	_ui = ui;
 	_creative_panel = nullptr;
 	_creative_grid = nullptr;
+	_inventory_grid = nullptr;
 	_hotbar_grid = nullptr;
 	_inventory_open = false;
 	_selected_slot = 0;
@@ -56,8 +57,9 @@ void InventoryManager::setup(Node *player, Control *ui) {
 
 	_creative_panel = Object::cast_to<PanelContainer>(_ui->get_node_or_null("CreativePanel"));
 	_creative_grid = Object::cast_to<GridInventory>(_ui->get_node_or_null("CreativePanel/Margin/Content/CreativeScroll/Center/CreativeGrid"));
+	_inventory_grid = Object::cast_to<GridInventory>(_ui->get_node_or_null("CreativePanel/Margin/Content/InventoryScroll/Center/InventoryGrid"));
 	_hotbar_grid = Object::cast_to<GridInventory>(_ui->get_node_or_null("HotbarPanel/Margin/HotbarGrid"));
-	if (!_creative_panel || !_creative_grid || !_hotbar_grid) {
+	if (!_creative_panel || !_creative_grid || !_inventory_grid || !_hotbar_grid) {
 		UtilityFunctions::push_error("InventoryManager could not find CreativePanel, CreativeGrid, and HotbarGrid in the inventory scene");
 		_player = nullptr;
 		_ui = nullptr;
@@ -69,6 +71,7 @@ void InventoryManager::setup(Node *player, Control *ui) {
 	_hotbar_grid->connect("item_changed", callable_mp(this, &InventoryManager::_on_hotbar_item_changed));
 	_creative_panel->hide();
 	_creative_grid->set_interaction_enabled(false);
+	_inventory_grid->set_interaction_enabled(false);
 	_hotbar_grid->set_interaction_enabled(false);
 	_ui->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
 	_hotbar_grid->set_selected_cell(Point2i(_selected_slot, 0));
@@ -82,6 +85,7 @@ void InventoryManager::_on_ui_tree_exiting() {
 	_ui = nullptr;
 	_creative_panel = nullptr;
 	_creative_grid = nullptr;
+	_inventory_grid = nullptr;
 	_hotbar_grid = nullptr;
 	_inventory_open = false;
 	_selected_block_id = 0;
@@ -111,10 +115,12 @@ void InventoryManager::toggle_inventory() {
 }
 
 void InventoryManager::open_inventory() {
-	if (!_ui || !_creative_panel || !_creative_grid || !_hotbar_grid) return;
+	if (!_ui || !_creative_panel || !_creative_grid || !_inventory_grid || !_hotbar_grid) return;
 	_inventory_open = true;
 	_creative_panel->show();
 	_creative_grid->set_interaction_enabled(true);
+	_inventory_grid->set_interaction_enabled(true);
+	if (GridInventory *craft = Object::cast_to<GridInventory>(_ui->get_node_or_null("CreativePanel/Margin/Content/CraftScroll/Center/Recipe/CraftGrid"))) craft->set_interaction_enabled(true);
 	_hotbar_grid->set_interaction_enabled(true);
 	_ui->set_mouse_filter(Control::MOUSE_FILTER_STOP);
 	if (_player) _player->set("inventory_open", true);
@@ -125,7 +131,9 @@ void InventoryManager::close_inventory() {
 	if (!_ui) return;
 	_inventory_open = false;
 	if (_creative_panel) _creative_panel->hide();
+	if (GridInventory *craft = Object::cast_to<GridInventory>(_ui->get_node_or_null("CreativePanel/Margin/Content/CraftScroll/Center/Recipe/CraftGrid"))) craft->set_interaction_enabled(false);
 	if (_creative_grid) _creative_grid->set_interaction_enabled(false);
+	if (_inventory_grid) _inventory_grid->set_interaction_enabled(false);
 	if (_hotbar_grid) _hotbar_grid->set_interaction_enabled(false);
 	_ui->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
 	if (_player) _player->set("inventory_open", false);

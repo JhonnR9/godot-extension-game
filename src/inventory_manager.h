@@ -18,6 +18,7 @@ class InventoryManager final : public Object {
 	Control *_ui = nullptr;
 	PanelContainer *_creative_panel = nullptr;
 	GridInventory *_creative_grid = nullptr;
+	GridInventory *_inventory_grid = nullptr;
 	GridInventory *_hotbar_grid = nullptr;
 	int _selected_slot = 0;
 	int _selected_block_id = 0;

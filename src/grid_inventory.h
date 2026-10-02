@@ -88,6 +88,9 @@ public:
 	void set_interaction_enabled(bool enabled);
 	bool is_interaction_enabled() const { return _interaction_enabled; }
 
+	Ref<ItemView> get_craft_result() const;
+	bool craft_into(GridInventory *destination);
+
 	int get_rows() const { return _rows; }
 	void set_rows(int value);
 	int get_columns() const { return _columns; }

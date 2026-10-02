@@ -1,4 +1,5 @@
 #include "grid_inventory.h"
+#include "../project/generated/block_registry.generated.h"
 
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/input_event_mouse_button.hpp>
@@ -58,6 +59,9 @@ Label *GridInventory::_create_count_label() {
 	label->set_offset(SIDE_RIGHT, -3.0);
 	label->set_offset(SIDE_BOTTOM, -1.0);
 	label->set_mouse_filter(MOUSE_FILTER_IGNORE);
+	label->set_z_index(1);
+	label->add_theme_constant_override("outline_size", 4);
+	label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 1));
 	if (_count_label_settings.is_valid()) label->set_label_settings(_count_label_settings);
 	return label;
 }
@@ -103,7 +107,7 @@ void GridInventory::_sync_slot(Slot &slot) {
 	}
 	if (slot.panel) {
 		String tooltip = slot.item->get_name() + "\nID: " + String::num_int64(slot.item->get_id()) +
-			"\nCategoria: " + (slot.item->get_category().is_empty() ? String("misc") : slot.item->get_category());
+			"\nCategory: " + (slot.item->get_category().is_empty() ? String("misc") : slot.item->get_category());
 		if (!slot.item->get_hint_description().is_empty()) tooltip += "\n" + slot.item->get_hint_description();
 		slot.panel->set_tooltip_text(tooltip);
 	}
@@ -213,7 +217,11 @@ bool GridInventory::_accept_drop_data(const Vector2 &, const Variant &data, cons
 	const Dictionary payload = data;
 	const Ref<ItemView> item = payload.get("item", Variant());
 	if (item.is_null()) return false;
-	return _cells.has(_make_key(cell.x, cell.y));
+	const Slot *target = _cells.getptr(_make_key(cell.x, cell.y));
+	if (!target) return false;
+	if (target->item.is_valid() && target->item->get_id() == item->get_id())
+		return target->item->get_item_amount() < ItemView::MAX_STACK;
+	return target->item.is_null() || !bool(payload.get("creative_source", false));
 }
 
 void GridInventory::_handle_drop_data(const Vector2 &, const Variant &data, const Point2i &cell) {
@@ -227,16 +235,27 @@ void GridInventory::_handle_drop_data(const Vector2 &, const Variant &data, cons
 	const Ref<ItemView> displaced = target->item;
 	const bool from_creative = bool(payload.get("creative_source", false));
 	if (from_creative) {
-		set_item_at(item, Point2i(target->column, target->row));
+		if (displaced.is_valid() && displaced->get_id() != item->get_id()) return;
+		if (displaced.is_valid()) {
+			Ref<ItemView> stacked = displaced->duplicate_item();
+			stacked->set_item_amount(displaced->get_item_amount() + item->get_item_amount());
+			set_item_at(stacked, cell);
+		} else set_item_at(item->duplicate_item(), cell);
 	} else {
 		Object *source_object = payload.get("source", Variant());
 		GridInventory *source = Object::cast_to<GridInventory>(source_object);
 		const Vector2i source_cell = payload.get("source_cell", Vector2i(-1, -1));
 		const Point2i target_cell(target->column, target->row);
 		if (displaced.is_valid() && displaced->get_id() == item->get_id()) {
-			Ref<ItemView> stacked = displaced;
-			stacked->set_item_amount(stacked->get_item_amount() + item->get_item_amount());
+			const int moved = MIN(ItemView::MAX_STACK - displaced->get_item_amount(), item->get_item_amount());
+			Ref<ItemView> stacked = displaced->duplicate_item();
+			stacked->set_item_amount(stacked->get_item_amount() + moved);
 			set_item_at(stacked, target_cell);
+			if (source && moved < item->get_item_amount()) {
+				Ref<ItemView> remainder = item->duplicate_item();
+				remainder->set_item_amount(item->get_item_amount() - moved);
+				source->set_item_at(remainder, source_cell);
+			}
 		} else {
 			set_item_at(item, target_cell);
 			if (source && displaced.is_valid()) source->set_item_at(displaced, Point2i(source_cell));
@@ -318,6 +337,7 @@ bool GridInventory::add_item_at(const Ref<ItemView> &item, const Point2i &cell) 
 	if (!slot) return false;
 	if (slot->item.is_null()) return set_item_at(item, cell);
 	if (slot->item->get_id() != item->get_id()) return false;
+	if (slot->item->get_item_amount() + item->get_item_amount() > ItemView::MAX_STACK) return false;
 	slot->item->set_item_amount(slot->item->get_item_amount() + item->get_item_amount());
 	_sync_slot(*slot);
 	emit_signal("item_changed", cell, slot->item);
@@ -326,15 +346,75 @@ bool GridInventory::add_item_at(const Ref<ItemView> &item, const Point2i &cell) 
 
 bool GridInventory::add_item(const Ref<ItemView> &item) {
 	if (item.is_null()) return false;
-	Slot *first_empty = nullptr;
+	int capacity = 0;
+	for (const KeyValue<int64_t, Slot> &entry : _cells) {
+		const Slot &slot = entry.value;
+		if (slot.item.is_null()) capacity += ItemView::MAX_STACK;
+		else if (slot.item->get_id() == item->get_id()) capacity += ItemView::MAX_STACK - slot.item->get_item_amount();
+	}
+	if (capacity < item->get_item_amount()) return false;
+	int remaining = item->get_item_amount();
+	for (int pass = 0; pass < 2; ++pass)
+		for (int row = 0; row < _rows; ++row)
+			for (int column = 0; column < _columns && remaining > 0; ++column) {
+				Slot *slot = _cells.getptr(_make_key(column, row));
+				if (!slot || (pass == 0 && (slot->item.is_null() || slot->item->get_id() != item->get_id())) ||
+					(pass == 1 && slot->item.is_valid())) continue;
+				const int existing = slot->item.is_valid() ? slot->item->get_item_amount() : 0;
+				const int moved = MIN(remaining, ItemView::MAX_STACK - existing);
+				if (moved <= 0) continue;
+				Ref<ItemView> stack = item->duplicate_item();
+				stack->set_item_amount(existing + moved);
+				set_item_at(stack, Point2i(column, row));
+				remaining -= moved;
+			}
+	return remaining == 0;
+}
+
+// Shapeless recipes: one raw log in any cell produces four matching planks.
+Ref<ItemView> GridInventory::get_craft_result() const {
+	Ref<ItemView> ingredient;
+	for (const KeyValue<int64_t, Slot> &entry : _cells) {
+		if (entry.value.item.is_null()) continue;
+		if (ingredient.is_valid()) return Ref<ItemView>();
+		ingredient = entry.value.item;
+	}
+	if (ingredient.is_null()) return Ref<ItemView>();
+	const int id = ingredient->get_id();
+	int output_id = 0;
+	String output_name;
+	switch (id) {
+		case voxel::block_ids::oak_log: output_id = voxel::block_ids::oak_planks; output_name = "Oak Planks"; break;
+		case voxel::block_ids::palm_log: output_id = voxel::block_ids::palm_planks; output_name = "Palm Planks"; break;
+		case voxel::block_ids::pine_log: output_id = voxel::block_ids::pine_planks; output_name = "Pine Planks"; break;
+		default: return Ref<ItemView>();
+	}
+	Ref<ItemView> result = ingredient->duplicate_item();
+	result->set_id(output_id);
+	result->set_name(output_name);
+	result->set_category("building");
+	result->set_icon(Ref<Texture2D>());
+	result->set_item_amount(4);
+	return result;
+}
+
+bool GridInventory::craft_into(GridInventory *destination) {
+	if (!destination || destination == this || destination->is_creative_source()) return false;
+	const Ref<ItemView> result = get_craft_result();
+	if (result.is_null() || !destination->add_item(result)) return false;
 	for (KeyValue<int64_t, Slot> &entry : _cells) {
 		Slot &slot = entry.value;
-		if (slot.item.is_valid() && slot.item->get_id() == item->get_id()) {
-			return add_item_at(item, Point2i(slot.column, slot.row));
+		if (slot.item.is_null()) continue;
+		const Point2i cell(slot.column, slot.row);
+		if (slot.item->get_item_amount() == 1) clear_item_at(cell);
+		else {
+			Ref<ItemView> remainder = slot.item->duplicate_item();
+			remainder->set_item_amount(remainder->get_item_amount() - 1);
+			set_item_at(remainder, cell);
 		}
-		if (slot.item.is_null() && !first_empty) first_empty = &slot;
+		break;
 	}
-	return first_empty && set_item_at(item, Point2i(first_empty->column, first_empty->row));
+	return true;
 }
 
 void GridInventory::set_selected_cell(const Point2i &cell) {
@@ -432,6 +512,8 @@ void GridInventory::_notification(const int what) {
 }
 
 void GridInventory::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_craft_result"), &GridInventory::get_craft_result);
+	ClassDB::bind_method(D_METHOD("craft_into", "destination"), &GridInventory::craft_into);
 	ClassDB::bind_method(D_METHOD("get_item_at", "cell"), &GridInventory::get_item_at);
 	ClassDB::bind_method(D_METHOD("set_item_at", "item", "cell"), &GridInventory::set_item_at);
 	ClassDB::bind_method(D_METHOD("clear_item_at", "cell"), &GridInventory::clear_item_at);

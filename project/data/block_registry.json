@@ -540,6 +540,66 @@
 				1,
 				1
 			]
+		},
+		{
+			"id": 29,
+			"name": "oak_planks",
+			"display_name": "Oak Planks",
+			"category": "building",
+			"flags": [
+				"solid"
+			],
+			"textures": {
+				"side": "oak_planks",
+				"top": "oak_planks",
+				"bottom": "oak_planks"
+			},
+			"tint": [
+				1,
+				1,
+				1,
+				1
+			]
+		},
+		{
+			"id": 30,
+			"name": "palm_planks",
+			"display_name": "Palm Planks",
+			"category": "building",
+			"flags": [
+				"solid"
+			],
+			"textures": {
+				"side": "palm_planks",
+				"top": "palm_planks",
+				"bottom": "palm_planks"
+			},
+			"tint": [
+				1,
+				1,
+				1,
+				1
+			]
+		},
+		{
+			"id": 31,
+			"name": "pine_planks",
+			"display_name": "Pine Planks",
+			"category": "building",
+			"flags": [
+				"solid"
+			],
+			"textures": {
+				"side": "pine_planks",
+				"top": "pine_planks",
+				"bottom": "pine_planks"
+			},
+			"tint": [
+				1,
+				1,
+				1,
+				1
+			]
 		}
 	],
 	"version": 1

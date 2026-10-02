@@ -57,7 +57,7 @@ text = "Singleplayer
 
 [node name="Mulplayer" type="Button" parent="HUD/Buttons" unique_id=70037711]
 layout_mode = 2
-text = "Mulplayey (coming soon)"
+text = "Multiplayer (coming soon)"
 
 [node name="Settings" type="Button" parent="HUD/Buttons" unique_id=80389888]
 layout_mode = 2
