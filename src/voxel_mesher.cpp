@@ -3,8 +3,6 @@
 #include "chunk_mesh_builder.h"
 #include "chunk_model.h"
 
-#include <bits/fs_fwd.h>
-
 #include <godot_cpp/classes/mesh.hpp>
 
 namespace godot {
