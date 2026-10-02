@@ -22,11 +22,11 @@ func _process(_delta: float) -> void:
 		var total_chunks := world.get_initial_loading_total_chunks()
 		progress_bar.value = world.get_initial_loading_progress() * 100.0
 		count_label.text = "%d / %d chunks" % [ready_chunks, total_chunks]
-		status_label.text = "Preparando o terreno..."
+		status_label.text = "Laying the world..."
 	elif loading_started and not closing:
 		closing = true
 		progress_bar.value = 100.0
-		status_label.text = "Mundo pronto"
+		status_label.text = "Ready"
 		var tween := create_tween()
 		tween.tween_interval(0.25)
 		tween.tween_property(background, "modulate:a", 0.0, 0.25)
@@ -53,13 +53,13 @@ func _build_screen() -> void:
 	center.add_child(content)
 
 	var title := Label.new()
-	title.text = "GERANDO MUNDO"
+	title.text = "Generating a World"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 28)
 	content.add_child(title)
 
 	status_label = Label.new()
-	status_label.text = "Preparando o terreno..."
+	status_label.text = "Laying the world..."
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(status_label)
 

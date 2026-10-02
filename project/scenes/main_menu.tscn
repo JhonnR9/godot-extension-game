@@ -29,10 +29,11 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 stretch = true
-stretch_shrink = 2
+stretch_shrink = 1
 
 [node name="Viewport" type="SubViewport" parent="Background"]
 own_world_3d = true
+msaa_3d = 2
 size = Vector2i(640, 360)
 render_target_update_mode = 4
 

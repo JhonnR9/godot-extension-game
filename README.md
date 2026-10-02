@@ -1,5 +1,11 @@
 # voxelgames
 
+![Voxelgames screenshot 1](screenshots/screenshot_1.png)
+
+![Voxelgames screenshot 2](screenshots/screenshot_2.png)
+
+![Voxelgames screenshot 3](screenshots/screenshot_3.png)
+
 A voxel game in development, built with **Godot 4.7 and a C++ GDExtension**. The engine generates, loads, and updates the world in chunks; GDScript handles the character, menus, settings, and UI coordination. The current focus is exploration and building in a procedural single-player world.
 
 The project already includes editable terrain, biomes, caves, vegetation, water, dynamic lighting, saves, and persistent inventories. The pipeline uses workers to generate data and geometry, installs results on the main thread, and controls how much work is finalized per frame.
