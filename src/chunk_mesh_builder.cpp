@@ -49,9 +49,9 @@ void ChunkMeshBuilder::_add_faces(const ChunkNeighbors &neighbors, const CubeFac
 	const int depth_count = x_face ? Chunk::SIZE_X : (y_face ? Chunk::SIZE_Y : Chunk::SIZE_Z);
 	const int width = y_face ? Chunk::SIZE_Z : (x_face ? Chunk::SIZE_Z : Chunk::SIZE_X);
 	const int height = x_face ? Chunk::SIZE_Y : (y_face ? Chunk::SIZE_X : Chunk::SIZE_Y);
-	std::vector<uint8_t> mask(static_cast<size_t>(width * height));
-	std::vector<std::array<float, 4>> ao(static_cast<size_t>(width * height));
-	std::vector<uint8_t> visited(static_cast<size_t>(width * height));
+	mask.resize(static_cast<size_t>(width * height));
+	ao.resize(static_cast<size_t>(width * height));
+	visited.resize(static_cast<size_t>(width * height));
 
 	auto index = [width](const int u, const int v) { return static_cast<size_t>(v * width + u); };
 	auto block_at = [center, face](const int depth, const int u, const int v) {
@@ -177,69 +177,62 @@ void ChunkMeshBuilder::_add_faces(const ChunkNeighbors &neighbors, const CubeFac
 }
 
 int ChunkMeshBuilder::_get_tex_layer(const CubeFace &face, const uint16_t type) {
-	if (type == voxel::block_ids::water) {
-		return voxel::WATER_TEXTURE_LAYER;
-	}
-	if (TextureKey key = { type, face }; texture_map.has(key)) {
-		return texture_map[key];
-	}
-	return 0;
+    if (type == voxel::block_ids::water) return voxel::WATER_TEXTURE_LAYER;
+    return metadata->layers[type][static_cast<int>(face)];
 }
-
-Color ChunkMeshBuilder::_get_block_tint(const uint16_t type) const {
-	return block_tints.has(type) ? block_tints[type] : Color(1.0f, 1.0f, 1.0f, 1.0f);
-}
-
-void ChunkMeshBuilder::_load_textures() {
-	block_texture_array = ResourceLoader::get_singleton()->load("res://textures/block_array.tres");
-}
-
-void ChunkMeshBuilder::_initialize_texture_map() {
+Color ChunkMeshBuilder::_get_block_tint(const uint16_t type) const { return metadata->tints[type]; }
+std::shared_ptr<const ChunkMeshMetadata> ChunkMeshBuilder::load_metadata() {
+    auto data = std::make_shared<ChunkMeshMetadata>();
 	Ref<FileAccess> file = FileAccess::open("res://data/block_registry.generated.json", FileAccess::READ);
 	if (file.is_null()) {
 		ERR_PRINT("Could not load generated block registry metadata.");
-		return;
+		return data;
 	}
 
 	String json_text = file->get_as_text();
-	Variant data     = JSON::parse_string(json_text);
+	Variant parsed     = JSON::parse_string(json_text);
 
-	if (data.get_type() != Variant::DICTIONARY) {
+	if (parsed.get_type() != Variant::DICTIONARY) {
 		ERR_PRINT("Generated block registry metadata is invalid.");
-		return;
+		return data;
 	}
 
-	Dictionary root = data;
+	Dictionary root = parsed;
 	Array blocks = root.get("blocks", Array());
 	for (int i = 0; i < blocks.size(); ++i) {
 		Dictionary block = blocks[i];
 		const uint16_t id = static_cast<uint16_t>(int(block.get("id", 0)));
+        if (id >= data->layers.size()) continue;
 		Array tint = block.get("tint", Array());
 		if (tint.size() == 4) {
-			block_tints[id] = Color(double(tint[0]), double(tint[1]), double(tint[2]), double(tint[3]));
+			data->tints[id] = Color(double(tint[0]), double(tint[1]), double(tint[2]), double(tint[3]));
 		}
 		Dictionary faces = block.get("texture_layers", Dictionary());
 		const int side = int(faces.get("side", -1));
 		const int top = int(faces.get("top", side));
 		const int bottom = int(faces.get("bottom", side));
 		if (side >= 0) {
-			texture_map[{ id, CubeFace::F }] = side;
-			texture_map[{ id, CubeFace::B }] = side;
-			texture_map[{ id, CubeFace::L }] = side;
-			texture_map[{ id, CubeFace::R }] = side;
+			data->layers[id][static_cast<int>(CubeFace::F)] = side;
+			data->layers[id][static_cast<int>(CubeFace::B)] = side;
+			data->layers[id][static_cast<int>(CubeFace::L)] = side;
+			data->layers[id][static_cast<int>(CubeFace::R)] = side;
 		}
-		if (top >= 0) texture_map[{ id, CubeFace::U }] = top;
-		if (bottom >= 0) texture_map[{ id, CubeFace::D }] = bottom;
+		if (top >= 0) data->layers[id][static_cast<int>(CubeFace::U)] = top;
+		if (bottom >= 0) data->layers[id][static_cast<int>(CubeFace::D)] = bottom;
 	}
+    return data;
 }
 
 void ChunkMeshBuilder::_add_crossed_plant_faces(const ChunkNeighbors &neighbors) {
 	const Chunk *center = neighbors.center.get();
-	for (int x = 0; x < Chunk::SIZE_X; ++x) {
+	for (int z = 0; z < Chunk::SIZE_Z; ++z) {
 		for (int y = 0; y < Chunk::SIZE_Y; ++y) {
-			for (int z = 0; z < Chunk::SIZE_Z; ++z) {
+			for (int x = 0; x < Chunk::SIZE_X; ++x) {
 				const voxel::Block block = center->get_block(x, y, z);
 				if (!_is_crossed_plant(block)) continue;
+				if (voxel::type(block) == voxel::block_ids::torch) {
+					torch_positions.push_back(Vector3(x + 0.5f, y + 0.8f, z + 0.5f));
+				}
 				const int layer = _get_tex_layer(CubeFace::F, voxel::type(block));
 				const Vector3 a(x + 0.12f, y, z + 0.12f);
 				const Vector3 b(x + 0.88f, y, z + 0.88f);
@@ -262,14 +255,13 @@ void ChunkMeshBuilder::_add_crossed_plant_faces(const ChunkNeighbors &neighbors)
 	}
 }
 
-ChunkMeshBuilder::ChunkMeshBuilder() {
-	_load_textures();
-	_initialize_texture_map();
-}
+ChunkMeshBuilder::ChunkMeshBuilder(std::shared_ptr<const ChunkMeshMetadata> p_metadata) : metadata(std::move(p_metadata)) {}
 
-Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
+ChunkMeshData ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
 	opaque_mesher.clear();
+	torch_positions.clear();
 	transparent_mesher.clear();
+    if (neighbors.center->is_empty()) return {};
 
 	_add_faces(neighbors, CubeFace::U);
 	_add_faces(neighbors, CubeFace::L);
@@ -284,27 +276,9 @@ Ref<ArrayMesh> ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
 	const bool has_opaque = !PackedVector3Array(opaque_arrays[Mesh::ARRAY_VERTEX]).is_empty();
 	const bool has_transparent = !PackedVector3Array(transparent_arrays[Mesh::ARRAY_VERTEX]).is_empty();
 	if (!has_opaque && !has_transparent) {
-		return Ref<ArrayMesh>();
+		return {};
 	}
 
-	Ref<ArrayMesh> mesh;
-	mesh.instantiate();
-
-	int64_t format = Mesh::ARRAY_FORMAT_VERTEX |
-			Mesh::ARRAY_FORMAT_NORMAL |
-			Mesh::ARRAY_FORMAT_TEX_UV |
-			Mesh::ARRAY_FORMAT_CUSTOM0 |
-			Mesh::ARRAY_FORMAT_COLOR |
-			Mesh::ARRAY_FORMAT_INDEX |
-			(Mesh::ARRAY_CUSTOM_R_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT);
-
-	if (has_opaque) {
-		mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, opaque_arrays, Array(), Dictionary(), format);
-	}
-	if (has_transparent) {
-		mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, transparent_arrays, Array(), Dictionary(), format);
-	}
-
-	return mesh;
+    return {opaque_arrays, transparent_arrays, has_opaque, has_transparent};
 }
 } // namespace godot

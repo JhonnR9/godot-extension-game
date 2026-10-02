@@ -12,9 +12,6 @@
 #include <godot_cpp/classes/array_mesh.hpp>
 #include <memory>
 #include <array>
-#include <string>
-#include <unordered_map>
-#include <godot_cpp/classes/texture2d_array.hpp>
 
 namespace godot {
 struct ChunkNeighbors {
@@ -35,45 +32,41 @@ struct ChunkNeighbors {
 	std::shared_ptr<Chunk> back;
 };
 
-struct TextureKey {
-	uint16_t type;
-	CubeFace face;
-
-	bool operator==(const TextureKey &p_other) const {
-		return type == p_other.type && face == p_other.face;
-	}
+struct ChunkMeshMetadata {
+    std::array<std::array<int, 6>, 1024> layers{};
+    std::array<Color, 1024> tints;
+    ChunkMeshMetadata() { tints.fill(Color(1, 1, 1, 1)); }
 };
 
-struct TextureKeyHasher {
-	static uint32_t hash(const TextureKey &p_key) {
-		uint32_t h = hash_murmur3_buffer(&p_key.type, sizeof(uint16_t));
-		h          = hash_murmur3_buffer(&p_key.face, sizeof(CubeFace), h);
-		return h;
-	}
+struct ChunkMeshData {
+    Array opaque_arrays;
+    Array transparent_arrays;
+    bool has_opaque = false;
+    bool has_transparent = false;
 };
-
 class ChunkMeshBuilder {
 	VoxelMesher opaque_mesher;
+    std::vector<uint8_t> mask, visited;
+    std::vector<std::array<float, 4>> ao;
 	VoxelMesher transparent_mesher;
+	PackedVector3Array torch_positions;
 	VoxelMesher &_get_mesher(voxel::Block block);
 	void _add_faces(const ChunkNeighbors &neighbors, CubeFace face);
 	void _add_crossed_plant_faces(const ChunkNeighbors &neighbors);
 	int _get_tex_layer(const CubeFace &face, uint16_t type);
 	Color _get_block_tint(uint16_t type) const;
 
-	Ref<Texture2DArray> block_texture_array;
-	void _load_textures();
-	void _initialize_texture_map();
+    std::shared_ptr<const ChunkMeshMetadata> metadata;
 
-	HashMap<TextureKey, int, TextureKeyHasher> texture_map;
-	HashMap<uint16_t, Color> block_tints;
 	static voxel::Block _get_block(const ChunkNeighbors &neighbors, int x, int y, int z);
 	static bool _is_face_visible(const ChunkNeighbors &neighbors, int x, int y, int z, voxel::Block current_block);
 	static bool _is_crossed_plant(voxel::Block block);
 
 public:
-	ChunkMeshBuilder();
-	Ref<ArrayMesh> build(const ChunkNeighbors &neighbors);
+	explicit ChunkMeshBuilder(std::shared_ptr<const ChunkMeshMetadata> p_metadata);
+    static std::shared_ptr<const ChunkMeshMetadata> load_metadata();
+	ChunkMeshData build(const ChunkNeighbors &neighbors);
+	PackedVector3Array get_torch_positions() const { return torch_positions; }
 
 	static bool _is_air(const ChunkNeighbors &n, int x, int y, int z);
 

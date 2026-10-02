@@ -600,6 +600,26 @@
 				1,
 				1
 			]
+		},
+		{
+			"id": 32,
+			"name": "torch",
+			"display_name": "Torch",
+			"category": "lighting",
+			"flags": [
+				"cutout",
+				"crossed",
+				"emissive"
+			],
+			"textures": {
+				"side": "torch"
+			},
+			"tint": [
+				1,
+				1,
+				1,
+				1
+			]
 		}
 	],
 	"version": 1

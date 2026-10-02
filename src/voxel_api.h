@@ -49,6 +49,8 @@ public:
 	void set_render_settings(const Dictionary &p_settings);
 	Dictionary get_render_settings() const;
 	static Dictionary get_default_render_settings();
+	Dictionary get_pipeline_stats() const;
+    void set_pipeline_settings(const Dictionary &settings);
 	static void set_default_render_settings(const Dictionary &p_settings);
 
 protected:
@@ -64,6 +66,7 @@ private:
 	Ref<ChunkRegionAsyncLoader> _region_loader;
 	std::shared_ptr<const ChunkGenerationPipeline> _generation_pipeline;
 	int64_t _world_seed = 0;
+    std::shared_ptr<TerrainColumnCache> _column_cache;
 
 	void save_world_final() const;
 	void _set_day_hour(double hour) const;
@@ -77,7 +80,12 @@ private:
 	int _cache_radius = _world_radius + 3;
 	int _diameter     = (_cache_radius * 2) + 1; //  (2 * R + 1).
 	int _prewarm_chunk_pool = (_diameter * _diameter) * _world_height;
-	int _current_chunks_finalize_in_frame = 100;
+    double _mesh_finalize_budget_ms = 2.0;
+    double _last_finalize_ms = 0.0;
+    double _max_finalize_ms = 0.0;
+    bool _streaming_changed = false;
+    HashSet<Vector3i> _mesh_candidates;
+    double _cleanup_timer = 0.0;
 
 	std::shared_ptr<const BiomeRegistry> _biome_registry;
 	String _biome_registry_path = "res://data/biome_registry.json";
@@ -107,7 +115,6 @@ private:
 	void _remove_chunk(ChunkNode *p_chunk_node);
 	void _update_visible_chunks();
 	void _cleanup_far_chunks() const;
-	float _get_current_chunks_finalize_amount(float delta);
 	void _clear_world();
 
 	void _finalize_chunk(const MeshResult &res);

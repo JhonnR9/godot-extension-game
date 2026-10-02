@@ -10,6 +10,7 @@ uniform sampler2DArray albedo_array : source_color, filter_nearest_mipmap_anisot
 // Only these atlas layers may emit. Saturated foliage and tinted rock do not.
 uniform int iron_ore_layer = -1;
 uniform int diamond_ore_layer = -1;
+uniform int torch_layer = -1;
 uniform float iron_emission : hint_range(0.0, 3.0, 0.05) = 0.65;
 uniform float diamond_emission : hint_range(0.0, 3.0, 0.05) = 1.25;
 
@@ -41,7 +42,10 @@ void fragment() {
     EMISSION = vec3(0.0);
     // Analytical color masks in linear space leave the neutral host rock dark.
     // No extra texture fetch, light node, or additional material surface.
-    if (abs(v_layer - float(iron_ore_layer)) < 0.5) {
+    if (abs(v_layer - float(torch_layer)) < 0.5) {
+        // Only the bright flame emits; the wooden handle remains lit normally.
+        EMISSION = tex.rgb * smoothstep(0.35, 0.7, tex.r) * 2.0;
+    } else if (abs(v_layer - float(iron_ore_layer)) < 0.5) {
         float inclusion = smoothstep(0.045, 0.16, tex.r - tex.b);
         EMISSION = tex.rgb * inclusion * iron_emission;
     } else if (abs(v_layer - float(diamond_ore_layer)) < 0.5) {

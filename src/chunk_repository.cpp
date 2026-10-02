@@ -25,7 +25,8 @@ void ChunkRepository::_update_dirty_chunks(const Vector3i &p_local_pos, const Ve
 			for (int x = (p_local_pos.x == Chunk::MIN_X ? -1 : 0); x <= (p_local_pos.x == Chunk::MAX_X ? 1 : 0); ++x)
 				_dirty_chunks.insert(p_chunk_pos + Vector3i(x, y, z));
 
-	_dirty_regions.insert(voxel::chunk_to_region_coords(p_chunk_pos));
+    { std::lock_guard region_lock(_dirty_regions_mutex);
+        _dirty_regions.insert(voxel::chunk_to_region_coords(p_chunk_pos)); }
 }
 
 void ChunkRepository::_apply_edited_blocks(const Vector3i &p_chunk_pos, const std::shared_ptr<Chunk> &p_model) {
@@ -73,12 +74,12 @@ void ChunkRepository::_bind_methods() {
 }
 
 void ChunkRepository::add_chunk(const Vector3i &p_pos, const std::shared_ptr<Chunk> &p_model) {
+    _apply_edited_blocks(p_pos, p_model);
 	{
 		std::lock_guard lock(_mutex);
 		_chunks[p_pos] = p_model;
 	}
 
-	_apply_edited_blocks(p_pos, p_model);
 
 	{
 		std::lock_guard lock(_chunk_versions_mutex);
@@ -152,33 +153,37 @@ void ChunkRepository::clear_all() {
 }
 
 void ChunkRepository::set_block(const Vector3i &world_block_pos, voxel::Block block) {
-	const Vector3i chunk_pos = voxel::block_to_chunk_coords(world_block_pos);
+    const Vector3i pos = voxel::block_to_chunk_coords(world_block_pos);
+    const Vector3i local = voxel::block_to_chunk_local_block(world_block_pos);
+    {
+        std::lock_guard lock(_mutex);
+        auto *stored = _chunks.getptr(pos);
+        if (!stored || (*stored)->get_block(local.x, local.y, local.z) == block) return;
+        // Only block data is read by workers; stage/flags remain main-thread state.
+        if (stored->use_count() > 1) *stored = std::make_shared<Chunk>(**stored);
+        (*stored)->set_block(local.x, local.y, local.z, block);
+    }
+    { std::lock_guard lock(_edited_blocks_mutex); _edited_chunks[pos][local] = block; }
+    _update_dirty_chunks(local, pos);
+    { std::lock_guard lock(_chunk_versions_mutex); _chunk_versions[pos]++; }
+}
 
-	std::shared_ptr<Chunk> chunk;
-	{
-		std::lock_guard lock(_mutex);
-		if (_chunks.has(chunk_pos)) {
-			chunk = _chunks[chunk_pos];
-		} else {
-			return;
-		}
-	}
-
-	const Vector3i local_pos = voxel::block_to_chunk_local_block(world_block_pos);
-
-	chunk->set_block(local_pos.x, local_pos.y, local_pos.z, block);
-
-	{
-		std::lock_guard lock(_edited_blocks_mutex);
-		_edited_chunks[chunk_pos][local_pos] = block;
-	}
-
-	_update_dirty_chunks(local_pos, chunk_pos);
-
-	{
-		std::lock_guard lock(_chunk_versions_mutex);
-		_chunk_versions[chunk_pos]++;
-	}
+ChunkNeighbors ChunkRepository::get_neighbors_snapshot(const Vector3i &pos) {
+    ChunkNeighbors n;
+    std::lock_guard lock(_mutex);
+    for (int z = -1; z <= 1; ++z)
+        for (int y = -1; y <= 1; ++y)
+            for (int x = -1; x <= 1; ++x)
+                if (auto *chunk = _chunks.getptr(pos + Vector3i(x, y, z)))
+                    n.halo[ChunkNeighbors::halo_index(x, y, z)] = *chunk;
+    n.center = n.halo[ChunkNeighbors::halo_index(0, 0, 0)];
+    n.right = n.halo[ChunkNeighbors::halo_index(1, 0, 0)];
+    n.left = n.halo[ChunkNeighbors::halo_index(-1, 0, 0)];
+    n.top = n.halo[ChunkNeighbors::halo_index(0, 1, 0)];
+    n.bottom = n.halo[ChunkNeighbors::halo_index(0, -1, 0)];
+    n.front = n.halo[ChunkNeighbors::halo_index(0, 0, 1)];
+    n.back = n.halo[ChunkNeighbors::halo_index(0, 0, -1)];
+    return n;
 }
 
 HashSet<Vector3i> ChunkRepository::consume_dirty_chunks() {
@@ -235,13 +240,19 @@ void ChunkRepository::merge_region_edits(const voxel::Region &region) {
 	for (const auto &chunk_entry : region.edited_chunks) {
 		const Vector3i &chunk_pos = chunk_entry.key;
 		if (_chunks.has(chunk_pos)) {
-			auto chunk = _chunks[chunk_pos];
+			auto chunk = std::make_shared<Chunk>(*_chunks[chunk_pos]);
+            _chunks[chunk_pos] = chunk;
 			for (const auto &block_entry : chunk_entry.value.delta) {
 				const Vector3i &local_pos = block_entry.key;
 				const voxel::Block &block = block_entry.value;
 				chunk->set_block(local_pos.x, local_pos.y, local_pos.z, block);
 			}
-			_dirty_chunks.insert(chunk_pos);
+            // Region edits invalidate face neighbours and AO diagonals too.
+            for (int z = -1; z <= 1; ++z)
+                for (int y = -1; y <= 1; ++y)
+                    for (int x = -1; x <= 1; ++x)
+                        _dirty_chunks.insert(chunk_pos + Vector3i(x,y,z));
+            { std::lock_guard version_lock(_chunk_versions_mutex); _chunk_versions[chunk_pos]++; }
 		}
 	}
 }

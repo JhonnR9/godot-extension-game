@@ -36,5 +36,6 @@
 	"short_grass_side": 34,
 	"snow": 35,
 	"stone": 36,
-	"tallgrass_side": 37
+	"tallgrass_side": 37,
+	"torch": 38
 }

@@ -113,14 +113,14 @@ func run() -> void:
 	trees.biomes[0].trees = {"max_per_chunk": 4, "trunk": "sandstone", "leaves": "oak_leaves", "min_height": 5, "max_height": 7, "crown_radius": 3}
 	write_config("user://test_tree_profiles.json", trees)
 	var tree_a := make_world("user://test_tree_profiles.json", Vector3(0, 32, 0), "Tree boundary A")
-	var tree_b := make_world("user://test_tree_profiles.json", Vector3(16, 32, 16), "Tree boundary B")
+	var tree_b := make_world("user://test_tree_profiles.json", Vector3(32, 32, 32), "Tree boundary B")
 	if await wait_for_world(tree_a) and await wait_for_world(tree_b):
 		var trunks := 0
 		var leaves := 0
 		var sandstone := block_id("sandstone")
 		var leaf := block_id("oak_leaves")
-		for z in range(-16, 32):
-			for x in range(-16, 32):
+		for z in range(-32, 64):
+			for x in range(-32, 64):
 				for y in range(33, 46):
 					var pos := Vector3(x, y, z)
 					var a := int(tree_a.get_block_type_at(pos))
@@ -143,16 +143,16 @@ func run() -> void:
 	spawn_world.set_focus_node(player)
 	spawn_world.start_world(int(SaveService.create_world(42, "Configured spawn height test")))
 	var spawn_column: Dictionary = spawn_world.sample_terrain_column(Vector2i(-18, 16))
-	check(spawn_column.height == 255, "Configured terrain exceeded world height limits.")
+	check(spawn_column.height == mini(303, int(spawn_world.get_pipeline_stats().world_max_y)), "Configured terrain exceeded world height limits.")
 	check(player.global_position.y == spawn_column.height + 6, "Player spawned inside configured high terrain.")
 	await wait_for_world(spawn_world)
 	# Detach the test focus before Godot tears down the child nodes.
 	spawn_world.set_focus_node(null)
 	spawn_world.set_focus_position(player.global_position)
-	world.set_focus_position(Vector3(0, -240, 0))
+	world.set_focus_position(Vector3(0, -1008, 0))
 	world.start_world(int(SaveService.create_world(42, "Bedrock loading boundary test")))
 	if await wait_for_world(world):
-		check(world.get_block_type_at(Vector3(0, -256, 0)) == block_id("bedrock"), "Bedrock boundary failed to load.")
+		check(world.get_block_type_at(Vector3(0, int(world.get_pipeline_stats().world_min_y), 0)) == block_id("bedrock"), "Bedrock boundary failed to load.")
 	for frame in range(60):
 		await process_frame
 	print("Biome registry checks finished: ", failures, " failures.")

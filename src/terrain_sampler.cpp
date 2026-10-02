@@ -12,6 +12,27 @@ float smooth(float t) {
 float noise(const Ref<FastNoiseLite> &n, int x, int z, float fallback = 0) { return n.is_valid() ? n->get_noise_2d(x, z) : fallback; }
 bool matches(float t, float lo, float hi) { return t >= lo && (t < hi || (hi == 1 && t == 1)); }
 } //namespace
+std::shared_ptr<const std::vector<ColumnGenerationData>> TerrainColumnCache::get(const Vector3i &pos, const TerrainSettings &settings) {
+    const uint64_t key = (uint64_t(uint32_t(pos.x)) << 32) | uint32_t(pos.z);
+    {
+        std::lock_guard lock(mutex);
+        auto found = entries.find(key);
+        if (found != entries.end()) return found->second;
+    }
+    // Noise and biome sampling stay outside the shared lock.
+    auto sampled = std::make_shared<std::vector<ColumnGenerationData>>(Chunk::SIZE_X * Chunk::SIZE_Z);
+    for (int z = 0; z < Chunk::SIZE_Z; ++z)
+        for (int x = 0; x < Chunk::SIZE_X; ++x)
+            (*sampled)[z * Chunk::SIZE_X + x] = TerrainSampler::sample(settings,
+                pos.x * Chunk::SIZE_X + x, pos.z * Chunk::SIZE_Z + z);
+    std::lock_guard lock(mutex);
+    auto found = entries.find(key);
+    if (found != entries.end()) return found->second;
+    while (entries.size() >= 256) { entries.erase(order.front()); order.pop_front(); }
+    order.push_back(key);
+    entries.emplace(key, sampled);
+    return sampled;
+}
 ColumnGenerationData TerrainSampler::sample(const TerrainSettings &s, int32_t x, int32_t z) {
 	const BiomeRegistry &registry = s.biome_registry ? *s.biome_registry : *BiomeRegistry::defaults();
 	const auto &w				  = registry.world;

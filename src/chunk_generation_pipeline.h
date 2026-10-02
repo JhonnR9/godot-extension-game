@@ -11,7 +11,10 @@
 
 namespace godot {
 
+class TerrainColumnCache;
+
 struct TerrainSettings {
+    std::shared_ptr<TerrainColumnCache> column_cache;
 	int terrain_base_height = 24;
 	float terrain_amplitude = 9.0f;
 	int water_level = 24;

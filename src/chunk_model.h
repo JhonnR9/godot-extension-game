@@ -32,9 +32,9 @@ enum class ChunkFlag : uint8_t {
 };
 
 struct Chunk {
-	static constexpr int SIZE_X = 16;
-	static constexpr int SIZE_Y = 16;
-	static constexpr int SIZE_Z = 16;
+	static constexpr int SIZE_X = 32;
+	static constexpr int SIZE_Y = 64;
+	static constexpr int SIZE_Z = 32;
 
 	static constexpr int MAX_X = SIZE_X - 1;
 	static constexpr int MAX_Y = SIZE_Y - 1;
@@ -54,8 +54,13 @@ struct Chunk {
 	}
 
 	constexpr void set_block(int x, int y, int z, voxel::Block b) {
-		_blocks[index(x, y, z)] = b;
+        const int i = index(x, y, z);
+        _non_air_blocks -= !voxel::is_air(_blocks[i]);
+        _non_air_blocks += !voxel::is_air(b);
+        _blocks[i] = b;
 	}
+
+    constexpr bool is_empty() const { return _non_air_blocks == 0; }
 
 	constexpr bool has_flag(ChunkFlag flag) const {
 		return flags & static_cast<uint8_t>(flag);
@@ -75,6 +80,7 @@ struct Chunk {
 
 private:
 	voxel::Block _blocks[VOLUME]{};
+    uint32_t _non_air_blocks = 0;
 
 	static constexpr int index(int x, int y, int z) {
 		return x + y * SIZE_X + z * SIZE_X * SIZE_Y;

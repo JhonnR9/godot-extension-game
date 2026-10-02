@@ -10,8 +10,12 @@
 namespace godot {
 
 void BiomeSelectionPass::apply(ChunkGenerationContext &context) const {
-    for(int z=0;z<Chunk::SIZE_Z;++z) for(int x=0;x<Chunk::SIZE_X;++x)
-        context.column(x,z)=TerrainSampler::sample(context.settings,context.world_x(x),context.world_z(z));
+    if (context.settings.column_cache) {
+        context.columns = *context.settings.column_cache->get(context.chunk_position, context.settings);
+    } else {
+        for(int z=0;z<Chunk::SIZE_Z;++z) for(int x=0;x<Chunk::SIZE_X;++x)
+            context.column(x,z)=TerrainSampler::sample(context.settings,context.world_x(x),context.world_z(z));
+    }
     context.columns_ready=true;
 }
 

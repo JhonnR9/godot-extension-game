@@ -1,70 +1,49 @@
 #ifndef CHUNK_MESH_ASYNC_GENERATOR_H
 #define CHUNK_MESH_ASYNC_GENERATOR_H
-
 #include "chunk_mesh_builder.h"
-#include "chunk_model.h"
-#include "godot_cpp/templates/hash_map.hpp"
-#include "godot_cpp/templates/hash_set.hpp"
-#include "godot_cpp/templates/hashfuncs.hpp"
-
-#include <godot_cpp/classes/array_mesh.hpp>
+#include "chunk_task_scheduler.h"
 #include <godot_cpp/classes/ref_counted.hpp>
-#include <memory>
-#include <mutex>
-
 namespace godot {
 struct MeshResult {
-	Ref<ArrayMesh> mesh;
+	ChunkMeshData geometry;
 	PackedVector3Array collision_faces;
+	PackedVector3Array torch_positions;
 	Vector3i pos;
-	uint64_t version{ 0 };
-
-	bool operator==(const MeshResult &p_b) const {
-		return pos == p_b.pos;
-	}
+	uint64_t version	= 0;
+	uint64_t request_id = 0;
+	uint64_t wait_us = 0, work_us = 0;
 };
-
-
-struct MeshResultHasher {
-	static _FORCE_INLINE_ uint32_t hash(const MeshResult &p_value) {
-		uint32_t h = hash_murmur3_one_32(p_value.pos.x);
-		h          = hash_murmur3_one_32(p_value.pos.y, h);
-		return hash_murmur3_one_32(p_value.pos.z, h);
-	}
-};
-
-
-using MeshResultHashSet = HashSet<MeshResult, MeshResultHasher>;
-
-class ChunkMeshAsyncGenerator;
-
 struct ChunkMeshJob {
 	Vector3i pos;
 	ChunkNeighbors neighbors;
-	ChunkMeshAsyncGenerator *generator;
-	uint64_t version;
+	uint64_t version	= 0;
+	bool priority		= false;
+	uint64_t request_id = 0;
+	uint64_t queued_us	= 0;
+	std::shared_ptr<const ChunkMeshMetadata> metadata;
 };
-
 class ChunkMeshAsyncGenerator : public RefCounted {
 	GDCLASS(ChunkMeshAsyncGenerator, RefCounted)
+	static std::vector<MeshResult> run_batch(const std::vector<ChunkMeshJob> &jobs);
+	ChunkTaskScheduler<ChunkMeshJob, MeshResult> scheduler{ run_batch };
+	std::shared_ptr<const ChunkMeshMetadata> metadata;
 
 protected:
 	static void _bind_methods();
 
-private:
-	std::mutex _generated_meshes_mutex;
-	MeshResultHashSet _generated_meshes;
-
-	std::mutex _generating_meshes_mutex;
-	HashSet<Vector3i> _generating_meshes;
-
 public:
-	void queue_async_generate_mesh(Vector3i p_pos, ChunkNeighbors p_neighbors, uint64_t p_version, bool p_priority = false);
-	bool is_queued_mesh(Vector3i p_pos);
-	size_t get_queue_size();
-
-	MeshResultHashSet consume_generated_meshes(int amount = -1);
+	void prepare_metadata();
+	void queue_async_generate_mesh(Vector3i pos, ChunkNeighbors neighbors, uint64_t version, bool priority = false);
+	bool is_queued_mesh(Vector3i pos) { return scheduler.contains(pos); }
+	bool is_current(const MeshResult &r) { return scheduler.is_current(r); }
+	size_t get_queue_size() { return scheduler.ready_size(); }
+	bool pop_generated_mesh(MeshResult &r) { return scheduler.pop(r); }
+	Dictionary get_stats() { return scheduler.stats(); }
+	void configure(int batch, int inflight) { scheduler.configure(batch, inflight); }
+	void pump() { scheduler.pump(); }
+	void reset() { scheduler.reset(); }
+	void cancel_outside(const Vector3i &center, int radius, int height) { scheduler.cancel_outside(center, radius, height); }
+	void forget(const Vector3i &pos) { scheduler.forget(pos); }
 };
 } //namespace godot
-
-#endif //CHUNK_MESH_ASYNC_GENERATOR_H
+#endif

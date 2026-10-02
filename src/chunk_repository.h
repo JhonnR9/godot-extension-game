@@ -2,6 +2,7 @@
 #define CHUNK_REPOSITORY_H
 #include "ChunkDiskRepository.h"
 #include "voxel.h"
+#include "chunk_mesh_builder.h"
 #include "godot_cpp/templates/hash_map.hpp"
 #include "godot_cpp/templates/hash_set.hpp"
 
@@ -37,6 +38,7 @@ protected:
 public:
 	void add_chunk(const Vector3i &p_pos, const std::shared_ptr<Chunk> &p_model);
 	std::shared_ptr<Chunk> get_chunk(const Vector3i &p_pos);
+    ChunkNeighbors get_neighbors_snapshot(const Vector3i &pos);
 	bool contains_chunk(const Vector3i &p_pos);
 	void remove_chunk(const Vector3i &p_pos);
 	Vector<Vector3i> get_keys_snapshot();

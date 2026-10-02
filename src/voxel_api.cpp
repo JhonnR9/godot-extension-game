@@ -1,5 +1,7 @@
 #include "voxel_api.h"
 #include <cmath>
+#include <chrono>
+#include <algorithm>
 #include "terrain_sampler.h"
 #include "ChunkDiskRepository.h"
 #include "chunk_model.h"
@@ -22,6 +24,7 @@ void VoxelAPI::_ready() {
 	_chunk_stream_manager.instantiate();
 	_model_generator.instantiate();
 	_mesh_generator.instantiate();
+    _mesh_generator->prepare_metadata();
 	_disk_repository.instantiate();
 	_region_loader.instantiate();
 	_apply_render_settings_fields(get_default_render_settings(), false);
@@ -93,6 +96,7 @@ void VoxelAPI::_init_chunks() {
 	_previous_player_chunk_pos		= _last_focos_position;
 	const Vector3i current_position = voxel::block_to_chunk_coords(_get_current_focus_position());
 	_chunk_stream_manager->shift_chunks(current_position);
+    _streaming_changed = true;
 
 	// grid regions 3 x 3 load
 	const Vector3i current_region = voxel::chunk_to_region_coords(_last_focos_position);
@@ -136,39 +140,45 @@ void VoxelAPI::_remove_chunk(ChunkNode *p_chunk_node) {
 }
 
 void VoxelAPI::_update_visible_chunks() {
-	if (_is_initializing && !_pending_region_loads.is_empty()) {
-		return;
-	}
-
-	for (const Vector3i &pos : _chunk_stream_manager->pop_queue_free_chunks()) {
-		if (_rendered_chunks.has(pos)) {
-			_remove_chunk(_rendered_chunks[pos]);
-		}
-	}
-
-	for (const Vector3i &pos : _chunk_stream_manager->get_active_chunks_snapshot()) {
-		std::shared_ptr<Chunk> chunk = _chunk_repository->get_chunk(pos);
-
-		if (!chunk) {
-			chunk = _model_generator->get_loading_chunk(pos);
-		}
-
-		if (chunk) {
-			switch (chunk->stage) {
-				case ChunkStage::LOADED:
-				case ChunkStage::WAITING_NEIGHBORS:
-					if (!_rendered_chunks.has(pos)) {
-						_try_build_mesh_with_neighbors(pos);
-					}
-					break;
-				default:
-					break;
-			}
-			continue;
-		}
-
-		_queue_async_generate_chunk(pos);
-	}
+    if (_is_initializing && !_pending_region_loads.is_empty()) return;
+    if (_streaming_changed) {
+        for (const auto &pos : _chunk_stream_manager->pop_queue_free_chunks()) {
+            if (_rendered_chunks.has(pos)) _remove_chunk(_rendered_chunks[pos]);
+        }
+        _model_generator->cancel_outside(_last_focos_position, _world_radius + 1, _world_height + 1);
+        _mesh_generator->cancel_outside(_last_focos_position, _world_radius, _world_height);
+        HashSet<Vector3i> data_positions;
+        for (const auto &pos : _chunk_stream_manager->get_active_chunks_snapshot()) {
+            _mesh_candidates.insert(pos);
+            for (int z = -1; z <= 1; ++z)
+                for (int y = -1; y <= 1; ++y)
+                    for (int x = -1; x <= 1; ++x) {
+                        const auto data_pos = pos + Vector3i(x,y,z);
+                        if (data_pos.y >= WORLD_MIN_CHUNK_Y && data_pos.y <= WORLD_MAX_CHUNK_Y)
+                            data_positions.insert(data_pos);
+                    }
+        }
+        std::vector<Vector3i> ordered;
+        for (const auto &pos : data_positions) ordered.push_back(pos);
+        std::sort(ordered.begin(), ordered.end(), [&](const Vector3i &a, const Vector3i &b) {
+            return (a - _last_focos_position).length_squared() < (b - _last_focos_position).length_squared();
+        });
+        for (const auto &pos : ordered)
+            if (!_chunk_repository->contains_chunk(pos) && !_model_generator->is_loading_chunk(pos))
+                _queue_async_generate_chunk(pos);
+        _streaming_changed = false;
+    }
+    // Missing neighbours retry only when a model arrives, not every frame.
+    if (_mesh_candidates.is_empty()) return;
+    std::vector<Vector3i> candidates;
+    for (const auto &pos : _mesh_candidates) candidates.push_back(pos);
+    _mesh_candidates.clear();
+    for (const auto &pos : candidates) {
+        if (!_chunk_stream_manager->is_chunk_active(pos)) continue;
+        auto chunk = _chunk_repository->get_chunk(pos);
+        if (chunk && chunk->stage != ChunkStage::RENDERED)
+            _try_build_mesh_with_neighbors(pos);
+    }
 }
 
 // This routine repeats every 2 seconds.
@@ -216,6 +226,7 @@ void VoxelAPI::_process(double delta) {
 
 	if (current_position != _last_focos_position) {
 		_chunk_stream_manager->shift_chunks(current_position);
+    _streaming_changed = true;
 		_update_region_streaming(current_position, _last_focos_position);
 		_previous_player_chunk_pos = _last_focos_position;
 		_last_focos_position	   = current_position;
@@ -223,16 +234,6 @@ void VoxelAPI::_process(double delta) {
 
 	_process_loaded_regions();
 	_update_visible_chunks();
-
-	const float frame_ms   = static_cast<float>(delta) * 1000.0f;
-	size_t mesh_queue_size = _mesh_generator->get_queue_size();
-
-	if (mesh_queue_size > 200)
-		_current_chunks_finalize_in_frame = 100;
-	else if (frame_ms > 16.0f)
-		_current_chunks_finalize_in_frame = 10;
-	else
-		_current_chunks_finalize_in_frame = 25;
 
 	_process_models();
 	_process_meshes(current_position);
@@ -244,17 +245,19 @@ void VoxelAPI::_process(double delta) {
 		_rebuild_chunk(pos);
 	}
 
-	static double cleanup_timer = 0.0;
-	cleanup_timer += delta;
+	_model_generator->pump();
+    _mesh_generator->pump();
+    _cleanup_timer += delta;
 
-	if (cleanup_timer > 2.0) {
+	if (_cleanup_timer > 2.0) {
 		_cleanup_far_chunks();
-		cleanup_timer = 0.0;
+		_cleanup_timer = 0.0;
 	}
 }
 
 void VoxelAPI::_exit_tree() {
 	save_world_final();
+    _clear_world();
 }
 
 void VoxelAPI::break_block(const Vector3 &world_pos) {
@@ -535,11 +538,11 @@ void VoxelAPI::_apply_render_settings_fields(const Dictionary &p_settings, const
 		}
 	}
 	const int active_chunk_estimate = horizontal_chunk_count * (_world_height * 2 + 1);
-	_prewarm_chunk_pool = MIN(active_chunk_estimate, 1024);
+	_prewarm_chunk_pool = MIN(active_chunk_estimate, 15000);
 	if (_chunk_pool.is_valid()) {
 		// The pool tracks total capacity (active and idle nodes) and grows when
 		// render settings increase; startup prewarm remains capped for load time.
-		_chunk_pool->set_prewarm(MAX(_prewarm_chunk_pool, active_chunk_estimate));
+		_chunk_pool->set_prewarm(_prewarm_chunk_pool);
 	}
 	_apply_distance_fog();
 
@@ -551,6 +554,7 @@ void VoxelAPI::_apply_render_settings_fields(const Dictionary &p_settings, const
         
 		_chunk_stream_manager->set_stream_settings(stream_settings);
 		_chunk_stream_manager->shift_chunks(_last_focos_position);
+        _streaming_changed = true;
 	}
 }
 
@@ -589,35 +593,25 @@ Vector3 VoxelAPI::_get_current_focus_position() const {
 }
 
 void VoxelAPI::_process_models() {
-	HashMap<Vector3i, std::shared_ptr<Chunk>> ready_models = _model_generator->consume_generated_results();
-
-	if (ready_models.is_empty()) {
-		return;
-	}
-
-	for (auto &ready_model : ready_models) {
-		//  Chunk start with LOADED.
-		_queue_region_load(voxel::chunk_to_region_coords(ready_model.key));
-		_chunk_repository->add_chunk(ready_model.key, ready_model.value);
-	}
-
-	// A previously absent diagonal can enter the streaming radius later.
-	// Refresh already visible meshes that baked AO against that missing data.
-	HashSet<Vector3i> ao_updates;
-	for (const auto &ready_model : ready_models) {
-		for (int z = -1; z <= 1; ++z) {
-			for (int y = -1; y <= 1; ++y) {
-				for (int x = -1; x <= 1; ++x) {
-					if (ABS(x) + ABS(y) + ABS(z) < 2) continue;
-					const Vector3i pos = ready_model.key + Vector3i(x, y, z);
-					const auto neighbour = _chunk_repository->get_chunk(pos);
-					if (neighbour && neighbour->stage == ChunkStage::RENDERED)
-						ao_updates.insert(pos);
-				}
-			}
-		}
-	}
-	for (const Vector3i &pos : ao_updates) _rebuild_chunk(pos);
+    const auto models = _model_generator->consume_generated_results();
+    for (const auto &result : models) {
+        _queue_region_load(voxel::chunk_to_region_coords(result.pos));
+        _chunk_repository->add_chunk(result.pos, result.model);
+    }
+    HashSet<Vector3i> updates;
+    for (const auto &result : models) {
+        for (int z = -1; z <= 1; ++z)
+            for (int y = -1; y <= 1; ++y)
+                for (int x = -1; x <= 1; ++x) {
+                    const auto pos = result.pos + Vector3i(x,y,z);
+                    if (!_chunk_stream_manager->is_chunk_active(pos)) continue;
+                    _mesh_candidates.insert(pos);
+                    auto chunk = _chunk_repository->get_chunk(pos);
+                    if (chunk && (chunk->stage == ChunkStage::RENDERED || _mesh_generator->is_queued_mesh(pos)))
+                        updates.insert(pos);
+                }
+    }
+    for (const auto &pos : updates) _rebuild_chunk(pos);
 }
 
 void VoxelAPI::_ensure_region_loaded_for_chunk(const Vector3i &chunk_pos) {
@@ -711,6 +705,7 @@ void VoxelAPI::_unload_region(const Vector3i &region_pos) {
 	_region_cache.erase(region_pos);
 }
 void VoxelAPI::_setup_generation_pipeline(int64_t p_seed) {
+    _column_cache = std::make_shared<TerrainColumnCache>();
 	_world_seed = p_seed;
 	auto pipeline = std::make_shared<ChunkGenerationPipeline>();
 	pipeline->add_pass(std::make_shared<BiomeSelectionPass>());
@@ -723,20 +718,25 @@ void VoxelAPI::_setup_generation_pipeline(int64_t p_seed) {
 	_generation_pipeline = std::move(pipeline);
 }
 
-void VoxelAPI::_process_meshes(const Vector3i &p_pos) {
-	const MeshResultHashSet ready_meshes = _mesh_generator->consume_generated_meshes(_current_chunks_finalize_in_frame);
-
-	for (const MeshResult &result : ready_meshes) {
-		const int dist_x = ABS(result.pos.x - p_pos.x);
-		const int dist_y = ABS(result.pos.y - p_pos.y);
-		const int dist_z = ABS(result.pos.z - p_pos.z);
-
-		if (dist_x > _world_radius + 1 || dist_y > _world_height + 1 || dist_z > _world_radius + 1) {
-			continue;
-		}
-
-		_finalize_chunk(result);
-	}
+void VoxelAPI::_process_meshes(const Vector3i &) {
+    const auto start = std::chrono::steady_clock::now();
+    MeshResult result;
+    int count = 0;
+    while (count < 32 && _mesh_generator->pop_generated_mesh(result)) {
+        if (_mesh_generator->is_current(result)) _finalize_chunk(result);
+        else if (!_mesh_generator->is_queued_mesh(result.pos)) {
+            if (auto chunk = _chunk_repository->get_chunk(result.pos)) {
+                chunk->stage = ChunkStage::LOADED;
+                _mesh_candidates.insert(result.pos);
+            }
+        }
+        _mesh_generator->forget(result.pos);
+        ++count;
+        if (std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count() >= _mesh_finalize_budget_ms)
+            break;
+    }
+    _last_finalize_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+    _max_finalize_ms = std::max(_max_finalize_ms, _last_finalize_ms);
 }
 
 int VoxelAPI::get_initial_loading_ready_chunks() const {
@@ -767,6 +767,7 @@ void VoxelAPI::_update_initial_loading_status() {
 }
 
 void VoxelAPI::_rebuild_chunk(const Vector3i &pos) const {
+    if (!_chunk_stream_manager->is_chunk_active(pos)) return;
 	const ChunkNeighbors neighbors = _get_neighbors_for(pos);
 
 	if (!neighbors.center) {
@@ -801,6 +802,25 @@ bool VoxelAPI::_is_high_priority(const Vector3i &pos, bool dirty) const {
 }
 
 void VoxelAPI::_clear_world() {
+    if (_model_generator.is_valid()) _model_generator->reset();
+    if (_mesh_generator.is_valid()) _mesh_generator->reset();
+    if (_region_loader.is_valid()) _region_loader->reset();
+    if (_disk_repository.is_valid()) _disk_repository->wait_for_saves();
+    std::vector<ChunkNode *> nodes;
+    for (const auto &entry : _rendered_chunks) nodes.push_back(entry.value);
+    for (auto *node : nodes) _chunk_pool->release(node);
+    _rendered_chunks.clear();
+    _chunk_repository->clear_all();
+    _region_cache.clear();
+    _pending_region_loads.clear();
+    _initial_loading_chunks.clear();
+    _mesh_candidates.clear();
+    _generation_pipeline.reset();
+    _column_cache.reset();
+    _streaming_changed = false;
+    _is_initializing = false;
+    _cleanup_timer = 0.0;
+    _last_finalize_ms = _max_finalize_ms = 0.0;
 }
 void VoxelAPI::_finalize_chunk(const MeshResult &res) {
 	std::shared_ptr<Chunk> chunk = _chunk_repository->get_chunk(res.pos);
@@ -818,21 +838,35 @@ void VoxelAPI::_finalize_chunk(const MeshResult &res) {
 	}
 
 	if (!_chunk_stream_manager->is_chunk_active(res.pos)) {
+        chunk->stage = ChunkStage::LOADED;
 		return;
 	}
 
 	// Empty chunks have no mesh or collision to install, and are ready for
 	// streaming once their empty result has been processed on the main thread.
-	if (res.mesh.is_null()) {
+	if (!res.geometry.has_opaque && !res.geometry.has_transparent) {
+		if (_rendered_chunks.has(res.pos)) {
+			_remove_chunk(_rendered_chunks[res.pos]);
+		}
 		chunk->stage = ChunkStage::RENDERED;
 		return;
 	}
 
-	if (_rendered_chunks.has(res.pos)) {
-		_remove_chunk(_rendered_chunks[res.pos]);
-	}
+    // Rendering resources and uploads belong to the main thread. Workers
+    // publish only geometry, so obsolete results never allocate a GPU mesh.
+    Ref<ArrayMesh> mesh;
+    mesh.instantiate();
+    const int64_t format = Mesh::ARRAY_FORMAT_VERTEX | Mesh::ARRAY_FORMAT_NORMAL |
+        Mesh::ARRAY_FORMAT_TEX_UV | Mesh::ARRAY_FORMAT_CUSTOM0 |
+        Mesh::ARRAY_FORMAT_COLOR | Mesh::ARRAY_FORMAT_INDEX |
+        (Mesh::ARRAY_CUSTOM_R_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT);
+    if (res.geometry.has_opaque)
+        mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, res.geometry.opaque_arrays, Array(), Dictionary(), format);
+    if (res.geometry.has_transparent)
+        mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, res.geometry.transparent_arrays, Array(), Dictionary(), format);
 
-	ChunkNode *chunk_node = _chunk_pool->acquire();
+    ChunkNode *chunk_node = _rendered_chunks.has(res.pos)
+        ? _rendered_chunks[res.pos] : _chunk_pool->acquire();
 
 	if (chunk_node == nullptr) {
 		WARN_PRINT("ChunkPool is overflow! Increase the prewarm size or check the cleanup.");
@@ -841,16 +875,15 @@ void VoxelAPI::_finalize_chunk(const MeshResult &res) {
 
 	_rendered_chunks[res.pos] = chunk_node;
 
-	chunk_node->set_mesh(res.mesh);
+	chunk_node->set_mesh(mesh);
 	chunk_node->set_material_override(Ref<Material>());
-	for (int surface = 0; surface < res.mesh->get_surface_count(); ++surface) {
-		Array arrays = res.mesh->surface_get_arrays(surface);
-		PackedFloat32Array layers = arrays[Mesh::ARRAY_CUSTOM0];
-		const bool is_water_surface = !layers.is_empty() && layers[0] >= voxel::WATER_TEXTURE_LAYER;
+	for (int surface = 0; surface < mesh->get_surface_count(); ++surface) {
+        const bool is_water_surface = !res.geometry.has_opaque || surface > 0;
 		chunk_node->set_surface_override_material(surface,
 				is_water_surface ? chunk_node->get_water_material() : chunk_node->get_material());
 	}
 	chunk_node->set_collision_faces(res.collision_faces);
+	chunk_node->set_torch_positions(res.torch_positions);
 	chunk_node->set_global_position(voxel::chunk_coords_to_world(res.pos));
 
 	chunk->stage = ChunkStage::RENDERED;
@@ -858,6 +891,7 @@ void VoxelAPI::_finalize_chunk(const MeshResult &res) {
 
 TerrainSettings VoxelAPI::_make_terrain_settings() const {
     TerrainSettings settings;
+    settings.column_cache = _column_cache;
     settings.terrain_base_height=_terrain_base_height; settings.terrain_amplitude=_terrain_amplitude;
     settings.water_level=_water_level; settings.world_seed=_world_seed; settings.biome_registry=_biome_registry;
     settings.terrain_noise=_terrain_noise; settings.biome_noise=_biome_noise; settings.dune_noise=_dune_noise;
@@ -893,6 +927,8 @@ double VoxelAPI::_get_day_hour() const {
 void VoxelAPI::save_world_final() const {
 	if (_disk_repository.is_null() || _disk_repository->get_current_world_id() == 0)
 		return;
+    // Older async region writes must not overwrite this final snapshot.
+    _disk_repository->wait_for_saves();
 
 	if (SaveService *service = SaveService::get_singleton()) {
 		Dictionary world_data;
@@ -933,20 +969,8 @@ void VoxelAPI::save_world_final() const {
 	}
 }
 
-ChunkNeighbors VoxelAPI::_get_neighbors_for(const Vector3i p_pos) const {
-	ChunkNeighbors n;
-	for (int z = -1; z <= 1; ++z)
-		for (int y = -1; y <= 1; ++y)
-			for (int x = -1; x <= 1; ++x)
-				n.halo[ChunkNeighbors::halo_index(x, y, z)] = _chunk_repository->get_chunk(p_pos + Vector3i(x, y, z));
-	n.center = n.halo[ChunkNeighbors::halo_index(0, 0, 0)];
-	n.right = n.halo[ChunkNeighbors::halo_index(1, 0, 0)];
-	n.left = n.halo[ChunkNeighbors::halo_index(-1, 0, 0)];
-	n.top = n.halo[ChunkNeighbors::halo_index(0, 1, 0)];
-	n.bottom = n.halo[ChunkNeighbors::halo_index(0, -1, 0)];
-	n.front = n.halo[ChunkNeighbors::halo_index(0, 0, 1)];
-	n.back = n.halo[ChunkNeighbors::halo_index(0, 0, -1)];
-	return n;
+ChunkNeighbors VoxelAPI::_get_neighbors_for(const Vector3i pos) const {
+    return _chunk_repository->get_neighbors_snapshot(pos);
 }
 
 void VoxelAPI::_try_build_mesh_with_neighbors(const Vector3i p_pos) const {
@@ -956,7 +980,7 @@ void VoxelAPI::_try_build_mesh_with_neighbors(const Vector3i p_pos) const {
 		return;
 	}
 
-	if (chunk->stage == ChunkStage::QUEUED_MESH || chunk->stage == ChunkStage::GENERATING_MESH) {
+	if (_mesh_generator->is_queued_mesh(p_pos)) {
 		return;
 	}
 
@@ -974,13 +998,13 @@ void VoxelAPI::_try_build_mesh_with_neighbors(const Vector3i p_pos) const {
 		return;
 	}
 
-	// Wait for active diagonal neighbours too, so AO never bakes a temporary
-	// gap while their terrain is still being generated.
+	// The generated data halo includes diagonals outside the visible cylinder.
+    // Wait for all of it to avoid temporary AO and redundant border rebuilds.
 	for (int z = -1; z <= 1; ++z) {
 		for (int y = -1; y <= 1; ++y) {
 			for (int x = -1; x <= 1; ++x) {
 				if (!neighbors.halo[ChunkNeighbors::halo_index(x, y, z)] &&
-						_chunk_stream_manager->is_chunk_active(p_pos + Vector3i(x, y, z))) {
+						p_pos.y + y >= WORLD_MIN_CHUNK_Y && p_pos.y + y <= WORLD_MAX_CHUNK_Y) {
 					chunk->stage = ChunkStage::WAITING_NEIGHBORS;
 					return;
 				}
@@ -996,6 +1020,29 @@ void VoxelAPI::save_world() const {
 	save_world_final();
 }
 
+void VoxelAPI::set_pipeline_settings(const Dictionary &settings) {
+    ERR_FAIL_COND_MSG(_model_generator.is_null() || _mesh_generator.is_null(), "Add VoxelAPI to the scene tree before configuring the pipeline.");
+    const int batch = settings.get("batch_size", 1);
+    const int inflight = settings.get("max_inflight", 8);
+    _model_generator->configure(batch, inflight);
+    _mesh_generator->configure(batch, inflight);
+    _mesh_finalize_budget_ms = std::clamp(double(settings.get("finalize_budget_ms", 2.0)), 0.1, 8.0);
+}
+Dictionary VoxelAPI::get_pipeline_stats() const {
+    Dictionary stats;
+    stats["chunk_size"] = Vector3i(Chunk::SIZE_X, Chunk::SIZE_Y, Chunk::SIZE_Z);
+    stats["world_min_y"] = WORLD_BEDROCK_Y;
+    stats["world_max_y"] = WORLD_MAX_CHUNK_Y * Chunk::SIZE_Y + Chunk::MAX_Y;
+    stats["ready_meshes"] = int64_t(_mesh_generator->get_queue_size());
+    stats["loaded_models"] = _chunk_repository->get_keys_snapshot().size();
+    stats["rendered_nodes"] = _rendered_chunks.size();
+    stats["models"] = _model_generator->get_stats();
+    stats["meshes"] = _mesh_generator->get_stats();
+    stats["last_finalize_ms"] = _last_finalize_ms;
+    stats["max_finalize_ms"] = _max_finalize_ms;
+    stats["finalize_budget_ms"] = _mesh_finalize_budget_ms;
+    return stats;
+}
 void VoxelAPI::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_biome_registry_path", "path"), &VoxelAPI::set_biome_registry_path);
     ClassDB::bind_method(D_METHOD("get_biome_registry_path"), &VoxelAPI::get_biome_registry_path);
@@ -1011,6 +1058,8 @@ void VoxelAPI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_block_type_at", "world_pos"), &VoxelAPI::get_block_type_at);
 	ClassDB::bind_method(D_METHOD("save_world"), &VoxelAPI::save_world);
 	ClassDB::bind_method(D_METHOD("start_world", "id"), &VoxelAPI::start_world);
+    ClassDB::bind_method(D_METHOD("get_pipeline_stats"), &VoxelAPI::get_pipeline_stats);
+    ClassDB::bind_method(D_METHOD("set_pipeline_settings", "settings"), &VoxelAPI::set_pipeline_settings);
 	ClassDB::bind_method(D_METHOD("is_initial_loading"), &VoxelAPI::is_initial_loading);
 	ClassDB::bind_method(D_METHOD("get_initial_loading_total_chunks"), &VoxelAPI::get_initial_loading_total_chunks);
 	ClassDB::bind_method(D_METHOD("get_initial_loading_ready_chunks"), &VoxelAPI::get_initial_loading_ready_chunks);

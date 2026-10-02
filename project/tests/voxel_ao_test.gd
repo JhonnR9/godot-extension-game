@@ -8,7 +8,7 @@ func corner_visibility(world: Node, point: Vector3, normal: Vector3) -> float:
 		if not child is MeshInstance3D or child.mesh == null:
 			continue
 		var local: Vector3 = point - child.position
-		if local.x < 0 or local.x > 16 or local.y < 0 or local.y > 16 or local.z < 0 or local.z > 16:
+		if local.x < 0 or local.x > 32 or local.y < 0 or local.y > 64 or local.z < 0 or local.z > 32:
 			continue
 		for surface in child.mesh.get_surface_count():
 			var arrays: Array = child.mesh.surface_get_arrays(surface)
@@ -66,8 +66,8 @@ func run() -> void:
 		await wait_corner(world, face_origin + u + v, normal, 0.0)
 		await wait_corner(world, face_origin, normal, 1.0)
 	# This corner needs a diagonal chunk across X, Y and Z simultaneously.
-	var base := Vector3(15, 47, 15)
-	var diagonal := Vector3(16, 48, 16)
+	var base := Vector3(31, 63, 31)
+	var diagonal := Vector3(32, 64, 32)
 	world.set_block(base, stone)
 	world.set_block(diagonal, stone)
 	await wait_corner(world, diagonal, Vector3.UP, 2.0 / 3.0)
@@ -81,13 +81,13 @@ func run() -> void:
 	# Isolated cubes remain unoccluded; large open planes retain greedy meshing.
 	var floor_quads := 0
 	for child in world.get_children():
-		if not child is MeshInstance3D or child.mesh == null or child.position != Vector3(0, 32, 0):
+		if not child is MeshInstance3D or child.mesh == null or child.position != Vector3.ZERO:
 			continue
 		var arrays: Array = child.mesh.surface_get_arrays(0)
 		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
 		for i in range(0, vertices.size(), 4):
-			if normals[i].y > 0.99 and is_equal_approx(vertices[i].y, 1.0):
+			if normals[i].y > 0.99 and is_equal_approx(vertices[i].y, 33.0):
 				floor_quads += 1
 	check(floor_quads == 1, "Unoccluded flat chunk should still merge to one top quad, got %s" % floor_quads)
 	for frame in range(60): await process_frame

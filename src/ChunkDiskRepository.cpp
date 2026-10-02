@@ -15,7 +15,13 @@ static constexpr int REGION_FILE_VERSION = 1;
 
 void ChunkDiskRepository::_bind_methods() {}
 
+void ChunkDiskRepository::wait_for_saves() {
+    if (auto *pool = WorkerThreadPool::get_singleton())
+        for (auto id : save_tasks) pool->wait_for_task_completion(id);
+    save_tasks.clear();
+}
 void ChunkDiskRepository::set_current_world(int64_t p_id) {
+    wait_for_saves();
 	current_world_id = p_id;
 	if (const String dir = SaveService::get_world_dir(p_id) + "/regions"; !DirAccess::dir_exists_absolute(dir)) {
 		DirAccess::make_dir_recursive_absolute(dir);
@@ -79,6 +85,11 @@ void ChunkDiskRepository::save_region(Vector3i region_pos, const voxel::Region &
 }
 
 void ChunkDiskRepository::save_region_async(Vector3i region_pos, const voxel::Region &region) {
+    auto *pool = WorkerThreadPool::get_singleton();
+    for (auto it = save_tasks.begin(); it != save_tasks.end();) {
+        if (pool->is_task_completed(*it)) { pool->wait_for_task_completion(*it); it = save_tasks.erase(it); }
+        else ++it;
+    }
 	struct RegionSaveJob {
 		Vector3i pos;
 		voxel::Region region;
@@ -86,12 +97,12 @@ void ChunkDiskRepository::save_region_async(Vector3i region_pos, const voxel::Re
 	};
 
 	auto *job = new RegionSaveJob{ region_pos, region, this };
-	WorkerThreadPool::get_singleton()->add_native_task([](void *data) {
+	save_tasks.push_back(WorkerThreadPool::get_singleton()->add_native_task([](void *data) {
 		auto *save_job = static_cast<RegionSaveJob *>(data);
 		save_job->repo->save_region(save_job->pos, save_job->region);
 		delete save_job;
 	},
-			job);
+			job));
 }
 
 voxel::Region ChunkDiskRepository::load_region(Vector3i region_pos) {

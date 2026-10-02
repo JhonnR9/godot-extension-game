@@ -6,6 +6,7 @@
 #include <godot_cpp/classes/texture2d_array.hpp>
 #include <godot_cpp/classes/shader_material.hpp>
 #include <godot_cpp/classes/shader.hpp>
+#include <godot_cpp/classes/box_shape3d.hpp>
 
 namespace godot {
 
@@ -49,6 +50,7 @@ void ChunkNode::_setup() {
             // Generated lookup follows atlas reordering when textures are added.
             mat->set_shader_parameter("iron_ore_layer", voxel::texture_layer_from_name("iron_ore"));
             mat->set_shader_parameter("diamond_ore_layer", voxel::texture_layer_from_name("diamond_ore"));
+            mat->set_shader_parameter("torch_layer", voxel::texture_layer_from_name("torch"));
             override_material = mat;
         } else {
             ERR_PRINT("Error: mismatched or invalid atlas array in res://textures/block_array.tres");
@@ -94,7 +96,46 @@ void ChunkNode::set_collision_faces( const PackedVector3Array &collision_faces) 
     }
 }
 
+void ChunkNode::set_torch_positions(const PackedVector3Array &positions) {
+    if (positions == _torch_positions) return;
+    _torch_positions = positions;
+    for (OmniLight3D *light : _torch_lights) {
+        remove_child(light);
+        memdelete(light);
+    }
+    _torch_lights.clear();
+    for (int i = 0; i < positions.size(); ++i) {
+        OmniLight3D *light = memnew(OmniLight3D);
+        light->set_name("TorchLight");
+        light->set_position(positions[i]);
+        light->set_color(Color(1.0f, 0.64f, 0.28f));
+        light->set_param(Light3D::PARAM_ENERGY, 2.0f);
+        light->set_param(Light3D::PARAM_RANGE, 8.0f);
+        light->set_shadow(true);
+        light->set_enable_distance_fade(true);
+        light->set_distance_fade_begin(32.0f);
+        light->set_distance_fade_length(8.0f);
+        light->set_distance_fade_shadow(24.0f);
+        // Selection-only collider: raycasts can break/place against the torch,
+        // while the player's layer-1 movement collision passes through it.
+        StaticBody3D *selection = memnew(StaticBody3D);
+        selection->set_collision_layer(2);
+        selection->set_collision_mask(0);
+        selection->set_position(Vector3(0.0f, -0.3f, 0.0f));
+        CollisionShape3D *shape_node = memnew(CollisionShape3D);
+        Ref<BoxShape3D> box;
+        box.instantiate();
+        box->set_size(Vector3(1.0f, 1.0f, 1.0f));
+        shape_node->set_shape(box);
+        selection->add_child(shape_node);
+        light->add_child(selection);
+        add_child(light);
+        _torch_lights.push_back(light);
+    }
+}
+
 void ChunkNode::disable() {
+    set_torch_positions(PackedVector3Array());
     set_mesh(Ref<Mesh>());
 
     if (_shape.is_valid()) {
@@ -103,7 +144,7 @@ void ChunkNode::disable() {
 
     set_visible(false);
     set_process(false);
-    set_global_position(Vector3());
+    set_position(Vector3());
 }
 
 void ChunkNode::enable() {

@@ -38,6 +38,7 @@ inline constexpr std::uint16_t pine_leaves = 28;
 inline constexpr std::uint16_t oak_planks = 29;
 inline constexpr std::uint16_t palm_planks = 30;
 inline constexpr std::uint16_t pine_planks = 31;
+inline constexpr std::uint16_t torch = 32;
 }
 
 inline constexpr std::uint32_t default_block_flags(std::uint16_t id) {
@@ -74,6 +75,7 @@ inline constexpr std::uint32_t default_block_flags(std::uint16_t id) {
 		case block_ids::oak_planks: return 1024u;
 		case block_ids::palm_planks: return 1024u;
 		case block_ids::pine_planks: return 1024u;
+		case block_ids::torch: return 86016u;
 		default: return 0u;
 	}
 }
@@ -111,6 +113,7 @@ inline constexpr std::uint16_t block_id_from_name(std::string_view name) {
 	if (name == "oak_planks") return block_ids::oak_planks;
 	if (name == "palm_planks") return block_ids::palm_planks;
 	if (name == "pine_planks") return block_ids::pine_planks;
+	if (name == "torch") return block_ids::torch;
 	return 0xffff;
 }
 
@@ -153,10 +156,11 @@ inline constexpr int texture_layer_from_name(std::string_view name) {
 	if (name == "snow") return 35;
 	if (name == "stone") return 36;
 	if (name == "tallgrass_side") return 37;
+	if (name == "torch") return 38;
 	return -1;
 }
 
-inline constexpr int WATER_TEXTURE_LAYER = 38;
+inline constexpr int WATER_TEXTURE_LAYER = 39;
 }
 
 #endif

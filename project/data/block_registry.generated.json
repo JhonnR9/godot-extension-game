@@ -784,6 +784,32 @@
 				1.0,
 				1.0
 			]
+		},
+		{
+			"category": "lighting",
+			"display_name": "Torch",
+			"flag_mask": 86016,
+			"flags": [
+				"cutout",
+				"crossed",
+				"emissive"
+			],
+			"id": 32,
+			"name": "torch",
+			"texture_layers": {
+				"bottom": 38,
+				"side": 38,
+				"top": 38
+			},
+			"textures": {
+				"side": "torch"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
 		}
 	],
 	"texture_layers": {
@@ -824,8 +850,9 @@
 		"short_grass_side": 34,
 		"snow": 35,
 		"stone": 36,
-		"tallgrass_side": 37
+		"tallgrass_side": 37,
+		"torch": 38
 	},
 	"version": 1,
-	"water_texture_layer": 38
+	"water_texture_layer": 39
 }

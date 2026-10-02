@@ -9,6 +9,8 @@
 #include <godot_cpp/classes/material.hpp>
 #include <godot_cpp/classes/standard_material3d.hpp>
 #include <godot_cpp/classes/static_body3d.hpp>
+#include <godot_cpp/classes/omni_light3d.hpp>
+#include <vector>
 #include <godot_cpp/variant/packed_vector3_array.hpp>
 
 namespace godot {
@@ -31,11 +33,14 @@ private:
 	Ref<ConcavePolygonShape3D> _shape;
 	Ref<Material> _material;
 	Ref<Material> _water_material;
+	std::vector<OmniLight3D *> _torch_lights;
+    PackedVector3Array _torch_positions;
 
 	void _setup();
 
 public:
 	void set_collision_faces(const PackedVector3Array&collision_faces);
+	void set_torch_positions(const PackedVector3Array &positions);
 	Ref<Material> get_material() {
 		return _material;
 	}
