@@ -27,5 +27,18 @@ int main() {
 		assert(previous == 16);
 	}
 	assert(voxel::coast_height(16, 25, 1, 0.4f) == 25);
+	assert(voxel::freezing_weight(0.0f, 0.18f, 0.14f) == 1);
+	assert(voxel::freezing_weight(0.4f, 0.18f, 0.14f) == 0);
+	assert(std::abs(voxel::freezing_weight(0.18f, 0.18f, 0.14f) - 0.5f) < 0.0001f);
+	for (float patch : {0.0f, 0.5f, 1.0f}) {
+		assert(voxel::freezing_height(0, patch, 16, 24) == 16);
+		assert(voxel::freezing_height(1, patch, 16, 24) == 23);
+		int previous = 16;
+		for (int i = 0; i <= 100; ++i) {
+			const int height = voxel::freezing_height(i / 100.0f, patch, 16, 24);
+			assert(height >= previous && height <= previous + 1 && height <= 23);
+			previous = height;
+		}
+	}
 	std::cout << "Terrain transition checks passed.\n";
 }

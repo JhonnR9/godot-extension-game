@@ -30,5 +30,18 @@ inline float coast_height(float wet, float dry, float dryness, float ocean) {
 	const float shelf = dryness * (1 - transition_smooth((ocean - 0.45f) / 0.45f));
 	return wet + (dry - wet) * shelf;
 }
+
+inline float freezing_weight(float climate, float boundary, float width) {
+	return 1.0f - transition_smooth((climate - boundary + width) / (2.0f * width));
+}
+
+// The ice grows upward from the bed. Melting lowers its top into terraces,
+// leaving water above it instead of a hollow cap or a full-height wall.
+inline int freezing_height(float weight, float patch, int bed, int water_level) {
+	const int depth = std::max(0, water_level - bed - 1);
+	const float rise = transition_smooth((weight - 0.10f + (patch - 0.5f) * 0.20f) / 0.80f);
+	return bed + int(std::round(depth * rise));
+}
+
 } // namespace voxel
 #endif

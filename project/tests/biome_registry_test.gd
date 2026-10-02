@@ -95,14 +95,16 @@ func run() -> void:
 				check(defaults.get_block_type_at(Vector3(x, c.height, z)) == c.surface_block, "Sampler and surface disagree at %s" % Vector2i(x, z))
 				var above := int(defaults.get_block_type_at(Vector3(x, c.height + 1, z)))
 				var expect_water: bool = c.surface_water and c.height + 1 < c.water_level
-				check(above == (int(c.surface_fill) if expect_water else block_id("air")), "Sampler and surface fill/air disagree.")
+				var expected_fill: int = c.surface_fill
+				if c.height + 1 > c.solid_fill_height: expected_fill = block_id("water")
+				check(above == (expected_fill if expect_water else block_id("air")), "Sampler and surface fill/air disagree.")
 	# Exercise all existing palettes across broad climate/coast regions.
 	var found: Dictionary = {}
 	for z in range(-4096, 4097, 128):
 		for x in range(-4096, 4097, 128):
 			var c: Dictionary = defaults.sample_terrain_column(Vector2i(x, z))
 			found[c.biome_name] = true
-	for name in ["plains", "desert", "ocean", "river", "beach", "snow", "frozen_ocean", "frozen_river", "snowy_shore"]:
+	for name in ["mountains", "plains", "desert", "ocean", "river", "beach", "snow", "frozen_ocean", "frozen_river", "snowy_shore"]:
 		check(found.has(name), "Default biome never selected: " + name)
 
 	# Different initial focus changes chunk scheduling/cache population order.

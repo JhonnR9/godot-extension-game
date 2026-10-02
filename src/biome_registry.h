@@ -23,6 +23,7 @@ struct WeightedPlant {
 };
 struct VegetationProfile {
 	int patch_size	 = 12;
+	int patch_chance = 1000, cluster_radius = 0;
 	int coverage_min = 0, coverage_max = 0;
 	int flowers_min = 0, flowers_max = 0;
 	float climate_min = 0.0f, climate_max = 1.0f;
@@ -73,7 +74,7 @@ struct TerrainNoiseProfile {
 struct TerrainWorldProfile {
 	int base_height = 24, sea_level = 24;
 	float amplitude		= 9.0f;
-	float climate_start = 0.05f, climate_span = 0.30f;
+	float climate_start = -0.90f, climate_span = 2.0f;
 	float coast_start = 0.25f, coast_span = 0.80f;
 	float dry_coast_start = 0.05f, dry_coast_span = 0.65f;
 	float coast_blend_start = 0.34f, coast_blend_end = 0.68f;

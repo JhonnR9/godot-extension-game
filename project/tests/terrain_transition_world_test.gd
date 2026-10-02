@@ -29,6 +29,7 @@ func run() -> void:
 	inland.world.sea_level = 0
 	inland.biomes = inland.biomes.slice(0, 2)
 	inland.biomes[0].selection.climate_min = 0
+	inland.biomes[0].selection.climate_max = 0.68
 	for b in inland.biomes:
 		b.trees = {}
 		b.vegetation = {}
@@ -38,13 +39,14 @@ func run() -> void:
 	var mixed := {"sand_before": false, "dirt_after": false, "grass_after": false, "dirt_before": false}
 	var grass := block_id("grass")
 	var dirt := block_id("dirt")
+	var grass_boundary: float = inland.biomes[0].surface_overrides[0].climate_min
 	for z in range(-2048, 2049, 16):
 		for x in range(-2048, 2049, 16):
 			var c: Dictionary = land.sample_terrain_column(Vector2i(x, z))
 			if c.climate < 0.68 and c.biome_name == "desert": mixed.sand_before = true
-			if c.climate >= 0.68 and c.biome_name == "plains": mixed.dirt_after = true
-			if c.climate >= 0.34 and c.surface_block == grass: mixed.grass_after = true
-			if c.climate < 0.34 and c.surface_block == dirt: mixed.dirt_before = true
+			if c.climate >= 0.68 and c.biome_name == "mountains": mixed.dirt_after = true
+			if c.climate >= grass_boundary and c.surface_block == grass: mixed.grass_after = true
+			if c.climate < grass_boundary and c.surface_block == dirt: mixed.dirt_before = true
 			check(c == land.sample_terrain_column(Vector2i(x, z)), "Material transition sampling is not deterministic.")
 	for key in mixed:
 		check(mixed[key], "Missing material mixture across climate boundary: " + key)

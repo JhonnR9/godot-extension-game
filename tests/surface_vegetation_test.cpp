@@ -6,6 +6,7 @@
 
 struct Plant { uint16_t block; int weight; int min_height=1,max_height=1; };
 struct Profile {
+	int patch_chance=1000,cluster_radius=0;
     int patch_size=12,coverage_min=85,coverage_max=159,flowers_min=12,flowers_max=20;
     std::vector<Plant> plants={{20,62},{15,28},{21,10}},flowers={{14,1},{17,1},{18,1},{19,1}};
 };
@@ -22,6 +23,19 @@ int main() {
         ++height_counts[v.height];
     }
     for(int i=1;i<=3;++i) assert(height_counts[i]>500);
+	Profile clumps;
+	clumps.patch_size=24; clumps.patch_chance=180; clumps.cluster_radius=3;
+	clumps.coverage_min=600; clumps.coverage_max=850;
+	clumps.flowers_min=clumps.flowers_max=0; clumps.plants=clumps.flowers;
+	int clump_flowers=0;
+	for(int z=-256;z<256;++z) for(int x=-256;x<256;++x) {
+		const auto plant=voxel::sample_surface_plant(clumps,42,x,z).block;
+		if(plant) {
+			assert(plant==14 || plant==17 || plant==18 || plant==19);
+			++clump_flowers;
+		}
+	}
+	assert(clump_flowers>100 && clump_flowers<512*512/30);
 
     for (int64_t seed : {0,42,-17}) {
         std::array<int, 22> counts{};

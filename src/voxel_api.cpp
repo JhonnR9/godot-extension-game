@@ -78,6 +78,7 @@ Dictionary VoxelAPI::sample_terrain_column(const Vector2i &position) const {
     result["soil_depth"]=c.subsurface_depth; result["water_level"]=c.water_level;
     result["trees_allowed"]=c.trees_allowed; result["surface_water"]=c.surface_water;
     result["surface_fill"]=c.surface_fill;
+    result["solid_fill_height"]=c.solid_fill_height;
     return result;
 }
 

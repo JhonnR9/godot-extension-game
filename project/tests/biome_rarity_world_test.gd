@@ -10,6 +10,7 @@ func run() -> void:
 	var rarity_config := data.duplicate(true)
 	rarity_config.biomes = rarity_config.biomes.slice(0, 2)
 	rarity_config.biomes[0].selection.climate_min = 0
+	rarity_config.biomes[0].selection.climate_max = 0.68
 	rarity_config.world.base_height = 32
 	rarity_config.world.sea_level = 0
 	rarity_config.world.amplitude = 0
@@ -35,7 +36,7 @@ func run() -> void:
 			var c: Dictionary = rarity_world.sample_terrain_column(Vector2i(x, z))
 			if c.biome_name == "desert": count += 1
 			check(c.height == 32, "Disabled biome relief affected terrain.")
-			if rarity == 0: check(c.biome_name == "plains", "Disabled biome appeared.")
+			if rarity == 0: check(c.biome_name == "mountains", "Disabled biome appeared.")
 	var expected: Dictionary = {0: 0, 1: 16641, 2: 8395, 4: 2477}
 	check(count == expected[rarity], "Unexpected regional biome population: %s" % count)
 	for z in [-16, -1, 0, 15, 16]:

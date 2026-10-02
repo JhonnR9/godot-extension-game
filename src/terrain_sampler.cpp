@@ -80,6 +80,24 @@ ColumnGenerationData TerrainSampler::sample(const TerrainSettings &s, int32_t x,
 	c.deep_rock_below_y = chosen->deep_rock_below_y;
 	c.surface_water		= chosen->surface_water;
 	c.surface_fill = chosen->surface_fill;
+	c.solid_fill_height = c.surface_fill == voxel::block_ids::water ? c.surface_height : c.water_level - 1;
+	// Freeze independently of the ground palette so the shoreline develops
+	// melting terraces anchored to the bed rather than a hard biome boundary.
+	constexpr float freezing_band = 0.14f;
+	auto fill_profile = [&](float climate) -> const BiomeDefinition * {
+		climate = Math::clamp(climate, 0.0f, 1.0f);
+		return chosen->kind == BiomeKind::LAND ? &registry.land_at(climate, s.world_seed, x, z)
+			: registry.overlay_at(chosen->kind, climate, s.world_seed, x, z);
+	};
+	const auto *cold = fill_profile(c.climate_weight - freezing_band);
+	const auto *warm = fill_profile(c.climate_weight + freezing_band);
+	if (c.surface_water && cold && warm && cold->surface_fill == voxel::block_ids::ice &&
+		warm->surface_fill == voxel::block_ids::water) {
+		const float freeze = voxel::freezing_weight(c.climate_weight, cold->climate_max, freezing_band);
+		const float patch = voxel::transition_patch(s.world_seed ^ 0x1CE, x, z);
+		c.solid_fill_height = voxel::freezing_height(freeze, patch, c.surface_height, c.water_level);
+		c.surface_fill = c.solid_fill_height > c.surface_height ? voxel::block_ids::ice : voxel::block_ids::water;
+	}
 	for (const auto &o : chosen->surface_overrides)
 		if (matches(material_climate, o.climate_min, o.climate_max)) {
 			c.surface_block = voxel::make_block(o.surface);

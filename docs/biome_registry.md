@@ -1,7 +1,7 @@
 # Registro de biomas e camadas
 
 O arquivo `project/data/biome_registry.json` configura o relevo, os materiais,
-as camadas, as árvores e a vegetação. Inclui planície, deserto, oceano, rio,
+as camadas, as árvores e a vegetação. Inclui montanhas, planície, deserto, oceano, rio,
 praia, neve e os perfis costeiros congelados.
 
 `VoxelAPI` lê e valida o arquivo uma vez em `_ready()`. Cada tarefa de geração
@@ -48,6 +48,14 @@ são aceitos por compatibilidade, mas não controlam mais essa transição.
 
 As mudanças afetam chunks novos; chunks já salvos conservam o terreno anterior.
 
+O clima usa `climate_start: -0.9` e `climate_span: 2.0` para distribuir o
+ruído entre as três regiões sem saturar nos extremos. Em amostras amplas das
+sementes 42, 1234 e 2026, a faixa temperada cobre aproximadamente 56% do
+clima; neve e deserto ficam próximos de 22% cada, antes dos perfis costeiros.
+Esses valores não garantem a mesma proporção em toda região local. A grama,
+vegetação e árvores da planície se estendem até clima 0.58; a terra exposta
+fica na faixa de transição próxima do deserto.
+
 O bloco `world` configura altura base, nível do mar, amplitude, transições de
 costa, profundidade do leito dos rios e os seis ruídos. As sementes e seus
 deslocamentos continuam determinísticos por mundo. A altura final fica limitada
@@ -69,7 +77,7 @@ Não há sorteio por bloco/chunk nem dependência da ordem de carregamento.
 
 Se um bioma terrestre for recusado, o motor usa o bioma terrestre de `rarity: 1`
 com a âncora de relevo mais próxima do clima atual. Por isso, ao menos um bioma
-terrestre precisa manter `rarity: 1`; a planície é o fallback padrão. O relevo é
+terrestre precisa manter `rarity: 1`; o fallback usa o perfil garantido mais próximo. O relevo é
 misturado suavemente com esse fallback na transição regional. Para oceano, rio e
 praia, a seleção pula os perfis recusados e considera o próximo perfil compatível.
 
@@ -124,7 +132,7 @@ e `oak_wood`; seus IDs 8, 9 e 4 foram preservados para mundos salvos.
 
 `shape: "pine"` gera saias de galhos sobrepostas que afunilam até uma ponta.
 O bioma `snow` cobre o clima `[0, 0.18)` e usa pinheiros de 8 a 12 blocos,
-com `pine_log` e `pine_leaves`. A planície passa a cobrir `[0.18, 0.68)`.
+com `pine_log` e `pine_leaves`. Montanhas e planícies dividem a faixa temperada `[0.18, 0.68)`.
 O relevo e os materiais continuam suavizados nas transições.
 
 `surface_fill` configura o preenchimento abaixo do nível do mar: `water`
@@ -136,6 +144,29 @@ rios. A costa nevada recebe pinheiros; as palmeiras ficam nas praias quentes.
 O campo histórico `surface_water` continua habilitando/desabilitando o
 preenchimento, seja de água ou gelo. `sample_terrain_column` também retorna
 o ID de `surface_fill`.
+
+Na borda fria, uma faixa de 0.14 de clima em cada lado do limite mistura
+gelo e água com ruído espacial independente da superfície. O gelo sempre
+começa no fundo, mas seu topo desce gradualmente em degraus na borda fria.
+A água preenche o espaço acima desses degraus até o nível do mar. A consulta
+retorna `solid_fill_height`, a altura máxima do gelo sólido em cada coluna.
+Isso evita tanto lajes suspensas quanto paredes verticais de altura completa.
+A transição usa coordenadas mundiais e a semente, mantendo continuidade nas
+bordas de chunks.
+
+O antigo bioma `plains`, de relevo montanhoso, agora se chama `mountains` e
+mantém o ID 0 e seus parâmetros de relevo e vegetação. Ocupa clima
+`[0.18, 0.38)`. A nova `plains` (ID 9) ocupa `[0.38, 0.68)`, usa relevo
+baixo (`scale: 0.22`, `ridge_amplitude: 2`) e no máximo uma árvore candidata
+por chunk. No teste isolado de relevo, as alturas ficam entre 28 e 30; as
+bordas ainda interpolam com montanhas, litoral e deserto.
+
+As flores da planície usam `patch_chance: 180` (18% das células de 24 blocos)
+e `cluster_radius: 3`, criando grupos circulares espaçados. `patch_chance`
+aceita 0 a 1000; o padrão 1000 preserva os outros biomas. `cluster_radius`
+zero desativa agrupamento e um valor positivo limita a vegetação a um círculo
+determinístico dentro de cada célula; deve ser menor que metade de `patch_size`.
+A planície não possui grama alta ou samambaias na lista de plantas.
 
 `vegetation` configura `patch_size`, `coverage_min`/`coverage_max` e
 `flowers_min`/`flowers_max`. Cobertura usa milésimos: 120 significa 12% das

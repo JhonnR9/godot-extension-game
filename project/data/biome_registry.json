@@ -4,8 +4,8 @@
 		"base_height": 24,
 		"sea_level": 24,
 		"amplitude": 9,
-		"climate_start": 0.05,
-		"climate_span": 0.3,
+		"climate_start": -0.9,
+		"climate_span": 2.0,
 		"coast_start": 0.25,
 		"coast_span": 0.8,
 		"dry_coast_start": 0.05,
@@ -55,14 +55,14 @@
 			"soil_depth": 15,
 			"deep_rock_below_y": -32,
 			"id": 0,
-			"name": "plains",
+			"name": "mountains",
 			"selection": {
 				"kind": "land",
 				"climate_min": 0.18,
-				"climate_max": 0.68
+				"climate_max": 0.38
 			},
 			"relief": {
-				"anchor": 0.42,
+				"anchor": 0.26,
 				"noise": "mountain",
 				"scale": 2.4,
 				"ridge_amplitude": 19,
@@ -71,7 +71,7 @@
 			},
 			"surface_overrides": [
 				{
-					"climate_min": 0.34,
+					"climate_min": 0.58,
 					"climate_max": 1,
 					"surface": "dirt",
 					"soil_depth": 7
@@ -84,7 +84,7 @@
 				"crown_radius": 2,
 				"trunk": "oak_log",
 				"leaves": "oak_leaves",
-				"climate_max": 0.45,
+				"climate_max": 0.58,
 				"shape": "oak"
 			},
 			"vegetation": {
@@ -93,7 +93,7 @@
 				"coverage_max": 159,
 				"flowers_min": 12,
 				"flowers_max": 20,
-				"climate_max": 0.34,
+				"climate_max": 0.58,
 				"plants": [
 					{
 						"block": "short_grass",
@@ -343,6 +343,76 @@
 				"leaves": "pine_leaves"
 			},
 			"surface_fill": "ice"
+		},
+		{
+			"id": 9,
+			"name": "plains",
+			"rarity": 1,
+			"selection": {
+				"kind": "land",
+				"climate_min": 0.38,
+				"climate_max": 0.68
+			},
+			"relief": {
+				"anchor": 0.48,
+				"noise": "terrain",
+				"scale": 0.22,
+				"ridge_amplitude": 2,
+				"ridge_power": 1,
+				"bias": 4
+			},
+			"materials": {
+				"surface": "grass",
+				"soil": "dirt",
+				"rock": "stone",
+				"deep_rock": "deepslate"
+			},
+			"soil_depth": 6,
+			"deep_rock_below_y": -32,
+			"surface_overrides": [
+				{
+					"climate_min": 0.62,
+					"climate_max": 1,
+					"surface": "dirt",
+					"soil_depth": 4
+				}
+			],
+			"trees": {
+				"shape": "oak",
+				"max_per_chunk": 1,
+				"min_height": 4,
+				"max_height": 6,
+				"crown_radius": 2,
+				"climate_max": 0.58,
+				"trunk": "oak_log",
+				"leaves": "oak_leaves"
+			},
+			"vegetation": {
+				"patch_size": 24,
+				"patch_chance": 180,
+				"cluster_radius": 3,
+				"coverage_min": 600,
+				"coverage_max": 850,
+				"climate_max": 0.62,
+				"plants": [
+					{
+						"block": "flower",
+						"weight": 1
+					},
+					{
+						"block": "daisy",
+						"weight": 1
+					},
+					{
+						"block": "cornflower",
+						"weight": 1
+					},
+					{
+						"block": "poppy",
+						"weight": 1
+					}
+				]
+			}
 		}
 	]
 }

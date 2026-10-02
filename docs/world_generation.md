@@ -16,7 +16,7 @@ Each pass receives a `ChunkGenerationContext` with the chunk coordinates, world 
 
 ## Desert biome
 
-`BiomeSelectionPass` uses a smooth biome-noise weight, and the low biome-noise frequency creates larger regions. The transition belt blends terrain height continuously around a fixed sea level, with a scrubby dirt palette between grassland and full desert. Deserts use sand at the surface, sandstone below, dune relief, fewer trees, and cacti. The plains use stronger broad relief and deterministic flowers and tall grass. Plant blocks use cutout textures and do not collide.
+`BiomeSelectionPass` uses a smooth biome-noise weight, and the low biome-noise frequency creates larger regions. The transition belt blends terrain height continuously around a fixed sea level, with a scrubby dirt palette between grassland and full desert. Deserts use sand at the surface, sandstone below, dune relief, fewer trees, and cacti. Mountains retain the stronger broad relief and deterministic flowers and tall grass. Plains use low relief, sparse oak trees and occasional compact flower clusters. Plant blocks use cutout textures and do not collide.
 
 ## Adding another biome
 

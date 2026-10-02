@@ -28,6 +28,14 @@ SurfacePlant sample_surface_plant(const Profile &p, int64_t seed, int32_t x, int
 	const int size = p.patch_size;
 	const int px = x >= 0 ? x / size : (x - size + 1) / size, pz = z >= 0 ? z / size : (z - size + 1) / size;
 	const uint64_t patch = vegetation_hash(seed ^ 0x3A71, px, pz), sample = vegetation_hash(seed, x, z);
+	if ((patch >> 40) % 1000 >= uint64_t(p.patch_chance)) return {};
+	if (p.cluster_radius > 0) {
+		const int radius = p.cluster_radius, span = size - 2 * radius;
+		const int cx = radius + int((patch >> 16) % span), cz = radius + int((patch >> 32) % span);
+		const int64_t dx = int64_t(x) - int64_t(px) * size - cx;
+		const int64_t dz = int64_t(z) - int64_t(pz) * size - cz;
+		if (dx * dx + dz * dz > radius * radius) return {};
+	}
 	const int roll = sample % 1000;
 	if (roll >= p.coverage_min + int(patch % (p.coverage_max - p.coverage_min + 1)))
 		return {};

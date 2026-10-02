@@ -123,7 +123,8 @@ void WaterFillPass::apply(ChunkGenerationContext &context) const {
 						voxel::is_air(context.chunk.get_block(x, y, z))) {
 					const voxel::Block water_flags = voxel::BLOCK_FLAG_TRANSPARENT |
 							(column.definition && column.definition->kind == BiomeKind::OCEAN ? voxel::BLOCK_FLAG_OCEAN : 0);
-					const voxel::Block fill = column.surface_fill == voxel::block_ids::water
+					const bool water = column.surface_fill == voxel::block_ids::water || wy > column.solid_fill_height;
+					const voxel::Block fill = water
 						? voxel::make_block(voxel::block_ids::water, water_flags)
 						: voxel::make_block(column.surface_fill);
 					context.write_block(x, y, z, fill, GenerationLayer::WATER);
