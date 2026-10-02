@@ -231,7 +231,7 @@ func _update_footsteps(delta: float) -> void:
 			sound_key = "stone"
 		11, 12:
 			sound_key = "sand"
-		4, 8, 23:
+		4, 8, 23, 27:
 			sound_key = "wood"
 	var sound := footstep_streams.get(sound_key) as AudioStream
 	if sound and footstep_player:

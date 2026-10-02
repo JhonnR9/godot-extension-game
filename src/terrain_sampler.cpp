@@ -54,9 +54,9 @@ ColumnGenerationData TerrainSampler::sample(const TerrainSettings &s, int32_t x,
 	c.surface_height  = Math::round(Math::lerp(float(c.surface_height), coast, ocean));
 	const BiomeDefinition *chosen = &land;
 	{
-		const auto *o	  = registry.overlay_at(BiomeKind::OCEAN, c.climate_weight, s.world_seed, x, z);
-		const auto *r	  = registry.overlay_at(BiomeKind::RIVER, c.climate_weight, s.world_seed, x, z);
-		const auto *beach = registry.overlay_at(BiomeKind::BEACH, c.climate_weight, s.world_seed, x, z);
+		const auto *o	  = registry.overlay_at(BiomeKind::OCEAN, material_climate, s.world_seed, x, z);
+		const auto *r	  = registry.overlay_at(BiomeKind::RIVER, material_climate, s.world_seed, x, z);
+		const auto *beach = registry.overlay_at(BiomeKind::BEACH, material_climate, s.world_seed, x, z);
 		if (o && c.surface_height <= c.water_level + o->selection_height_offset && ocean >= o->selection_influence)
 			chosen = o;
 		else if (!land.dry_coast && r && c.surface_height <= c.water_level + r->selection_height_offset) {
@@ -79,6 +79,7 @@ ColumnGenerationData TerrainSampler::sample(const TerrainSettings &s, int32_t x,
 	c.subsurface_depth	= chosen->soil_depth;
 	c.deep_rock_below_y = chosen->deep_rock_below_y;
 	c.surface_water		= chosen->surface_water;
+	c.surface_fill = chosen->surface_fill;
 	for (const auto &o : chosen->surface_overrides)
 		if (matches(material_climate, o.climate_min, o.climate_max)) {
 			c.surface_block = voxel::make_block(o.surface);

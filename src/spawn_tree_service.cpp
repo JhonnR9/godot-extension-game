@@ -170,6 +170,24 @@ void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
 				}
 
 				// Five tapered layers make a rounded crown instead of a flat box.
+				if (candidate.profile.shape == TreeProfile::Shape::PINE) {
+					// Stacked branch skirts narrow toward a single pointed leader.
+					const int first = std::max(2, trunk_h / 3);
+					const int layers = trunk_h - first + 2;
+					for (int layer = 0; layer < layers; ++layer) {
+						const int dy = first + layer;
+						int radius = (crown * (layers - 1 - layer) + layers - 2) / (layers - 1);
+						if (layer % 3 == 2 && radius > 1) --radius;
+						for (int dx = -radius; dx <= radius; ++dx)
+							for (int dz = -radius; dz <= radius; ++dz) {
+								if (radius > 0 && ABS(dx) + ABS(dz) > radius + radius / 2) continue;
+								put(wx + dx, base_y + dy, wz + dz, leaves_block, false);
+							}
+					}
+					for (int dy = -1; dy < trunk_h; ++dy)
+						put(wx, base_y + dy, wz, log_block, true, dy == -1);
+					continue;
+				}
 				if (candidate.profile.shape == TreeProfile::Shape::PALM) {
 					const int top = base_y + trunk_h - 1;
 					put(wx, top + 1, wz, leaves_block, false);

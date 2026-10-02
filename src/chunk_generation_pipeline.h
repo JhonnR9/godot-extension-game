@@ -43,6 +43,7 @@ struct ColumnGenerationData {
 	const BiomeDefinition *definition = nullptr;
 	int deep_rock_below_y = -32;
 	bool surface_water = true;
+	uint16_t surface_fill = voxel::block_ids::water;
 	int32_t surface_height = 0;
 	int32_t height_offset = 0;
 	float height_scale = 1.0f;

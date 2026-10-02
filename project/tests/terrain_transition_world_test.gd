@@ -28,6 +28,7 @@ func run() -> void:
 	inland.world.dry_coast_span = 0.001
 	inland.world.sea_level = 0
 	inland.biomes = inland.biomes.slice(0, 2)
+	inland.biomes[0].selection.climate_min = 0
 	for b in inland.biomes:
 		b.trees = {}
 		b.vegetation = {}

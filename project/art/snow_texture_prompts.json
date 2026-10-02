@@ -1,0 +1,30 @@
+{
+  "tool": "built-in image_gen",
+  "output_size": [
+    32,
+    32
+  ],
+  "resampling": "nearest",
+  "assets": [
+    {
+      "name": "snow",
+      "prompt": "Square seamless tiling SNOW BLOCK material texture for a voxel game. Flat orthographic edge-to-edge snow surface, no objects, no text or border, no rendered cube. Crisp 32x32-style pixel art with clean large pixels, mostly soft white with very subtle pale icy blue speckles and shallow compacted snow patterns. Even lighting, no cast shadows, opaque. Should remain bright white after downsampling to 32x32.",
+      "path": "res://textures/blocks/snow.png"
+    },
+    {
+      "name": "ice",
+      "prompt": "Square seamless tiling ICE BLOCK material texture for voxel game. Flat orthographic edge-to-edge frozen blue ice surface, no objects, no text, no border, no rendered cube. Crisp 32x32-style pixel art, pale cyan blue with sparse angular whitish fracture streaks and darker blue trapped ice facets, restrained contrast. Even lighting, opaque texture, solid ice intended to walk on, no water waves. Should read clearly at 32x32 pixels.",
+      "path": "res://textures/blocks/ice.png"
+    },
+    {
+      "name": "pine_leaves",
+      "prompt": "Square seamless tiling PINE TREE NEEDLE LEAVES block material texture for voxel game. Flat orthographic foliage material filling the image edge to edge, no tree illustration, no text, no border, no rendered cube. Crisp large-pixel 32x32-style pixel art, dense overlapping clusters of short dark forest green conifer needles with muted blue-green highlights and dark gaps, cold evergreen color palette, some subtle tiny pale snow flecks but predominantly dark green. Even lighting, opaque. Clearly different from broad oak leaves and tropical palm fronds.",
+      "path": "res://textures/blocks/pine_leaves.png"
+    },
+    {
+      "name": "pine_log_side",
+      "prompt": "Square seamless tiling PINE LOG BARK SIDE block material texture for voxel game. Flat orthographic edge-to-edge vertical bark material, no tree, no text, no border, no rendered cube. Crisp 32x32-style pixel art, cool muted reddish dark brown pine bark with vertical fissures and irregular chunky gray-brown scaly plates, subtle contrast, evenly lit no cast shadows. Opaque. Large crisp pixels intended to downsample to 32x32. Different from tan horizontal-ring palm bark.",
+      "path": "res://textures/blocks/pine_log_side.png"
+    }
+  ]
+}

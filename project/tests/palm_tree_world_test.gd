@@ -13,13 +13,17 @@ func run() -> void:
 	# Fully flatten the shoreline and remove rivers to exercise beach trees
 	# across positive/negative chunk boundaries with different loading orders.
 	data.world.amplitude = 0
+	data.world.climate_start = -1
+	data.world.climate_span = 0.001
 	data.world.coast_start = 1
 	data.world.dry_coast_start = 1
 	data.world.coast_span = 0.001
 	data.world.dry_coast_span = 0.001
 	data.world.wet_coast_offset = 0
 	for b in data.biomes:
-		b.relief = {"anchor": 1 if b.name == "desert" else 0, "ridge_amplitude": 0, "bias": 0}
+		b.relief = b.get("relief", {})
+		b.relief.ridge_amplitude = 0
+		b.relief.bias = 0
 		b.vegetation = {}
 		if b.name == "river": b.rarity = 0
 	write_config("user://palm_beach.json", data)

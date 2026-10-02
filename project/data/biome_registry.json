@@ -58,11 +58,11 @@
 			"name": "plains",
 			"selection": {
 				"kind": "land",
-				"climate_min": 0,
+				"climate_min": 0.18,
 				"climate_max": 0.68
 			},
 			"relief": {
-				"anchor": 0,
+				"anchor": 0.42,
 				"noise": "mountain",
 				"scale": 2.4,
 				"ridge_amplitude": 19,
@@ -233,6 +233,116 @@
 				"trunk": "palm_log",
 				"leaves": "palm_leaves"
 			}
+		},
+		{
+			"id": 5,
+			"name": "snow",
+			"rarity": 1,
+			"selection": {
+				"kind": "land",
+				"climate_min": 0,
+				"climate_max": 0.18
+			},
+			"relief": {
+				"anchor": 0,
+				"noise": "mountain",
+				"scale": 1.6,
+				"ridge_amplitude": 22,
+				"ridge_power": 2,
+				"bias": -3
+			},
+			"materials": {
+				"surface": "snow",
+				"soil": "dirt",
+				"rock": "stone",
+				"deep_rock": "deepslate"
+			},
+			"soil_depth": 6,
+			"deep_rock_below_y": -32,
+			"surface_fill": "ice",
+			"trees": {
+				"shape": "pine",
+				"max_per_chunk": 4,
+				"min_height": 8,
+				"max_height": 12,
+				"crown_radius": 3,
+				"trunk": "pine_log",
+				"leaves": "pine_leaves"
+			}
+		},
+		{
+			"materials": {
+				"surface": "snow",
+				"soil": "sand",
+				"rock": "stone",
+				"deep_rock": "deepslate"
+			},
+			"soil_depth": 5,
+			"deep_rock_below_y": -32,
+			"id": 6,
+			"name": "frozen_ocean",
+			"selection": {
+				"kind": "ocean",
+				"height_max_offset": -4,
+				"min_influence": 0,
+				"climate_max": 0.18,
+				"priority": 10
+			},
+			"rarity": 1,
+			"surface_fill": "ice",
+			"trees": {}
+		},
+		{
+			"materials": {
+				"surface": "snow",
+				"soil": "sand",
+				"rock": "stone",
+				"deep_rock": "deepslate"
+			},
+			"soil_depth": 2,
+			"deep_rock_below_y": -32,
+			"id": 7,
+			"name": "frozen_river",
+			"selection": {
+				"kind": "river",
+				"height_max_offset": 2,
+				"min_influence": 0.5,
+				"climate_max": 0.18,
+				"priority": 10
+			},
+			"rarity": 1,
+			"surface_fill": "ice",
+			"trees": {}
+		},
+		{
+			"materials": {
+				"surface": "snow",
+				"soil": "sand",
+				"rock": "stone",
+				"deep_rock": "deepslate"
+			},
+			"soil_depth": 3,
+			"deep_rock_below_y": -32,
+			"id": 8,
+			"name": "snowy_shore",
+			"selection": {
+				"kind": "beach",
+				"height_max_offset": 2,
+				"min_influence": 0.05,
+				"climate_max": 0.18,
+				"priority": 10
+			},
+			"rarity": 1,
+			"trees": {
+				"shape": "pine",
+				"max_per_chunk": 2,
+				"min_height": 8,
+				"max_height": 12,
+				"crown_radius": 3,
+				"trunk": "pine_log",
+				"leaves": "pine_leaves"
+			},
+			"surface_fill": "ice"
 		}
 	]
 }

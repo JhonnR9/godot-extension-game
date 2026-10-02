@@ -109,8 +109,8 @@ void WaterFillPass::apply(ChunkGenerationContext &context) const {
 	for (int z = 0; z < Chunk::SIZE_Z; ++z) {
 		for (int x = 0; x < Chunk::SIZE_X; ++x) {
 			const ColumnGenerationData &column = context.column(x, z);
-			// Water bodies belong to lowland/plains terrain only. Leave the
-			// desert dry and ignore shallow one-block dips in the ground.
+			// Fill low columns with the biome's water or solid ice palette.
+			// Dry biomes and shallow one-block dips stay unfilled.
 			if (!column.surface_water ||
 					column.surface_height >= column.water_level - 1) {
 				continue;
@@ -123,8 +123,10 @@ void WaterFillPass::apply(ChunkGenerationContext &context) const {
 						voxel::is_air(context.chunk.get_block(x, y, z))) {
 					const voxel::Block water_flags = voxel::BLOCK_FLAG_TRANSPARENT |
 							(column.definition && column.definition->kind == BiomeKind::OCEAN ? voxel::BLOCK_FLAG_OCEAN : 0);
-					context.write_block(x, y, z,
-							voxel::make_block(voxel::block_ids::water, water_flags), GenerationLayer::WATER);
+					const voxel::Block fill = column.surface_fill == voxel::block_ids::water
+						? voxel::make_block(voxel::block_ids::water, water_flags)
+						: voxel::make_block(column.surface_fill);
+					context.write_block(x, y, z, fill, GenerationLayer::WATER);
 				}
 			}
 		}

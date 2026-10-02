@@ -258,6 +258,9 @@ std::shared_ptr<const BiomeRegistry> BiomeRegistry::from_dictionary(const Dictio
 		b.deep_rock_below_y = r.integer(d, "deep_rock_below_y", -32, WORLD_BEDROCK_Y, 255);
 		b.dry_coast			= r.boolean(d, "dry_coast", false);
 		b.surface_water		= r.boolean(d, "surface_water", true);
+		b.surface_fill = r.block(d, "surface_fill", "water");
+		if (b.surface_fill != voxel::block_ids::water && !voxel::is_collidable(voxel::make_block(b.surface_fill)))
+			r.fail("surface_fill must be water or a solid block");
 		for (const Variant &v : r.array(d, "surface_overrides")) {
 			if (v.get_type() != Variant::DICTIONARY) {
 				r.fail("Surface override must be an object");
@@ -294,6 +297,8 @@ std::shared_ptr<const BiomeRegistry> BiomeRegistry::from_dictionary(const Dictio
 			b.trees.shape = TreeProfile::Shape::OAK;
 		else if (tree_shape == "palm")
 			b.trees.shape = TreeProfile::Shape::PALM;
+		else if (tree_shape == "pine")
+			b.trees.shape = TreeProfile::Shape::PINE;
 		else
 			r.fail("Unknown tree shape: " + tree_shape);
 		b.trees.max_per_chunk  = r.integer(trees, "max_per_chunk", 0, 0, 16);
@@ -371,6 +376,8 @@ std::shared_ptr<const BiomeRegistry> BiomeRegistry::defaults() {
 		auto r = std::make_shared<BiomeRegistry>();
 		BiomeDefinition plains;
 		plains.name		   = "plains";
+		plains.climate_min = 0.18f;
+		plains.height_anchor = 0.42f;
 		plains.climate_max = 0.68f;
 		plains.surface_overrides.push_back({ 0.34f, 1.0f, voxel::block_ids::dirt, 7 });
 		plains.trees.max_per_chunk	   = 4;
@@ -425,6 +432,36 @@ std::shared_ptr<const BiomeRegistry> BiomeRegistry::defaults() {
 				b.trees.leaves = voxel::block_ids::palm_leaves;
 			}
 			r->biomes.push_back(b);
+		}
+		BiomeDefinition snow;
+		snow.id = 5;
+		snow.name = "snow";
+		snow.climate_max = 0.18f;
+		snow.height_scale = 1.6f;
+		snow.ridge_amplitude = 22;
+		snow.height_bias = -3;
+		snow.surface = voxel::block_ids::snow;
+		snow.soil_depth = 6;
+		snow.surface_fill = voxel::block_ids::ice;
+		snow.trees.shape = TreeProfile::Shape::PINE;
+		snow.trees.max_per_chunk = 4;
+		snow.trees.min_height = 8;
+		snow.trees.max_height = 12;
+		snow.trees.crown_radius = 3;
+		snow.trees.trunk = voxel::block_ids::pine_log;
+		snow.trees.leaves = voxel::block_ids::pine_leaves;
+		r->biomes.push_back(snow);
+		for (int i = 2; i <= 4; ++i) {
+			BiomeDefinition frozen = r->biomes[i];
+			frozen.id = i + 4;
+			frozen.name = i == 2 ? "frozen_ocean" : i == 3 ? "frozen_river" : "snowy_shore";
+			frozen.climate_max = snow.climate_max;
+			frozen.priority = 10;
+			frozen.surface = voxel::block_ids::snow;
+			frozen.surface_fill = voxel::block_ids::ice;
+			frozen.trees = i == 4 ? snow.trees : TreeProfile{};
+			if (i == 4) frozen.trees.max_per_chunk = 2;
+			r->biomes.push_back(frozen);
 		}
 		return r;
 	}();

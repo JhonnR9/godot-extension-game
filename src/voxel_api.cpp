@@ -77,6 +77,7 @@ Dictionary VoxelAPI::sample_terrain_column(const Vector2i &position) const {
     result["rock_block"]=voxel::type(c.stone_block); result["deep_rock_block"]=voxel::type(c.deep_stone_block);
     result["soil_depth"]=c.subsurface_depth; result["water_level"]=c.water_level;
     result["trees_allowed"]=c.trees_allowed; result["surface_water"]=c.surface_water;
+    result["surface_fill"]=c.surface_fill;
     return result;
 }
 

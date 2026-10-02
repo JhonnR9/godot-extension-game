@@ -9,6 +9,7 @@ func run() -> void:
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/biome_registry.json"))
 	var rarity_config := data.duplicate(true)
 	rarity_config.biomes = rarity_config.biomes.slice(0, 2)
+	rarity_config.biomes[0].selection.climate_min = 0
 	rarity_config.world.base_height = 32
 	rarity_config.world.sea_level = 0
 	rarity_config.world.amplitude = 0

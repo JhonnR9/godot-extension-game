@@ -465,6 +465,81 @@
 				1,
 				1
 			]
+		},
+		{
+			"id": 25,
+			"name": "snow",
+			"display_name": "Snow",
+			"category": "terrain",
+			"flags": [
+				"solid"
+			],
+			"textures": {
+				"side": "snow"
+			},
+			"tint": [
+				1,
+				1,
+				1,
+				1
+			]
+		},
+		{
+			"id": 26,
+			"name": "ice",
+			"display_name": "Ice",
+			"category": "terrain",
+			"flags": [
+				"solid"
+			],
+			"textures": {
+				"side": "ice"
+			},
+			"tint": [
+				1,
+				1,
+				1,
+				1
+			]
+		},
+		{
+			"id": 27,
+			"name": "pine_log",
+			"display_name": "Pine Log",
+			"category": "foliage",
+			"flags": [
+				"solid"
+			],
+			"textures": {
+				"side": "pine_log_side",
+				"top": "oak_log_top",
+				"bottom": "oak_log_top"
+			},
+			"tint": [
+				1,
+				1,
+				1,
+				1
+			]
+		},
+		{
+			"id": 28,
+			"name": "pine_leaves",
+			"display_name": "Pine Leaves",
+			"category": "foliage",
+			"flags": [
+				"solid",
+				"cutout"
+			],
+			"textures": {
+				"side": "pine_leaves"
+			},
+			"tint": [
+				1,
+				1,
+				1,
+				1
+			]
 		}
 	],
 	"version": 1

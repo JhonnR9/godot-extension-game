@@ -29,7 +29,7 @@ struct VegetationProfile {
 	std::vector<WeightedPlant> plants, flowers;
 };
 struct TreeProfile {
-	enum class Shape { OAK, PALM };
+	enum class Shape { OAK, PALM, PINE };
 	Shape shape = Shape::OAK;
 	int max_per_chunk = 0, min_height = 5, max_height = 7, crown_radius = 2;
 	float climate_min = 0.0f, climate_max = 1.0f;
@@ -55,6 +55,7 @@ struct BiomeDefinition {
 	float height_scale = 2.4f, ridge_amplitude = 19.0f, ridge_power = 2.0f, height_bias = -5.0f;
 	ReliefNoise relief_noise = ReliefNoise::MOUNTAIN;
 	bool dry_coast = false, surface_water = true;
+	uint16_t surface_fill = voxel::block_ids::water;
 	int selection_height_offset = 2;
 	float selection_influence	= 0.5f;
 	uint16_t surface = voxel::block_ids::grass, soil = voxel::block_ids::dirt;

@@ -1,8 +1,8 @@
 # Registro de biomas e camadas
 
 O arquivo `project/data/biome_registry.json` configura o relevo, os materiais,
-as camadas, as árvores e a vegetação. As definições existentes continuam sendo
-planície, deserto, oceano, rio e praia, com os parâmetros anteriores.
+as camadas, as árvores e a vegetação. Inclui planície, deserto, oceano, rio,
+praia, neve e os perfis costeiros congelados.
 
 `VoxelAPI` lê e valida o arquivo uma vez em `_ready()`. Cada tarefa de geração
 recebe uma referência compartilhada e imutável ao registro. Não há leitura de
@@ -11,7 +11,7 @@ Reinicie o mundo/jogo após editar o arquivo. Para usar outro arquivo, configure
 `biome_registry_path` no Inspector ou antes de adicionar `VoxelAPI` à árvore.
 
 Uma configuração inválida gera uma mensagem com o caminho e o campo/problema,
-e o jogo usa os cinco biomas padrão embutidos. É possível validar sem iniciar
+e o jogo usa os biomas padrão embutidos. É possível validar sem iniciar
 um mundo usando `VoxelAPI.validate_biome_registry(dictionary)`, que retorna
 `valid` e `error`. IDs e nomes precisam ser únicos; materiais precisam existir
 no registro de blocos; intervalos, frequências e limites são validados.
@@ -121,6 +121,21 @@ com `palm_log`/`palm_leaves`, altura de 7 a 10 e até dois candidatos por chunk.
 Só colunas secas acima da água recebem árvores; deserto e oceano não possuem
 candidatos de palmeira. Os blocos da árvore original são `oak_log`, `oak_leaves`
 e `oak_wood`; seus IDs 8, 9 e 4 foram preservados para mundos salvos.
+
+`shape: "pine"` gera saias de galhos sobrepostas que afunilam até uma ponta.
+O bioma `snow` cobre o clima `[0, 0.18)` e usa pinheiros de 8 a 12 blocos,
+com `pine_log` e `pine_leaves`. A planície passa a cobrir `[0.18, 0.68)`.
+O relevo e os materiais continuam suavizados nas transições.
+
+`surface_fill` configura o preenchimento abaixo do nível do mar: `water`
+(padrão) ou um bloco sólido. Na região fria usa `ice`, um bloco sólido
+com colisão, em todo o volume que normalmente receberia água. Os perfis
+`frozen_ocean`, `frozen_river` e `snowy_shore`, com prioridade 10 e clima
+abaixo de 0.18, mantêm as margens nevadas e a água congelada na costa e nos
+rios. A costa nevada recebe pinheiros; as palmeiras ficam nas praias quentes.
+O campo histórico `surface_water` continua habilitando/desabilitando o
+preenchimento, seja de água ou gelo. `sample_terrain_column` também retorna
+o ID de `surface_fill`.
 
 `vegetation` configura `patch_size`, `coverage_min`/`coverage_max` e
 `flowers_min`/`flowers_max`. Cobertura usa milésimos: 120 significa 12% das
