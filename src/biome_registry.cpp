@@ -289,12 +289,19 @@ std::shared_ptr<const BiomeRegistry> BiomeRegistry::from_dictionary(const Dictio
 			b.strata.push_back(entry);
 		}
 		const Dictionary trees = r.object(d, "trees");
+		const String tree_shape = r.string(trees, "shape", "oak");
+		if (tree_shape == "oak")
+			b.trees.shape = TreeProfile::Shape::OAK;
+		else if (tree_shape == "palm")
+			b.trees.shape = TreeProfile::Shape::PALM;
+		else
+			r.fail("Unknown tree shape: " + tree_shape);
 		b.trees.max_per_chunk  = r.integer(trees, "max_per_chunk", 0, 0, 16);
 		b.trees.min_height	   = r.integer(trees, "min_height", 5, 2, 24);
 		b.trees.max_height	   = r.integer(trees, "max_height", std::max(7, b.trees.min_height), b.trees.min_height, 24);
 		b.trees.crown_radius   = r.integer(trees, "crown_radius", 2, 1, 6);
-		b.trees.trunk		   = r.block(trees, "trunk", "log");
-		b.trees.leaves		   = r.block(trees, "leaves", "leaves");
+		b.trees.trunk		   = r.block(trees, "trunk", "oak_log");
+		b.trees.leaves		   = r.block(trees, "leaves", "oak_leaves");
 		if (!voxel::is_collidable(voxel::make_block(b.trees.trunk)) || !voxel::is_collidable(voxel::make_block(b.trees.leaves)))
 			r.fail("Tree trunk and leaves must be solid blocks");
 		r.climate(trees, b.trees.climate_min, b.trees.climate_max);
@@ -408,6 +415,15 @@ std::shared_ptr<const BiomeRegistry> BiomeRegistry::defaults() {
 			b.selection_height_offset = i == 2 ? -4 : 2;
 			b.selection_influence	  = i == 2 ? 0.0f : i == 4 ? 0.05f
 															   : 0.5f;
+			if (i == 4) {
+				b.trees.shape = TreeProfile::Shape::PALM;
+				b.trees.max_per_chunk = 2;
+				b.trees.min_height = 7;
+				b.trees.max_height = 10;
+				b.trees.crown_radius = 4;
+				b.trees.trunk = voxel::block_ids::palm_log;
+				b.trees.leaves = voxel::block_ids::palm_leaves;
+			}
 			r->biomes.push_back(b);
 		}
 		return r;

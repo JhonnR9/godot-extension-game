@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b2b8tperp5e4m"
-path="res://.godot/imported/leaves_bottom.png-e66214cb23fb3acf863f7628ca2f6e6e.ctex"
+uid="uid://6j3i678rxmsb"
+path="res://.godot/imported/palm_leaves.png-8096671d191dda912d8ae9ce3b4d2518.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/blocks/leaves_bottom.png"
-dest_files=["res://.godot/imported/leaves_bottom.png-e66214cb23fb3acf863f7628ca2f6e6e.ctex"]
+source_file="res://textures/blocks/palm_leaves.png"
+dest_files=["res://.godot/imported/palm_leaves.png-8096671d191dda912d8ae9ce3b4d2518.ctex"]
 
 [params]
 

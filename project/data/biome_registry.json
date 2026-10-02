@@ -82,9 +82,10 @@
 				"min_height": 5,
 				"max_height": 7,
 				"crown_radius": 2,
-				"trunk": "log",
-				"leaves": "leaves",
-				"climate_max": 0.45
+				"trunk": "oak_log",
+				"leaves": "oak_leaves",
+				"climate_max": 0.45,
+				"shape": "oak"
 			},
 			"vegetation": {
 				"patch_size": 12,
@@ -222,7 +223,16 @@
 				"height_max_offset": 2,
 				"min_influence": 0.05
 			},
-			"rarity": 1
+			"rarity": 1,
+			"trees": {
+				"shape": "palm",
+				"max_per_chunk": 2,
+				"min_height": 7,
+				"max_height": 10,
+				"crown_radius": 4,
+				"trunk": "palm_log",
+				"leaves": "palm_leaves"
+			}
 		}
 	]
 }

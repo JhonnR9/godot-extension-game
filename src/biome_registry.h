@@ -29,9 +29,11 @@ struct VegetationProfile {
 	std::vector<WeightedPlant> plants, flowers;
 };
 struct TreeProfile {
+	enum class Shape { OAK, PALM };
+	Shape shape = Shape::OAK;
 	int max_per_chunk = 0, min_height = 5, max_height = 7, crown_radius = 2;
 	float climate_min = 0.0f, climate_max = 1.0f;
-	uint16_t trunk = voxel::block_ids::log, leaves = voxel::block_ids::leaves;
+	uint16_t trunk = voxel::block_ids::oak_log, leaves = voxel::block_ids::oak_leaves;
 };
 struct SurfaceOverride {
 	float climate_min = 0.0f, climate_max = 1.0f;

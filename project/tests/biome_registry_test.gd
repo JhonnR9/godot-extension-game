@@ -108,7 +108,7 @@ func run() -> void:
 	# Different initial focus changes chunk scheduling/cache population order.
 	# Border trees must still produce exactly the same blocks in both worlds.
 	var trees := custom.duplicate(true)
-	trees.biomes[0].trees = {"max_per_chunk": 4, "trunk": "sandstone", "leaves": "leaves", "min_height": 5, "max_height": 7, "crown_radius": 3}
+	trees.biomes[0].trees = {"max_per_chunk": 4, "trunk": "sandstone", "leaves": "oak_leaves", "min_height": 5, "max_height": 7, "crown_radius": 3}
 	write_config("user://test_tree_profiles.json", trees)
 	var tree_a := make_world("user://test_tree_profiles.json", Vector3(0, 32, 0), "Tree boundary A")
 	var tree_b := make_world("user://test_tree_profiles.json", Vector3(16, 32, 16), "Tree boundary B")
@@ -116,7 +116,7 @@ func run() -> void:
 		var trunks := 0
 		var leaves := 0
 		var sandstone := block_id("sandstone")
-		var leaf := block_id("leaves")
+		var leaf := block_id("oak_leaves")
 		for z in range(-16, 32):
 			for x in range(-16, 32):
 				for y in range(33, 46):

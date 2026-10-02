@@ -1,0 +1,25 @@
+{
+  "tool": "built-in image_gen",
+  "output_size": [
+    32,
+    32
+  ],
+  "resampling": "nearest",
+  "assets": [
+    {
+      "name": "palm_log_side",
+      "path": "res://textures/blocks/palm_log_side.png",
+      "prompt": "Square seamless pixel-art palm bark texture, tan and brown horizontal ring scars and fibrous bands, flat evenly lit edge-to-edge material, no text or rendered objects."
+    },
+    {
+      "name": "palm_log_top",
+      "path": "res://textures/blocks/palm_log_top.png",
+      "prompt": "Square palm cut-end pixel-art material, warm beige fibrous wood and scattered brown vascular dots, no concentric growth rings, flat evenly lit edge-to-edge texture."
+    },
+    {
+      "name": "palm_leaves",
+      "path": "res://textures/blocks/palm_leaves.png",
+      "prompt": "Square seamless pixel-art palm leaves texture, overlapping diagonal featherlike fronds with narrow pointed olive green leaflets and dark green gaps, flat evenly lit opaque edge-to-edge material."
+    }
+  ]
+}

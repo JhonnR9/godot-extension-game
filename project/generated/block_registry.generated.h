@@ -10,12 +10,12 @@ inline constexpr std::uint16_t air = 0;
 inline constexpr std::uint16_t grass = 1;
 inline constexpr std::uint16_t dirt = 2;
 inline constexpr std::uint16_t stone = 3;
-inline constexpr std::uint16_t wood = 4;
+inline constexpr std::uint16_t oak_wood = 4;
 inline constexpr std::uint16_t deepslate = 5;
 inline constexpr std::uint16_t iron_ore = 6;
 inline constexpr std::uint16_t diamond_ore = 7;
-inline constexpr std::uint16_t log = 8;
-inline constexpr std::uint16_t leaves = 9;
+inline constexpr std::uint16_t oak_log = 8;
+inline constexpr std::uint16_t oak_leaves = 9;
 inline constexpr std::uint16_t water = 10;
 inline constexpr std::uint16_t sand = 11;
 inline constexpr std::uint16_t sandstone = 12;
@@ -29,6 +29,8 @@ inline constexpr std::uint16_t poppy = 19;
 inline constexpr std::uint16_t short_grass = 20;
 inline constexpr std::uint16_t fern = 21;
 inline constexpr std::uint16_t coal_ore = 22;
+inline constexpr std::uint16_t palm_log = 23;
+inline constexpr std::uint16_t palm_leaves = 24;
 }
 
 inline constexpr std::uint32_t default_block_flags(std::uint16_t id) {
@@ -37,12 +39,12 @@ inline constexpr std::uint32_t default_block_flags(std::uint16_t id) {
 		case block_ids::grass: return 1024u;
 		case block_ids::dirt: return 1024u;
 		case block_ids::stone: return 1024u;
-		case block_ids::wood: return 1024u;
+		case block_ids::oak_wood: return 1024u;
 		case block_ids::deepslate: return 1024u;
 		case block_ids::iron_ore: return 1024u;
 		case block_ids::diamond_ore: return 1024u;
-		case block_ids::log: return 1024u;
-		case block_ids::leaves: return 17408u;
+		case block_ids::oak_log: return 1024u;
+		case block_ids::oak_leaves: return 17408u;
 		case block_ids::water: return 34816u;
 		case block_ids::sand: return 1024u;
 		case block_ids::sandstone: return 1024u;
@@ -56,6 +58,8 @@ inline constexpr std::uint32_t default_block_flags(std::uint16_t id) {
 		case block_ids::short_grass: return 81920u;
 		case block_ids::fern: return 81920u;
 		case block_ids::coal_ore: return 1024u;
+		case block_ids::palm_log: return 1024u;
+		case block_ids::palm_leaves: return 17408u;
 		default: return 0u;
 	}
 }
@@ -65,12 +69,12 @@ inline constexpr std::uint16_t block_id_from_name(std::string_view name) {
 	if (name == "grass") return block_ids::grass;
 	if (name == "dirt") return block_ids::dirt;
 	if (name == "stone") return block_ids::stone;
-	if (name == "wood") return block_ids::wood;
+	if (name == "oak_wood") return block_ids::oak_wood;
 	if (name == "deepslate") return block_ids::deepslate;
 	if (name == "iron_ore") return block_ids::iron_ore;
 	if (name == "diamond_ore") return block_ids::diamond_ore;
-	if (name == "log") return block_ids::log;
-	if (name == "leaves") return block_ids::leaves;
+	if (name == "oak_log") return block_ids::oak_log;
+	if (name == "oak_leaves") return block_ids::oak_leaves;
 	if (name == "water") return block_ids::water;
 	if (name == "sand") return block_ids::sand;
 	if (name == "sandstone") return block_ids::sandstone;
@@ -84,6 +88,8 @@ inline constexpr std::uint16_t block_id_from_name(std::string_view name) {
 	if (name == "short_grass") return block_ids::short_grass;
 	if (name == "fern") return block_ids::fern;
 	if (name == "coal_ore") return block_ids::coal_ore;
+	if (name == "palm_log") return block_ids::palm_log;
+	if (name == "palm_leaves") return block_ids::palm_leaves;
 	return 0xffff;
 }
 
@@ -102,24 +108,27 @@ inline constexpr int texture_layer_from_name(std::string_view name) {
 	if (name == "grass_side") return 11;
 	if (name == "grass_top") return 12;
 	if (name == "iron_ore") return 13;
-	if (name == "leaves_bottom") return 14;
-	if (name == "leaves_side") return 15;
-	if (name == "leaves_top") return 16;
-	if (name == "log_side") return 17;
+	if (name == "oak_leaves_bottom") return 14;
+	if (name == "oak_leaves_side") return 15;
+	if (name == "oak_leaves_top") return 16;
+	if (name == "oak_log_side") return 17;
 	if (name == "oak_log_top") return 18;
-	if (name == "poppy_side") return 19;
-	if (name == "sand_side") return 20;
-	if (name == "sandstone_side") return 21;
-	if (name == "short_grass_side") return 22;
-	if (name == "stone") return 23;
-	if (name == "tallgrass_side") return 24;
-	if (name == "wood_bottom") return 25;
-	if (name == "wood_side") return 26;
-	if (name == "wood_top") return 27;
+	if (name == "oak_wood_bottom") return 19;
+	if (name == "oak_wood_side") return 20;
+	if (name == "oak_wood_top") return 21;
+	if (name == "palm_leaves") return 22;
+	if (name == "palm_log_side") return 23;
+	if (name == "palm_log_top") return 24;
+	if (name == "poppy_side") return 25;
+	if (name == "sand_side") return 26;
+	if (name == "sandstone_side") return 27;
+	if (name == "short_grass_side") return 28;
+	if (name == "stone") return 29;
+	if (name == "tallgrass_side") return 30;
 	return -1;
 }
 
-inline constexpr int WATER_TEXTURE_LAYER = 28;
+inline constexpr int WATER_TEXTURE_LAYER = 31;
 }
 
 #endif

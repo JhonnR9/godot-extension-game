@@ -78,9 +78,9 @@
 			"id": 3,
 			"name": "stone",
 			"texture_layers": {
-				"bottom": 23,
-				"side": 23,
-				"top": 23
+				"bottom": 29,
+				"side": 29,
+				"top": 29
 			},
 			"textures": {
 				"side": "stone"
@@ -94,22 +94,22 @@
 		},
 		{
 			"category": "terrain",
-			"display_name": "Wood",
+			"display_name": "Oak Wood",
 			"flag_mask": 1024,
 			"flags": [
 				"solid"
 			],
 			"id": 4,
-			"name": "wood",
+			"name": "oak_wood",
 			"texture_layers": {
-				"bottom": 25,
-				"side": 26,
-				"top": 27
+				"bottom": 19,
+				"side": 20,
+				"top": 21
 			},
 			"textures": {
-				"bottom": "wood_bottom",
-				"side": "wood_side",
-				"top": "wood_top"
+				"bottom": "oak_wood_bottom",
+				"side": "oak_wood_side",
+				"top": "oak_wood_top"
 			},
 			"tint": [
 				1.0,
@@ -128,9 +128,9 @@
 			"id": 5,
 			"name": "deepslate",
 			"texture_layers": {
-				"bottom": 23,
-				"side": 23,
-				"top": 23
+				"bottom": 29,
+				"side": 29,
+				"top": 29
 			},
 			"textures": {
 				"side": "stone"
@@ -198,7 +198,7 @@
 				"solid"
 			],
 			"id": 8,
-			"name": "log",
+			"name": "oak_log",
 			"texture_layers": {
 				"bottom": 18,
 				"side": 17,
@@ -206,7 +206,7 @@
 			},
 			"textures": {
 				"bottom": "oak_log_top",
-				"side": "log_side",
+				"side": "oak_log_side",
 				"top": "oak_log_top"
 			},
 			"tint": [
@@ -218,23 +218,23 @@
 		},
 		{
 			"category": "foliage",
-			"display_name": "Leaves",
+			"display_name": "Oak Leaves",
 			"flag_mask": 17408,
 			"flags": [
 				"solid",
 				"cutout"
 			],
 			"id": 9,
-			"name": "leaves",
+			"name": "oak_leaves",
 			"texture_layers": {
 				"bottom": 14,
 				"side": 15,
 				"top": 16
 			},
 			"textures": {
-				"bottom": "leaves_bottom",
-				"side": "leaves_side",
-				"top": "leaves_top"
+				"bottom": "oak_leaves_bottom",
+				"side": "oak_leaves_side",
+				"top": "oak_leaves_top"
 			},
 			"tint": [
 				1.0,
@@ -272,9 +272,9 @@
 			"id": 11,
 			"name": "sand",
 			"texture_layers": {
-				"bottom": 20,
-				"side": 20,
-				"top": 20
+				"bottom": 26,
+				"side": 26,
+				"top": 26
 			},
 			"textures": {
 				"side": "sand_side"
@@ -296,9 +296,9 @@
 			"id": 12,
 			"name": "sandstone",
 			"texture_layers": {
-				"bottom": 21,
-				"side": 21,
-				"top": 21
+				"bottom": 27,
+				"side": 27,
+				"top": 27
 			},
 			"textures": {
 				"side": "sandstone_side"
@@ -370,9 +370,9 @@
 			"id": 15,
 			"name": "tall_grass",
 			"texture_layers": {
-				"bottom": 24,
-				"side": 24,
-				"top": 24
+				"bottom": 30,
+				"side": 30,
+				"top": 30
 			},
 			"textures": {
 				"side": "tallgrass_side"
@@ -394,9 +394,9 @@
 			"id": 16,
 			"name": "bedrock",
 			"texture_layers": {
-				"bottom": 23,
-				"side": 23,
-				"top": 23
+				"bottom": 29,
+				"side": 29,
+				"top": 29
 			},
 			"textures": {
 				"side": "stone"
@@ -469,9 +469,9 @@
 			"id": 19,
 			"name": "poppy",
 			"texture_layers": {
-				"bottom": 19,
-				"side": 19,
-				"top": 19
+				"bottom": 25,
+				"side": 25,
+				"top": 25
 			},
 			"textures": {
 				"side": "poppy_side"
@@ -494,9 +494,9 @@
 			"id": 20,
 			"name": "short_grass",
 			"texture_layers": {
-				"bottom": 22,
-				"side": 22,
-				"top": 22
+				"bottom": 28,
+				"side": 28,
+				"top": 28
 			},
 			"textures": {
 				"side": "short_grass_side"
@@ -556,6 +556,57 @@
 				1.0,
 				1.0
 			]
+		},
+		{
+			"category": "foliage",
+			"display_name": "Palm Log",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 23,
+			"name": "palm_log",
+			"texture_layers": {
+				"bottom": 24,
+				"side": 23,
+				"top": 24
+			},
+			"textures": {
+				"bottom": "palm_log_top",
+				"side": "palm_log_side",
+				"top": "palm_log_top"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "foliage",
+			"display_name": "Palm Leaves",
+			"flag_mask": 17408,
+			"flags": [
+				"solid",
+				"cutout"
+			],
+			"id": 24,
+			"name": "palm_leaves",
+			"texture_layers": {
+				"bottom": 22,
+				"side": 22,
+				"top": 22
+			},
+			"textures": {
+				"side": "palm_leaves"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
 		}
 	],
 	"texture_layers": {
@@ -573,21 +624,24 @@
 		"grass_side": 11,
 		"grass_top": 12,
 		"iron_ore": 13,
-		"leaves_bottom": 14,
-		"leaves_side": 15,
-		"leaves_top": 16,
-		"log_side": 17,
+		"oak_leaves_bottom": 14,
+		"oak_leaves_side": 15,
+		"oak_leaves_top": 16,
+		"oak_log_side": 17,
 		"oak_log_top": 18,
-		"poppy_side": 19,
-		"sand_side": 20,
-		"sandstone_side": 21,
-		"short_grass_side": 22,
-		"stone": 23,
-		"tallgrass_side": 24,
-		"wood_bottom": 25,
-		"wood_side": 26,
-		"wood_top": 27
+		"oak_wood_bottom": 19,
+		"oak_wood_side": 20,
+		"oak_wood_top": 21,
+		"palm_leaves": 22,
+		"palm_log_side": 23,
+		"palm_log_top": 24,
+		"poppy_side": 25,
+		"sand_side": 26,
+		"sandstone_side": 27,
+		"short_grass_side": 28,
+		"stone": 29,
+		"tallgrass_side": 30
 	},
 	"version": 1,
-	"water_texture_layer": 28
+	"water_texture_layer": 31
 }

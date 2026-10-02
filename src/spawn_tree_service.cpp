@@ -170,6 +170,32 @@ void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
 				}
 
 				// Five tapered layers make a rounded crown instead of a flat box.
+				if (candidate.profile.shape == TreeProfile::Shape::PALM) {
+					const int top = base_y + trunk_h - 1;
+					put(wx, top + 1, wz, leaves_block, false);
+					// Eight connected fronds rise at the crown and droop at the tips.
+					for (int dx = -1; dx <= 1; ++dx) {
+						for (int dz = -1; dz <= 1; ++dz) {
+							if (dx == 0 && dz == 0) continue;
+							const int reach = std::max(2, crown - int(leaf_hash(shape_seed, dx, 0, dz) % 2));
+							for (int step = 1; step <= reach; ++step) {
+								const int y = top + (step <= 2 ? 1 : 0) - (step == reach ? 1 : 0);
+								const int px = wx + dx * step, pz = wz + dz * step;
+								put(px, y, pz, leaves_block, false);
+								if (step == reach) put(px, y + 1, pz, leaves_block, false);
+								// Fill diagonal corners so each frond stays connected.
+								if (dx && dz) put(px - dx, y, pz, leaves_block, false);
+								if (step > 1 && step < reach) {
+									put(px + dz, y, pz - dx, leaves_block, false);
+									put(px - dz, y, pz + dx, leaves_block, false);
+								}
+							}
+						}
+					}
+					for (int dy = -1; dy < trunk_h; ++dy)
+						put(wx, base_y + dy, wz, log_block, true, dy == -1);
+					continue;
+				}
 				for (int layer = 0; layer < 5; ++layer) {
 					const int dy = trunk_h - 2 + layer;
 					const int radius = (layer == 1 || layer == 2) ? crown : (layer == 4 ? 0 : std::max(1,crown-1));

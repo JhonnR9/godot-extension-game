@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dv16er8nk7rnh"
-path="res://.godot/imported/log_side.png-aea0cc3e8fc7c2fb32f54044e27af83b.ctex"
+uid="uid://b0460ou7xsxns"
+path="res://.godot/imported/oak_log_bottom.png-c2887424fd1e10e02db6adc381ac8d93.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/blocks/log_side.png"
-dest_files=["res://.godot/imported/log_side.png-aea0cc3e8fc7c2fb32f54044e27af83b.ctex"]
+source_file="res://textures/blocks/oak_log_bottom.png"
+dest_files=["res://.godot/imported/oak_log_bottom.png-c2887424fd1e10e02db6adc381ac8d93.ctex"]
 
 [params]
 

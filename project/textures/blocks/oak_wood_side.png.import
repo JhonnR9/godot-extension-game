@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b0460ou7xsxns"
-path="res://.godot/imported/log_bottom.png-bdbf8f665f173f7ba8e86dc0b627b86a.ctex"
+uid="uid://c577tkfs6ua65"
+path="res://.godot/imported/oak_wood_side.png-6be17c1b054e346633a00fe30ec6989b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/blocks/log_bottom.png"
-dest_files=["res://.godot/imported/log_bottom.png-bdbf8f665f173f7ba8e86dc0b627b86a.ctex"]
+source_file="res://textures/blocks/oak_wood_side.png"
+dest_files=["res://.godot/imported/oak_wood_side.png-6be17c1b054e346633a00fe30ec6989b.ctex"]
 
 [params]
 

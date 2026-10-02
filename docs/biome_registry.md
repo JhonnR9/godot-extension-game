@@ -115,7 +115,12 @@ em `src/cave_tunnels.h` e `src/underground_deposits.h`.
 `trunk`, `leaves` e uma faixa climática opcional. O valor máximo limita candidatos
 por coluna de chunk, não garante uma quantidade exata: água e biomas inaptos
 podem descartar candidatos. Árvores mantêm a copa em cinco camadas do modelo
-atual de carvalho. Outros formatos de árvore ainda precisam de um novo gerador.
+atual de carvalho com `shape: "oak"` (padrão). `shape: "palm"` usa um tronco
+alto com oito folhas radiais que descem nas pontas. A praia configura palmeiras
+com `palm_log`/`palm_leaves`, altura de 7 a 10 e até dois candidatos por chunk.
+Só colunas secas acima da água recebem árvores; deserto e oceano não possuem
+candidatos de palmeira. Os blocos da árvore original são `oak_log`, `oak_leaves`
+e `oak_wood`; seus IDs 8, 9 e 4 foram preservados para mundos salvos.
 
 `vegetation` configura `patch_size`, `coverage_min`/`coverage_max` e
 `flowers_min`/`flowers_max`. Cobertura usa milésimos: 120 significa 12% das

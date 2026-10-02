@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dao52f1xqak2y"
-path="res://.godot/imported/leaves_side.png-799e6741a2f9b5448a7c5fb200a16213.ctex"
+uid="uid://cdatef2dbnpck"
+path="res://.godot/imported/oak_wood_bottom.png-fbb239ae9a2cd96f98062b0cb2f5965e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/blocks/leaves_side.png"
-dest_files=["res://.godot/imported/leaves_side.png-799e6741a2f9b5448a7c5fb200a16213.ctex"]
+source_file="res://textures/blocks/oak_wood_bottom.png"
+dest_files=["res://.godot/imported/oak_wood_bottom.png-fbb239ae9a2cd96f98062b0cb2f5965e.ctex"]
 
 [params]
 

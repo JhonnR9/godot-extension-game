@@ -20,7 +20,7 @@ alterações em recursos compartilhados. Parâmetros visuais mudam a 10 Hz.
 
 Os minérios de ferro e diamante têm texturas próprias de rocha com inclusões,
 em vez de reutilizar pedra com tint uniforme. Troncos de carvalho usam
-`log_side` na casca e `oak_log_top` no topo e na base, com anéis de crescimento.
+`oak_log_side` na casca e `oak_log_top` no topo e na base, com anéis de crescimento.
 As novas plantas são margarida, centáurea, papoula, grama baixa e samambaia.
 As texturas continuam em RGBA 32 × 32, no atlas gerado pelo Block Registry.
 IDs existentes são preservados; as novas plantas usam IDs 17–21.
