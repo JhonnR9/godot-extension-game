@@ -1,6 +1,8 @@
 shader_type spatial;
 render_mode unshaded, blend_mix, depth_draw_opaque, cull_back;
 
+global uniform float world_daylight;
+
 uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_nearest;
 
 group_uniforms water;
@@ -50,14 +52,16 @@ void fragment() {
 
 	float wave_noise = value_noise(water_uv * 2.0);
 	float wave_intensity = smoothstep(WDFreq, WDSize, wave_noise);
-	vec3 animated_water = waterColor.rgb + wave_intensity * vec3(WDBrightness * 0.12);
+	float water_light = mix(0.12, 1.0, world_daylight);
+	vec3 lit_water_color = waterColor.rgb * water_light;
+	vec3 animated_water = (waterColor.rgb + wave_intensity * vec3(WDBrightness * 0.12)) * water_light;
 
 	vec2 background_uv = SCREEN_UV;
 	background_uv.x += (distortion_noise - 0.5) * backGroundDirX;
 	background_uv.y += (distortion_noise - 0.5) * backGroundDirY;
 	vec3 refracted_background = texture(screen_texture, background_uv).rgb;
 	vec3 water_color = mix(refracted_background, animated_water, 0.2);
-	water_color = mix(water_color, waterColor.rgb, colorCorection);
+	water_color = mix(water_color, lit_water_color, colorCorection);
 
 	ALBEDO = water_color;
 	ALPHA = 0.99;

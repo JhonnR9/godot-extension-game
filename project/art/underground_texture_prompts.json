@@ -1,0 +1,20 @@
+{
+  "tool": "image_gen (built-in)",
+  "conversion": "Nearest-neighbor resampling to RGBA32x32 using ImageMagick.",
+  "assets": [
+    {
+      "name": "stone",
+      "path": "res://textures/blocks/stone.png",
+      "source": "/home/jhonn/.codex/generated_images/01a0f9a5-1eaa-74a0-bdf9-01fbc5a0efd9/exec-864fd72b-8d5a-4e60-a7ec-2e771765c4fc.png",
+      "transparent_background": false,
+      "prompt": "Use case: stylized-concept. Asset type: a single flat production voxel game tile at 32x32 logical pixels enlarged with nearest-neighbor. Input images are STYLE and BASE STONE references only; do not copy their copper or cyan inclusions. A seamless neutral gray stone texture matching the base rock around the inclusions in the two reference ore textures. Remove ALL mineral inclusions: ONLY stone. Fine irregular compact mottled gray patches and very subtle cracks, quieter contrast than the ores. No cobblestone outlines, no brown tint, no concentric swirls, no large rocks. Restrained grayscale pixel-art palette, crisp square pixels, same detail scale as references. Fill the whole square canvas edge to edge, seamless tileable diffuse albedo, flat lighting, no scene, no perspective, no borders, no words, no watermark, no transparent regions. Will be downsampled to exactly32x32."
+    },
+    {
+      "name": "coal_ore",
+      "path": "res://textures/blocks/coal_ore.png",
+      "source": "/home/jhonn/.codex/generated_images/01a0f9a5-1eaa-74a0-bdf9-01fbc5a0efd9/exec-81a43953-722f-4565-9d1d-2eed29995695.png",
+      "transparent_background": false,
+      "prompt": "Use case: stylized-concept. Asset type: a single flat production voxel game tile at 32x32 logical pixels enlarged with nearest-neighbor. Input images are STYLE and BASE STONE references only; do not copy their copper or cyan inclusions. A seamless coal ore texture matching the neutral gray stone base in the two reference ore textures. Add scattered small black and graphite charcoal mineral clusters embedded into the rock, occupying about 20 percent. Small irregular connected black angular inclusions with very subtle dark gray highlights. No glowing pixels, no large lump, no brown tint. Restrained grayscale pixel-art palette, crisp square pixels, same detail scale as references. Fill the whole square canvas edge to edge, seamless tileable diffuse albedo, flat lighting, no scene, no perspective, no borders, no words, no watermark, no transparent regions. Will be downsampled to exactly32x32."
+    }
+  ]
+}

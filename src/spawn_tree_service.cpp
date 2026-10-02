@@ -39,7 +39,9 @@ TreeGenerationPass::CandidateList TreeGenerationPass::_calculate_chunk_candidate
 
 	CandidateList candidates;
 
-	if (_max_trees_per_chunk <= 0) return candidates;
+	const auto registry = context.settings.biome_registry ? context.settings.biome_registry : BiomeRegistry::defaults();
+	const int max_candidates = registry->max_tree_candidates();
+	if (max_candidates <= 0) return candidates;
 
 	uint64_t rng = static_cast<uint64_t>(_seed) ^
 			(static_cast<uint64_t>(static_cast<int64_t>(cx)) * 0x9E3779B97F4A7C15ULL) ^
@@ -47,24 +49,23 @@ TreeGenerationPass::CandidateList TreeGenerationPass::_calculate_chunk_candidate
 
 	next_rand(rng);
 
-	const int tree_count = static_cast<int>(next_rand(rng) % (_max_trees_per_chunk + 1));
+	const int tree_count = static_cast<int>(next_rand(rng) % (max_candidates + 1));
 
 	for (int i = 0; i < tree_count; ++i) {
 
 		const int lx = static_cast<int>(next_rand(rng) % Chunk::SIZE_X);
 		const int lz = static_cast<int>(next_rand(rng) % Chunk::SIZE_Z);
 
-		const int span = _max_trunk_height - _min_trunk_height + 1;
-		const int trunk_h = _min_trunk_height + static_cast<int>(next_rand(rng) % span);
-
-		const int32_t wx = cx * Chunk::SIZE_X + lx;
-		const int32_t wz = cz * Chunk::SIZE_Z + lz;
-
-		if (!context.trees_allowed_at(wx, wz)) continue;
-		const int32_t base_y = context.surface_height_at(wx, wz) + 1;
-
-		if (base_y <= context.water_level_at(wx, wz)) continue;
-		candidates.push_back({wx, wz, base_y, trunk_h, next_rand(rng)});
+        const uint64_t height_roll=next_rand(rng);
+        const int32_t wx=cx*Chunk::SIZE_X+lx, wz=cz*Chunk::SIZE_Z+lz;
+        const auto column=context.sample_column_at(wx,wz);
+        if(!column.trees_allowed || !column.definition) continue;
+        const auto &profile=column.definition->trees;
+        if(i>=profile.max_per_chunk) continue;
+        const int32_t base_y=column.surface_height+1;
+        if(base_y<=column.water_level) continue;
+        const int trunk_h=profile.min_height+int(height_roll%(profile.max_height-profile.min_height+1));
+        candidates.push_back({wx,wz,base_y,trunk_h,next_rand(rng),profile});
 
 	}
 
@@ -114,7 +115,7 @@ TreeGenerationPass::CandidateList TreeGenerationPass::_get_chunk_candidates(
 }
 
 void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
-	if (_max_trees_per_chunk <= 0) {
+	if (context.settings.biome_registry && context.settings.biome_registry->max_tree_candidates() <= 0) {
 		return;
 	}
 
@@ -132,19 +133,17 @@ void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
 		}
 		const voxel::Block existing = context.chunk.get_block(lx, ly, lz);
 		if (voxel::is_air(existing) ||
-				(replace_leaves && voxel::type(existing) == voxel::block_ids::leaves) ||
-				(replace_leaves && (voxel::type(existing) == voxel::block_ids::flower ||
-						voxel::type(existing) == voxel::block_ids::tall_grass)) ||
+				(replace_leaves && voxel::has_flag(voxel::default_block_flags(voxel::type(existing)), voxel::BLOCK_FLAG_CUTOUT)) ||
+				(replace_leaves && voxel::has_flag(voxel::default_block_flags(voxel::type(existing)), voxel::BLOCK_FLAG_CROSSED)) ||
 				(replace_ground && voxel::is_collidable(existing))) {
-			const GenerationLayer layer = voxel::type(block) == voxel::block_ids::log
+			const GenerationLayer layer = replace_leaves
 					? GenerationLayer::TREE_TRUNK
 					: GenerationLayer::TREE_FOLIAGE;
 			context.write_block(lx, ly, lz, block, layer);
 		}
 	};
 
-	const voxel::Block log_block = voxel::make_block(voxel::block_ids::log);
-	const voxel::Block leaves_block = voxel::make_block(voxel::block_ids::leaves, voxel::BLOCK_FLAG_CUTOUT);
+
 
 	for (int dcx = -1; dcx <= 1; ++dcx) {
 		for (int dcz = -1; dcz <= 1; ++dcz) {
@@ -157,20 +156,23 @@ void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
 				const int32_t base_y = candidate.base_y;
 				const int trunk_h = candidate.trunk_height;
 				const uint64_t shape_seed = candidate.shape_seed;
+                const int crown=candidate.profile.crown_radius;
+                const auto log_block=voxel::make_block(candidate.profile.trunk);
+                const auto leaves_block=voxel::make_block(candidate.profile.leaves);
 
 				if (base_y + trunk_h + 2 < origin_y || base_y - 1 > origin_y + Chunk::MAX_Y) {
 					continue;
 				}
 
-				if (wx + 2 < origin_x || wx - 2 >= origin_x + Chunk::SIZE_X ||
-						wz + 2 < origin_z || wz - 2 >= origin_z + Chunk::SIZE_Z) {
+				if (wx + crown < origin_x || wx - crown >= origin_x + Chunk::SIZE_X ||
+						wz + crown < origin_z || wz - crown >= origin_z + Chunk::SIZE_Z) {
 					continue;
 				}
 
 				// Five tapered layers make a rounded crown instead of a flat box.
 				for (int layer = 0; layer < 5; ++layer) {
 					const int dy = trunk_h - 2 + layer;
-					const int radius = (layer == 1 || layer == 2) ? 2 : (layer == 4 ? 0 : 1);
+					const int radius = (layer == 1 || layer == 2) ? crown : (layer == 4 ? 0 : std::max(1,crown-1));
 
 					for (int dx = -radius; dx <= radius; ++dx) {
 
@@ -178,12 +180,12 @@ void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
 							const int ax = ABS(dx);
 							const int az = ABS(dz);
 
-							if (radius == 2 && ax == 2 && az == 2) {
+							if (radius == crown && ax == crown && az == crown) {
 								continue;
 							}
                             
 							// Break up the outer silhouette with sparse, repeatable gaps.
-							const bool outer_edge = radius == 2 && (ax == 2 || az == 2);
+							const bool outer_edge = radius == crown && (ax == crown || az == crown);
 
 							if (outer_edge && (leaf_hash(shape_seed, wx + dx, base_y + dy, wz + dz) % 7 == 0)) {
 								continue;
@@ -193,10 +195,10 @@ void TreeGenerationPass::apply(ChunkGenerationContext &context) const {
 					}
 					// Add a few leaf tufts around the upper shoulder of the crown.
 					if (layer == 3) {
-						put(wx - 2, base_y + dy, wz, leaves_block, false);
-						put(wx + 2, base_y + dy, wz, leaves_block, false);
-						put(wx, base_y + dy, wz - 2, leaves_block, false);
-						put(wx, base_y + dy, wz + 2, leaves_block, false);
+						put(wx - crown, base_y + dy, wz, leaves_block, false);
+						put(wx + crown, base_y + dy, wz, leaves_block, false);
+						put(wx, base_y + dy, wz - crown, leaves_block, false);
+						put(wx, base_y + dy, wz + crown, leaves_block, false);
 					}
 				}
 

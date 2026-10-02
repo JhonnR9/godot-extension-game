@@ -17,10 +17,7 @@ namespace godot {
 // are complete and reappear identically if the chunk is unloaded and reloaded.
 class TreeGenerationPass final : public ChunkGenerationPass {
 public:
-	explicit TreeGenerationPass(int64_t p_seed, int p_max_trees_per_chunk = 4,
-			int p_min_trunk_height = 5, int p_max_trunk_height = 7) :
-			_seed(p_seed), _max_trees_per_chunk(p_max_trees_per_chunk),
-			_min_trunk_height(p_min_trunk_height), _max_trunk_height(p_max_trunk_height) {}
+	explicit TreeGenerationPass(int64_t p_seed) : _seed(p_seed) {}
 
 	void apply(ChunkGenerationContext &context) const override;
 
@@ -48,6 +45,7 @@ private:
 		int32_t base_y = 0;
 		int trunk_height = 0;
 		uint64_t shape_seed = 0;
+		TreeProfile profile;
 	};
 
 	using CandidateList = std::vector<TreeCandidate>;
@@ -62,9 +60,6 @@ private:
 	CandidateList _get_chunk_candidates(const ChunkGenerationContext &context, int32_t cx, int32_t cz) const;
 
 	int64_t _seed = 0;
-	int _max_trees_per_chunk = 4;
-	int _min_trunk_height = 5;
-	int _max_trunk_height = 7;
 
 	mutable std::mutex _cache_mutex;
 	mutable std::unordered_map<ChunkKey, CacheEntry, ChunkKeyHash> _candidate_cache;

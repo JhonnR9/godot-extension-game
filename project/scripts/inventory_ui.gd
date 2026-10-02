@@ -50,16 +50,11 @@ func _load_blocks() -> void:
 	for block: Dictionary in data.blocks:
 		if int(block.get("id", 0)) == 0:
 			continue
-		var textures: Dictionary = block.get("textures", {})
-		var texture_name := str(textures.get("side", textures.get("top", textures.get("bottom", "stone_side"))))
-		if texture_name.is_empty():
-			texture_name = "stone_side"
 		blocks.append({
 			"id": int(block.id),
 			"name": str(block.get("display_name", block.name)),
 			"category": str(block.get("category", "misc")),
 			"flags": block.get("flags", []),
-			"icon": "res://textures/blocks/%s.png" % texture_name,
 		})
 
 func _configure_grid(grid: Control, rows: int, columns: int, slot_size: Vector2i, creative_source: bool) -> void:
@@ -79,7 +74,7 @@ func _make_block_item(block: Dictionary):
 	item.set_name(str(block.name))
 	item.set_hint_description("%s | %s" % [block.category, ", ".join(PackedStringArray(block.flags))])
 	item.set_item_amount(1)
-	item.set_icon(load(str(block.icon)))
+	item.set_icon(BlockIconCache.get_icon(int(block.id)))
 	return item
 
 func _block_by_id(block_id: int) -> Dictionary:

@@ -26,9 +26,9 @@
 			"id": 1,
 			"name": "grass",
 			"texture_layers": {
-				"bottom": 5,
-				"side": 6,
-				"top": 7
+				"bottom": 10,
+				"side": 11,
+				"top": 12
 			},
 			"textures": {
 				"bottom": "grass_bottom",
@@ -52,9 +52,9 @@
 			"id": 2,
 			"name": "dirt",
 			"texture_layers": {
-				"bottom": 1,
-				"side": 2,
-				"top": 3
+				"bottom": 5,
+				"side": 6,
+				"top": 7
 			},
 			"textures": {
 				"bottom": "dirt_down",
@@ -78,14 +78,12 @@
 			"id": 3,
 			"name": "stone",
 			"texture_layers": {
-				"bottom": 16,
-				"side": 17,
-				"top": 18
+				"bottom": 23,
+				"side": 23,
+				"top": 23
 			},
 			"textures": {
-				"bottom": "stone_bottom",
-				"side": "stone_side",
-				"top": "stone_top"
+				"side": "stone"
 			},
 			"tint": [
 				1.0,
@@ -104,9 +102,9 @@
 			"id": 4,
 			"name": "wood",
 			"texture_layers": {
-				"bottom": 20,
-				"side": 21,
-				"top": 22
+				"bottom": 25,
+				"side": 26,
+				"top": 27
 			},
 			"textures": {
 				"bottom": "wood_bottom",
@@ -130,19 +128,17 @@
 			"id": 5,
 			"name": "deepslate",
 			"texture_layers": {
-				"bottom": 16,
-				"side": 17,
-				"top": 18
+				"bottom": 23,
+				"side": 23,
+				"top": 23
 			},
 			"textures": {
-				"bottom": "stone_bottom",
-				"side": "stone_side",
-				"top": "stone_top"
+				"side": "stone"
 			},
 			"tint": [
-				0.55,
-				0.58,
-				0.64,
+				0.550000011920929,
+				0.579999983310699,
+				0.639999985694885,
 				1.0
 			]
 		},
@@ -156,19 +152,17 @@
 			"id": 6,
 			"name": "iron_ore",
 			"texture_layers": {
-				"bottom": 16,
-				"side": 17,
-				"top": 18
+				"bottom": 13,
+				"side": 13,
+				"top": 13
 			},
 			"textures": {
-				"bottom": "stone_bottom",
-				"side": "stone_side",
-				"top": "stone_top"
+				"side": "iron_ore"
 			},
 			"tint": [
 				1.0,
-				0.62,
-				0.3,
+				1.0,
+				1.0,
 				1.0
 			]
 		},
@@ -182,25 +176,23 @@
 			"id": 7,
 			"name": "diamond_ore",
 			"texture_layers": {
-				"bottom": 16,
-				"side": 17,
-				"top": 18
+				"bottom": 4,
+				"side": 4,
+				"top": 4
 			},
 			"textures": {
-				"bottom": "stone_bottom",
-				"side": "stone_side",
-				"top": "stone_top"
+				"side": "diamond_ore"
 			},
 			"tint": [
-				0.28,
-				0.86,
+				1.0,
+				1.0,
 				1.0,
 				1.0
 			]
 		},
 		{
 			"category": "foliage",
-			"display_name": "Log",
+			"display_name": "Oak Log",
 			"flag_mask": 1024,
 			"flags": [
 				"solid"
@@ -208,14 +200,14 @@
 			"id": 8,
 			"name": "log",
 			"texture_layers": {
-				"bottom": 11,
-				"side": 12,
-				"top": 13
+				"bottom": 18,
+				"side": 17,
+				"top": 18
 			},
 			"textures": {
-				"bottom": "log_bottom",
+				"bottom": "oak_log_top",
 				"side": "log_side",
-				"top": "log_top"
+				"top": "oak_log_top"
 			},
 			"tint": [
 				1.0,
@@ -235,9 +227,9 @@
 			"id": 9,
 			"name": "leaves",
 			"texture_layers": {
-				"bottom": 8,
-				"side": 9,
-				"top": 10
+				"bottom": 14,
+				"side": 15,
+				"top": 16
 			},
 			"textures": {
 				"bottom": "leaves_bottom",
@@ -254,9 +246,10 @@
 		{
 			"category": "fluid",
 			"display_name": "Water",
-			"flag_mask": 2048,
+			"flag_mask": 34816,
 			"flags": [
-				"transparent"
+				"transparent",
+				"ocean"
 			],
 			"id": 10,
 			"name": "water",
@@ -279,9 +272,9 @@
 			"id": 11,
 			"name": "sand",
 			"texture_layers": {
-				"bottom": 14,
-				"side": 14,
-				"top": 14
+				"bottom": 20,
+				"side": 20,
+				"top": 20
 			},
 			"textures": {
 				"side": "sand_side"
@@ -303,9 +296,9 @@
 			"id": 12,
 			"name": "sandstone",
 			"texture_layers": {
-				"bottom": 15,
-				"side": 15,
-				"top": 15
+				"bottom": 21,
+				"side": 21,
+				"top": 21
 			},
 			"textures": {
 				"side": "sandstone_side"
@@ -352,9 +345,9 @@
 			"id": 14,
 			"name": "flower",
 			"texture_layers": {
-				"bottom": 4,
-				"side": 4,
-				"top": 4
+				"bottom": 9,
+				"side": 9,
+				"top": 9
 			},
 			"textures": {
 				"side": "flower_side"
@@ -377,9 +370,9 @@
 			"id": 15,
 			"name": "tall_grass",
 			"texture_layers": {
-				"bottom": 19,
-				"side": 19,
-				"top": 19
+				"bottom": 24,
+				"side": 24,
+				"top": 24
 			},
 			"textures": {
 				"side": "tallgrass_side"
@@ -401,48 +394,200 @@
 			"id": 16,
 			"name": "bedrock",
 			"texture_layers": {
-				"bottom": 16,
-				"side": 17,
-				"top": 18
+				"bottom": 23,
+				"side": 23,
+				"top": 23
 			},
 			"textures": {
-				"bottom": "stone_bottom",
-				"side": "stone_side",
-				"top": "stone_top"
+				"side": "stone"
 			},
 			"tint": [
-				0.35,
-				0.36,
-				0.39,
+				0.349999994039536,
+				0.360000014305115,
+				0.389999985694885,
+				1.0
+			]
+		},
+		{
+			"category": "foliage",
+			"display_name": "Daisy",
+			"flag_mask": 81920,
+			"flags": [
+				"cutout",
+				"crossed"
+			],
+			"id": 17,
+			"name": "daisy",
+			"texture_layers": {
+				"bottom": 3,
+				"side": 3,
+				"top": 3
+			},
+			"textures": {
+				"side": "daisy_side"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "foliage",
+			"display_name": "Cornflower",
+			"flag_mask": 81920,
+			"flags": [
+				"cutout",
+				"crossed"
+			],
+			"id": 18,
+			"name": "cornflower",
+			"texture_layers": {
+				"bottom": 2,
+				"side": 2,
+				"top": 2
+			},
+			"textures": {
+				"side": "cornflower_side"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "foliage",
+			"display_name": "Poppy",
+			"flag_mask": 81920,
+			"flags": [
+				"cutout",
+				"crossed"
+			],
+			"id": 19,
+			"name": "poppy",
+			"texture_layers": {
+				"bottom": 19,
+				"side": 19,
+				"top": 19
+			},
+			"textures": {
+				"side": "poppy_side"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "foliage",
+			"display_name": "Short Grass",
+			"flag_mask": 81920,
+			"flags": [
+				"cutout",
+				"crossed"
+			],
+			"id": 20,
+			"name": "short_grass",
+			"texture_layers": {
+				"bottom": 22,
+				"side": 22,
+				"top": 22
+			},
+			"textures": {
+				"side": "short_grass_side"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "foliage",
+			"display_name": "Fern",
+			"flag_mask": 81920,
+			"flags": [
+				"cutout",
+				"crossed"
+			],
+			"id": 21,
+			"name": "fern",
+			"texture_layers": {
+				"bottom": 8,
+				"side": 8,
+				"top": 8
+			},
+			"textures": {
+				"side": "fern_side"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			]
+		},
+		{
+			"category": "ore",
+			"display_name": "Coal Ore",
+			"flag_mask": 1024,
+			"flags": [
+				"solid"
+			],
+			"id": 22,
+			"name": "coal_ore",
+			"texture_layers": {
+				"bottom": 1,
+				"side": 1,
+				"top": 1
+			},
+			"textures": {
+				"side": "coal_ore"
+			},
+			"tint": [
+				1.0,
+				1.0,
+				1.0,
 				1.0
 			]
 		}
 	],
 	"texture_layers": {
 		"cactus_side": 0,
-		"dirt_down": 1,
-		"dirt_side": 2,
-		"dirt_top": 3,
-		"flower_side": 4,
-		"grass_bottom": 5,
-		"grass_side": 6,
-		"grass_top": 7,
-		"leaves_bottom": 8,
-		"leaves_side": 9,
-		"leaves_top": 10,
-		"log_bottom": 11,
-		"log_side": 12,
-		"log_top": 13,
-		"sand_side": 14,
-		"sandstone_side": 15,
-		"stone_bottom": 16,
-		"stone_side": 17,
-		"stone_top": 18,
-		"tallgrass_side": 19,
-		"wood_bottom": 20,
-		"wood_side": 21,
-		"wood_top": 22
+		"coal_ore": 1,
+		"cornflower_side": 2,
+		"daisy_side": 3,
+		"diamond_ore": 4,
+		"dirt_down": 5,
+		"dirt_side": 6,
+		"dirt_top": 7,
+		"fern_side": 8,
+		"flower_side": 9,
+		"grass_bottom": 10,
+		"grass_side": 11,
+		"grass_top": 12,
+		"iron_ore": 13,
+		"leaves_bottom": 14,
+		"leaves_side": 15,
+		"leaves_top": 16,
+		"log_side": 17,
+		"oak_log_top": 18,
+		"poppy_side": 19,
+		"sand_side": 20,
+		"sandstone_side": 21,
+		"short_grass_side": 22,
+		"stone": 23,
+		"tallgrass_side": 24,
+		"wood_bottom": 25,
+		"wood_side": 26,
+		"wood_top": 27
 	},
 	"version": 1,
-	"water_texture_layer": 23
+	"water_texture_layer": 28
 }

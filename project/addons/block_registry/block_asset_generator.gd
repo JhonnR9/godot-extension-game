@@ -102,7 +102,7 @@ func rebuild() -> bool:
 		return false
 	if not _write_json(GENERATED_REGISTRY_PATH, generated_registry):
 		return false
-	if not _write_header(generated_blocks, texture_images.size()):
+	if not _write_header(generated_blocks, texture_images.size(), texture_layers):
 		return false
 	return _write_texture_array(texture_images)
 
@@ -183,7 +183,7 @@ func _write_json(path: String, value: Variant) -> bool:
 	return true
 
 
-func _write_header(blocks: Array[Dictionary], water_layer: int) -> bool:
+func _write_header(blocks: Array[Dictionary], water_layer: int, texture_layers: Dictionary) -> bool:
 	var output := "#ifndef BLOCK_REGISTRY_GENERATED_H\n#define BLOCK_REGISTRY_GENERATED_H\n\n#include <cstdint>\n#include <string_view>\n\nnamespace voxel {\nnamespace block_ids {\n"
 	for block: Dictionary in blocks:
 		output += "inline constexpr std::uint16_t %s = %d;\n" % [str(block.name), int(block.id)]
@@ -193,7 +193,10 @@ func _write_header(blocks: Array[Dictionary], water_layer: int) -> bool:
 	output += "\t\tdefault: return 0u;\n\t}\n}\n\ninline constexpr std::uint16_t block_id_from_name(std::string_view name) {\n"
 	for block: Dictionary in blocks:
 		output += "\tif (name == \"%s\") return block_ids::%s;\n" % [str(block.name), str(block.name)]
-	output += "\treturn 0xffff;\n}\n\ninline constexpr int WATER_TEXTURE_LAYER = %d;\n}\n\n#endif\n" % water_layer
+	output += "\treturn 0xffff;\n}\n\ninline constexpr int texture_layer_from_name(std::string_view name) {\n"
+	for texture_name: String in texture_layers:
+		output += "\tif (name == %s) return %d;\n" % [JSON.stringify(texture_name), int(texture_layers[texture_name])]
+	output += "\treturn -1;\n}\n\ninline constexpr int WATER_TEXTURE_LAYER = %d;\n}\n\n#endif\n" % water_layer
 	var file := FileAccess.open(GENERATED_HEADER_PATH, FileAccess.WRITE)
 	if file == null:
 		push_error("Could not write generated C++ registry header.")

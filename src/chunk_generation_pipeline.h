@@ -2,6 +2,7 @@
 #define CHUNK_GENERATION_PIPELINE_H
 
 #include "chunk_model.h"
+#include "biome_registry.h"
 #include "godot_cpp/classes/fast_noise_lite.hpp"
 #include "godot_cpp/classes/ref.hpp"
 
@@ -13,27 +14,15 @@ namespace godot {
 struct TerrainSettings {
 	int terrain_base_height = 24;
 	float terrain_amplitude = 9.0f;
-	float cave_threshold = 0.72f;
 	int water_level = 24;
 	int64_t world_seed = 0;
+	std::shared_ptr<const BiomeRegistry> biome_registry;
 	Ref<FastNoiseLite> terrain_noise;
-	Ref<FastNoiseLite> cave_noise;
-	Ref<FastNoiseLite> cave_tunnel_noise;
-	Ref<FastNoiseLite> cave_cross_tunnel_noise;
-	Ref<FastNoiseLite> ore_noise;
 	Ref<FastNoiseLite> biome_noise;
 	Ref<FastNoiseLite> dune_noise;
 	Ref<FastNoiseLite> mountain_noise;
 	Ref<FastNoiseLite> ocean_noise;
 	Ref<FastNoiseLite> river_noise;
-};
-
-enum class BiomeId : uint16_t {
-	PLAINS = 0,
-	DESERT = 1,
-	OCEAN = 2,
-	RIVER = 3,
-	BEACH = 4
 };
 
 // Generation writes are ordered by ownership. A later layer can replace an
@@ -48,16 +37,19 @@ enum class GenerationLayer : uint8_t {
 	TREE_TRUNK = 7
 };
 
-// Mutable per-column input/output for generation passes. A biome-selection pass
-// can configure these values before TerrainSurfacePass runs.
+// Complete base column sampled once before terrain is filled. The definition
+// pointer belongs to settings.biome_registry (or the static fallback registry).
 struct ColumnGenerationData {
+	const BiomeDefinition *definition = nullptr;
+	int deep_rock_below_y = -32;
+	bool surface_water = true;
 	int32_t surface_height = 0;
 	int32_t height_offset = 0;
 	float height_scale = 1.0f;
 	int32_t water_level = 24;
 	uint16_t biome_id = 0;
 	int32_t subsurface_depth = 15;
-	float desert_weight = 0.0f;
+	float climate_weight = 0.0f;
 	float ocean_weight = 0.0f;
 	float river_weight = 0.0f;
 	bool trees_allowed = true;
@@ -72,14 +64,16 @@ struct ChunkGenerationContext {
 	Chunk &chunk;
 	const TerrainSettings &settings;
 	std::vector<ColumnGenerationData> columns;
+	bool columns_ready = false;
 	std::vector<uint8_t> block_write_layers;
 
 	ChunkGenerationContext(const Vector3i &p_chunk_position, Chunk &p_chunk, const TerrainSettings &p_settings);
 	ColumnGenerationData &column(int x, int z);
 	const ColumnGenerationData &column(int x, int z) const;
+	ColumnGenerationData sample_column_at(int32_t world_x, int32_t world_z) const;
 	int32_t surface_height_at(int32_t world_x, int32_t world_z) const;
 	int32_t water_level_at(int32_t world_x, int32_t world_z) const;
-	float desert_weight_at(int32_t world_x, int32_t world_z) const;
+	float climate_weight_at(int32_t world_x, int32_t world_z) const;
 	bool trees_allowed_at(int32_t world_x, int32_t world_z) const;
 	int32_t world_x(int local_x) const;
 	int32_t world_y(int local_y) const;

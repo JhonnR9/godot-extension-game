@@ -1,260 +1,108 @@
 #include "chunk_generator.h"
+#include "cave_tunnels.h"
+#include "surface_vegetation.h"
+#include "terrain_sampler.h"
+#include "underground_deposits.h"
+#include <array>
 
 #include <godot_cpp/core/math.hpp>
 
 namespace godot {
 
 void BiomeSelectionPass::apply(ChunkGenerationContext &context) const {
-	const TerrainSettings &settings = context.settings;
-
-	for (int z = 0; z < Chunk::SIZE_Z; ++z) {
-		for (int x = 0; x < Chunk::SIZE_X; ++x) {
-			const int32_t wx = context.world_x(x);
-			const int32_t wz = context.world_z(z);
-			ColumnGenerationData &column = context.column(x, z);
-			const float desert = context.desert_weight_at(wx, wz);
-			column.desert_weight = desert;
-			column.river_weight = settings.river_noise.is_valid() ? settings.river_noise->get_noise_2d(wx, wz) : 1.0f;
-			const float terrain = settings.terrain_noise.is_valid() ? settings.terrain_noise->get_noise_2d(wx, wz) : 0.0f;
-			// High frequency detail bends the otherwise very broad ocean boundary.
-			column.ocean_weight = settings.ocean_noise.is_valid()
-					? settings.ocean_noise->get_noise_2d(wx, wz) + terrain * 0.16f : 0.0f;
-			const float mountain = settings.mountain_noise.is_valid() ? settings.mountain_noise->get_noise_2d(wx, wz) : terrain;
-			const float mountain_ridge = 1.0f - Math::abs(mountain);
-			const float dune = settings.dune_noise.is_valid() ? settings.dune_noise->get_noise_2d(wx, wz) : 0.0f;
-			const float mountain_offset = Math::pow(mountain_ridge, 2.0f) * 19.0f - 5.0f;
-			const float dune_offset = (1.0f - Math::abs(dune)) * 7.0f - 2.5f;
-			column.height_offset = Math::round(Math::lerp(mountain_offset, dune_offset, desert));
-			column.height_scale = Math::lerp(2.4f, 0.48f, desert);
-			// Sea level is a world-wide fixed height. Biomes can change terrain,
-			// but must not raise the water surface above this elevation.
-			column.water_level = settings.water_level;
-			column.trees_allowed = desert < 0.45f;
-			if (desert > 0.68f) {
-				column.biome_id = static_cast<uint16_t>(BiomeId::DESERT);
-				column.surface_block = voxel::make_block(voxel::block_ids::sand);
-				column.subsurface_block = voxel::make_block(voxel::block_ids::sand);
-				column.stone_block = voxel::make_block(voxel::block_ids::sandstone);
-				column.subsurface_depth = 4;
-			} else if (desert > 0.34f) {
-				// A broad scrubby transition belt blends the two palettes.
-				column.surface_block = voxel::make_block(voxel::block_ids::dirt);
-				column.subsurface_depth = 7;
-			}
-		}
-	}
+    for(int z=0;z<Chunk::SIZE_Z;++z) for(int x=0;x<Chunk::SIZE_X;++x)
+        context.column(x,z)=TerrainSampler::sample(context.settings,context.world_x(x),context.world_z(z));
+    context.columns_ready=true;
 }
 
 void VegetationGenerationPass::apply(ChunkGenerationContext &context) const {
-	const int32_t origin_x = context.chunk_position.x * Chunk::SIZE_X;
-	const int32_t origin_y = context.chunk_position.y * Chunk::SIZE_Y;
-	const int32_t origin_z = context.chunk_position.z * Chunk::SIZE_Z;
-	auto hash = [this](int32_t x, int32_t z) {
-		uint64_t value = static_cast<uint64_t>(_seed) ^ (static_cast<uint64_t>(static_cast<int64_t>(x)) * 0x9E3779B97F4A7C15ULL) ^
-				(static_cast<uint64_t>(static_cast<int64_t>(z)) * 0xC2B2AE3D27D4EB4FULL);
-		value = (value ^ (value >> 30)) * 0xBF58476D1CE4E5B9ULL;
-		value = (value ^ (value >> 27)) * 0x94D049BB133111EBULL;
-		return value ^ (value >> 31);
-	};
-	for (int z = 0; z < Chunk::SIZE_Z; ++z) {
-		for (int x = 0; x < Chunk::SIZE_X; ++x) {
-			const auto &column = context.column(x, z);
-			const int32_t wx = origin_x + x;
-			const int32_t wz = origin_z + z;
-			const int32_t y = column.surface_height + 1;
-			if (y <= column.water_level) continue;
-			const uint64_t roll = hash(wx, wz) % 1000;
-			if (column.desert_weight > 0.97f && column.biome_id == static_cast<uint16_t>(BiomeId::DESERT) &&
-					voxel::type(column.surface_block) == voxel::block_ids::sand) {
-				if (roll >= 6) continue;
-				if (y >= origin_y && y < origin_y + Chunk::SIZE_Y) {
-					const int ground_y = column.surface_height - origin_y;
-					const int plant_y = y - origin_y;
-					if (ground_y < 0 || ground_y >= Chunk::SIZE_Y ||
-							voxel::type(context.chunk.get_block(x, ground_y, z)) != voxel::block_ids::sand ||
-							!voxel::is_air(context.chunk.get_block(x, plant_y, z))) {
-						continue;
-					}
-				}
-				const int height = 1 + static_cast<int>((hash(wx ^ 0x5A5A, wz) >> 8) % 3);
-				for (int dy = 0; dy < height && y + dy < origin_y + Chunk::SIZE_Y; ++dy) {
-					if (y + dy < origin_y) continue;
-					context.write_block(x, y + dy - origin_y, z,
-							voxel::make_block(voxel::block_ids::cactus), GenerationLayer::VEGETATION);
-				}
-			} else if (column.desert_weight < 0.34f && roll < 58 && y >= origin_y && y < origin_y + Chunk::SIZE_Y) {
-				const uint16_t plant = roll < 28 ? voxel::block_ids::flower : voxel::block_ids::tall_grass;
-				if (voxel::is_air(context.chunk.get_block(x, y - origin_y, z))) {
-					context.write_block(x, y - origin_y, z,
-							voxel::make_block(plant, voxel::BLOCK_FLAG_CUTOUT), GenerationLayer::VEGETATION);
-				}
-			}
-		}
-	}
+    for(int z=0;z<Chunk::SIZE_Z;++z) for(int x=0;x<Chunk::SIZE_X;++x) {
+        const auto &c=context.column(x,z);
+        if(!c.definition || c.surface_height+1<=c.water_level) continue;
+        const auto &p=c.definition->vegetation;
+        if(p.coverage_max==0 || c.climate_weight<p.climate_min || (c.climate_weight>=p.climate_max && p.climate_max<1)) continue;
+        const auto plant=voxel::sample_surface_plant(p,_seed,context.world_x(x),context.world_z(z));
+        if(plant.block==voxel::block_ids::air) continue;
+        const int ground=c.surface_height-context.world_y(0);
+        if(ground>=0 && ground<Chunk::SIZE_Y && context.chunk.get_block(x,ground,z)!=c.surface_block) continue;
+        for(int dy=1;dy<=plant.height;++dy) {
+            const int y=ground+dy;
+            if(y>=0 && y<Chunk::SIZE_Y && voxel::is_air(context.chunk.get_block(x,y,z)))
+                context.write_block(x,y,z,voxel::make_block(plant.block),GenerationLayer::VEGETATION);
+        }
+    }
 }
 
 void TerrainSurfacePass::apply(ChunkGenerationContext &context) const {
-	const TerrainSettings &settings = context.settings;
-	for (int z = 0; z < Chunk::SIZE_Z; ++z) {
-		for (int x = 0; x < Chunk::SIZE_X; ++x) {
-			ColumnGenerationData &column = context.column(x, z);
-			const int32_t wx = context.world_x(x);
-			const int32_t wz = context.world_z(z);
-			const float noise = settings.terrain_noise.is_valid()
-					? settings.terrain_noise->get_noise_2d(wx, wz)
-					: 0.0f;
-			column.surface_height = settings.terrain_base_height + column.height_offset +
-					Math::round(noise * settings.terrain_amplitude * column.height_scale);
-			const bool is_desert = column.biome_id == static_cast<uint16_t>(BiomeId::DESERT);
-			float ocean_t = Math::clamp((0.25f - column.ocean_weight) / 0.80f, 0.0f, 1.0f);
-			ocean_t = ocean_t * ocean_t * (3.0f - 2.0f * ocean_t);
-			if (is_desert) {
-				// Keep the desert's dry shoreline transition narrow enough that the
-				// entire inland dune field does not collapse to a flat shelf.
-				float desert_coast_t = Math::clamp((-column.ocean_weight + 0.05f) / 0.65f, 0.0f, 1.0f);
-				desert_coast_t = desert_coast_t * desert_coast_t * (3.0f - 2.0f * desert_coast_t);
-				ocean_t = desert_coast_t;
-			}
-			// Blend the ocean bed and dry desert shore across the biome boundary,
-			// instead of switching the coast height at a single desert threshold.
-			float dry_coast = Math::clamp((column.desert_weight - 0.34f) / 0.34f, 0.0f, 1.0f);
-			dry_coast = dry_coast * dry_coast * (3.0f - 2.0f * dry_coast);
-			const float coast_target = Math::lerp(static_cast<float>(column.water_level - 8),
-					static_cast<float>(column.water_level + 1), dry_coast);
-			column.surface_height = Math::round(Math::lerp(static_cast<float>(column.surface_height),
-					coast_target, ocean_t));
-			if (is_desert && ocean_t > 0.85f) {
-				column.surface_height = MAX(column.surface_height, column.water_level + 1);
-			}
-			bool has_named_biome = false;
-			if (!is_desert && column.surface_height <= column.water_level - 4) {
-				column.biome_id = static_cast<uint16_t>(BiomeId::OCEAN);
-				column.surface_block = voxel::make_block(voxel::block_ids::sand);
-				column.subsurface_block = voxel::make_block(voxel::block_ids::sand);
-				column.subsurface_depth = 5;
-				column.trees_allowed = false;
-				has_named_biome = true;
-			} else if (!is_desert && column.surface_height <= column.water_level + 2) {
-				const float river_t = 1.0f - Math::clamp(Math::abs(column.river_weight) / 0.07f, 0.0f, 1.0f);
-				const float river_influence = river_t * river_t * (3.0f - 2.0f * river_t);
-				const int32_t river_bed_height = MIN(column.surface_height, column.water_level - 2);
-				column.surface_height = Math::round(Math::lerp(static_cast<float>(column.surface_height),
-						static_cast<float>(river_bed_height), river_influence));
-				if (river_influence > 0.5f && column.surface_height <= column.water_level - 2) {
-					column.biome_id = static_cast<uint16_t>(BiomeId::RIVER);
-					column.surface_block = voxel::make_block(voxel::block_ids::sand);
-					column.subsurface_block = voxel::make_block(voxel::block_ids::sand);
-					column.subsurface_depth = 2;
-					column.trees_allowed = false;
-					has_named_biome = true;
-				}
-			}
-			if (!is_desert && !has_named_biome && ocean_t > 0.05f &&
-					column.surface_height <= column.water_level + 2) {
-				column.biome_id = static_cast<uint16_t>(BiomeId::BEACH);
-				column.surface_block = voxel::make_block(voxel::block_ids::sand);
-				column.subsurface_block = voxel::make_block(voxel::block_ids::sand);
-				column.subsurface_depth = 3;
-				column.trees_allowed = false;
-			}
-
-			for (int y = 0; y < Chunk::SIZE_Y; ++y) {
-				const int32_t wy = context.world_y(y);
-				if (wy == WORLD_BEDROCK_Y) {
-					context.write_block(x, y, z, voxel::make_block(voxel::block_ids::bedrock), GenerationLayer::TERRAIN);
-					continue;
-				}
-				if (wy > column.surface_height) {
-					continue;
-				}
-
-				const int32_t depth = column.surface_height - wy;
-				voxel::Block block = column.stone_block;
-				if (depth == 0) {
-					block = column.surface_block;
-				} else if (depth <= column.subsurface_depth) {
-					block = column.subsurface_block;
-				} else if (wy < -32) {
-					block = column.deep_stone_block;
-				}
-				context.write_block(x, y, z, block, GenerationLayer::TERRAIN);
-			}
-		}
-	}
+    for(int z=0;z<Chunk::SIZE_Z;++z) for(int x=0;x<Chunk::SIZE_X;++x) for(int y=0;y<Chunk::SIZE_Y;++y) {
+        const auto block=TerrainSampler::block_at(context.column(x,z),context.world_y(y));
+        if(!voxel::is_air(block)) context.write_block(x,y,z,block,GenerationLayer::TERRAIN);
+    }
 }
 
 void CaveCarvingPass::apply(ChunkGenerationContext &context) const {
-	if (context.settings.cave_noise.is_null() || context.settings.cave_tunnel_noise.is_null() ||
-			context.settings.cave_cross_tunnel_noise.is_null()) {
-		return;
-	}
-
-	for (int z = 0; z < Chunk::SIZE_Z; ++z) {
-		for (int x = 0; x < Chunk::SIZE_X; ++x) {
-			const int32_t wx = context.world_x(x);
-			const int32_t wz = context.world_z(z);
-			const ColumnGenerationData &column = context.column(x, z);
-			for (int y = 0; y < Chunk::SIZE_Y; ++y) {
-				const int32_t wy = context.world_y(y);
-				if (wy == WORLD_BEDROCK_Y) {
-					continue;
-				}
-				voxel::Block block = context.chunk.get_block(x, y, z);
-				if (voxel::is_air(block)) {
-					continue;
-				}
-
-				const int32_t depth = column.surface_height - wy;
-				if (depth < 7) {
-					continue;
-				}
-				const float tunnel_a = context.settings.cave_tunnel_noise->get_noise_3d(wx, wy, wz);
-				const float tunnel_b = context.settings.cave_cross_tunnel_noise->get_noise_3d(wx, wy, wz);
-				const float tunnel_shape = MAX(Math::abs(tunnel_a), Math::abs(tunnel_b));
-				const bool tunnel = tunnel_shape < 0.075f;
-				bool chamber_widening = false;
-				if (!tunnel && depth >= 12 && tunnel_shape < 0.16f) {
-					chamber_widening = context.settings.cave_noise->get_noise_3d(wx, wy, wz) >
-							context.settings.cave_threshold;
-				}
-				if (tunnel || chamber_widening) {
-					context.write_block(x, y, z, 0, GenerationLayer::CARVING);
-				}
-			}
-		}
-	}
+    const voxel::CavePoint origin{static_cast<double>(context.world_x(0)),
+            static_cast<double>(context.world_y(0)), static_cast<double>(context.world_z(0))};
+    const auto tunnels = voxel::CaveTunnels::for_bounds(context.settings.world_seed, origin,
+            {origin.x + Chunk::SIZE_X, origin.y + Chunk::SIZE_Y, origin.z + Chunk::SIZE_Z});
+    std::array<bool, Chunk::VOLUME> carved{};
+    for (const auto &tunnel : tunnels) {
+        const double r = tunnel.radius;
+        const int min_x = std::max(0, static_cast<int>(std::floor(std::min(tunnel.a.x, tunnel.b.x)-r-origin.x)));
+        const int max_x = std::min(Chunk::MAX_X, static_cast<int>(std::ceil(std::max(tunnel.a.x, tunnel.b.x)+r-origin.x)));
+        const int min_y = std::max(0, static_cast<int>(std::floor(std::min(tunnel.a.y, tunnel.b.y)-r-origin.y)));
+        const int max_y = std::min(Chunk::MAX_Y, static_cast<int>(std::ceil(std::max(tunnel.a.y, tunnel.b.y)+r-origin.y)));
+        const int min_z = std::max(0, static_cast<int>(std::floor(std::min(tunnel.a.z, tunnel.b.z)-r-origin.z)));
+        const int max_z = std::min(Chunk::MAX_Z, static_cast<int>(std::ceil(std::max(tunnel.a.z, tunnel.b.z)+r-origin.z)));
+        for (int z=min_z; z<=max_z; ++z) {
+            for (int x=min_x; x<=max_x; ++x) {
+                const int surface = context.column(x,z).surface_height;
+                for (int y=min_y; y<=max_y; ++y) {
+                    const int wy=context.world_y(y);
+                    // Keep the terrain roof and bedrock intact; do not carve water.
+                    if (wy <= WORLD_BEDROCK_Y || surface-wy < 7) continue;
+                    const int index=x+Chunk::SIZE_X*(y+Chunk::SIZE_Y*z);
+                    if (carved[index]) continue;
+                    const auto block=context.chunk.get_block(x,y,z);
+                    if (!voxel::is_collidable(block)) continue;
+                    if (voxel::CaveTunnels::distance_squared(tunnel,
+                            {origin.x+x+0.5, origin.y+y+0.5, origin.z+z+0.5}) <= r*r) {
+                        context.write_block(x,y,z,0,GenerationLayer::CARVING);
+                        carved[index]=true;
+                    }
+                }
+            }
+        }
+    }
 }
 
 void OreGenerationPass::apply(ChunkGenerationContext &context) const {
-	if (context.settings.ore_noise.is_null()) {
-		return;
-	}
-
-	for (int z = 0; z < Chunk::SIZE_Z; ++z) {
-		for (int x = 0; x < Chunk::SIZE_X; ++x) {
-			const int32_t wx = context.world_x(x);
-			const int32_t wz = context.world_z(z);
-			for (int y = 0; y < Chunk::SIZE_Y; ++y) {
-				const int32_t wy = context.world_y(y);
-				voxel::Block block = context.chunk.get_block(x, y, z);
-				const uint16_t host = voxel::type(block);
-				if (host != voxel::block_ids::stone && host != voxel::block_ids::deepslate) {
-					continue;
-				}
-
-				const float vein = context.settings.ore_noise->get_noise_3d(wx, wy, wz);
-				uint16_t ore = voxel::block_ids::air;
-				if (wy < -96 && vein > 0.88f) {
-					ore = voxel::block_ids::diamond_ore;
-				} else if (wy < 64 && vein > 0.76f) {
-					ore = voxel::block_ids::iron_ore;
-				}
-				if (ore != voxel::block_ids::air) {
-					context.write_block(x, y, z, voxel::make_block(ore), GenerationLayer::ORE);
-				}
-			}
-		}
-	}
+    const int ox=context.world_x(0), oy=context.world_y(0), oz=context.world_z(0);
+    const auto deposits=voxel::underground_deposits(context.settings.world_seed,
+            ox,oy,oz,ox+Chunk::SIZE_X,oy+Chunk::SIZE_Y,oz+Chunk::SIZE_Z);
+    for (const auto &deposit : deposits) {
+        const uint16_t type=deposit.kind==voxel::DepositKind::IRON ? voxel::block_ids::iron_ore :
+                deposit.kind==voxel::DepositKind::COAL ? voxel::block_ids::coal_ore :
+                deposit.kind==voxel::DepositKind::DIAMOND ? voxel::block_ids::diamond_ore : voxel::block_ids::dirt;
+        const int min_x=std::max(0,static_cast<int>(std::floor(deposit.x-deposit.rx-ox)));
+        const int max_x=std::min(Chunk::MAX_X,static_cast<int>(std::ceil(deposit.x+deposit.rx-ox)));
+        const int min_y=std::max(0,static_cast<int>(std::floor(deposit.y-deposit.ry-oy)));
+        const int max_y=std::min(Chunk::MAX_Y,static_cast<int>(std::ceil(deposit.y+deposit.ry-oy)));
+        const int min_z=std::max(0,static_cast<int>(std::floor(deposit.z-deposit.rz-oz)));
+        const int max_z=std::min(Chunk::MAX_Z,static_cast<int>(std::ceil(deposit.z+deposit.rz-oz)));
+        for (int z=min_z;z<=max_z;++z) for (int x=min_x;x<=max_x;++x) {
+            for (int y=min_y;y<=max_y;++y) {
+                const int wy=oy+y;
+                if (wy<=WORLD_BEDROCK_Y || context.column(x,z).surface_height-wy < 12) continue;
+                const uint16_t host=voxel::type(context.chunk.get_block(x,y,z));
+                // Replace only rock: never fill the tunnel, cover bedrock,
+                // replace existing ore, or change a surface/vegetation block.
+                if (host!=voxel::block_ids::stone && host!=voxel::block_ids::deepslate) continue;
+                if (deposit.contains(ox+x+0.5,wy+0.5,oz+z+0.5))
+                    context.write_block(x,y,z,voxel::make_block(type),GenerationLayer::ORE);
+            }
+        }
+    }
 }
 
 void WaterFillPass::apply(ChunkGenerationContext &context) const {
@@ -263,7 +111,7 @@ void WaterFillPass::apply(ChunkGenerationContext &context) const {
 			const ColumnGenerationData &column = context.column(x, z);
 			// Water bodies belong to lowland/plains terrain only. Leave the
 			// desert dry and ignore shallow one-block dips in the ground.
-			if (column.biome_id == static_cast<uint16_t>(BiomeId::DESERT) ||
+			if (!column.surface_water ||
 					column.surface_height >= column.water_level - 1) {
 				continue;
 			}
@@ -274,7 +122,7 @@ void WaterFillPass::apply(ChunkGenerationContext &context) const {
 				if (wy > column.surface_height && wy < column.water_level &&
 						voxel::is_air(context.chunk.get_block(x, y, z))) {
 					const voxel::Block water_flags = voxel::BLOCK_FLAG_TRANSPARENT |
-							(column.biome_id == static_cast<uint16_t>(BiomeId::OCEAN) ? voxel::BLOCK_FLAG_OCEAN : 0);
+							(column.definition && column.definition->kind == BiomeKind::OCEAN ? voxel::BLOCK_FLAG_OCEAN : 0);
 					context.write_block(x, y, z,
 							voxel::make_block(voxel::block_ids::water, water_flags), GenerationLayer::WATER);
 				}

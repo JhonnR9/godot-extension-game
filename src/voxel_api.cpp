@@ -1,4 +1,5 @@
 #include "voxel_api.h"
+#include "terrain_sampler.h"
 #include "ChunkDiskRepository.h"
 #include "chunk_model.h"
 #include "chunk_pool.h"
@@ -37,56 +38,46 @@ void VoxelAPI::_ready() {
 	_chunk_pool->set_prewarm(_prewarm_chunk_pool);
 
 	set_process(true);
+	_biome_registry = BiomeRegistry::load(_biome_registry_path);
+	_terrain_base_height = _biome_registry->world.base_height;
+	_terrain_amplitude = _biome_registry->world.amplitude;
+	_water_level = _biome_registry->world.sea_level;
 	_setup_noises();
 
 }
 
 void VoxelAPI::_setup_noises() {
-	_terrain_noise.instantiate();
-	_terrain_noise->set_noise_type(FastNoiseLite::TYPE_PERLIN);
-	_terrain_noise->set_frequency(0.025);
-	_terrain_noise->set_fractal_octaves(4);
-
-	_cave_noise.instantiate();
-	_cave_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
-	_cave_noise->set_frequency(0.035);
-
-	_cave_tunnel_noise.instantiate();
-	_cave_tunnel_noise->set_noise_type(FastNoiseLite::TYPE_PERLIN);
-	_cave_tunnel_noise->set_frequency(0.045);
-
-	_cave_cross_tunnel_noise.instantiate();
-	_cave_cross_tunnel_noise->set_noise_type(FastNoiseLite::TYPE_PERLIN);
-	_cave_cross_tunnel_noise->set_frequency(0.045);
-
-	_ore_noise.instantiate();
-	_ore_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
-	_ore_noise->set_frequency(0.085);
-
-	_biome_noise.instantiate();
-	_biome_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
-	_biome_noise->set_frequency(0.0010);
-	_biome_noise->set_fractal_octaves(2);
-
-	_dune_noise.instantiate();
-	_dune_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
-	_dune_noise->set_frequency(0.016);
-	_dune_noise->set_fractal_octaves(3);
-
-	_mountain_noise.instantiate();
-	_mountain_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
-	_mountain_noise->set_frequency(0.006);
-	_mountain_noise->set_fractal_octaves(3);
-
-	_ocean_noise.instantiate();
-	_ocean_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
-	_ocean_noise->set_frequency(0.0015);
-	_ocean_noise->set_fractal_octaves(2);
-
-	_river_noise.instantiate();
-	_river_noise->set_noise_type(FastNoiseLite::TYPE_SIMPLEX);
-	_river_noise->set_frequency(0.008);
-	_river_noise->set_fractal_octaves(1);
+    const auto &w=_biome_registry->world;
+    auto setup=[](Ref<FastNoiseLite> &noise,const TerrainNoiseProfile &profile,FastNoiseLite::NoiseType type) {
+        noise.instantiate(); noise->set_noise_type(type);
+        noise->set_frequency(profile.frequency); noise->set_fractal_octaves(profile.octaves);
+    };
+    setup(_terrain_noise,w.terrain,FastNoiseLite::TYPE_PERLIN);
+    setup(_biome_noise,w.climate,FastNoiseLite::TYPE_SIMPLEX);
+    setup(_dune_noise,w.dune,FastNoiseLite::TYPE_SIMPLEX);
+    setup(_mountain_noise,w.mountain,FastNoiseLite::TYPE_SIMPLEX);
+    setup(_ocean_noise,w.ocean,FastNoiseLite::TYPE_SIMPLEX);
+    setup(_river_noise,w.river,FastNoiseLite::TYPE_SIMPLEX);
+}
+void VoxelAPI::set_biome_registry_path(const String &path) {
+    ERR_FAIL_COND_MSG(is_node_ready(), "Set biome_registry_path before adding VoxelAPI to the scene tree.");
+    _biome_registry_path=path;
+}
+Dictionary VoxelAPI::validate_biome_registry(const Dictionary &data) {
+    String error; const auto registry=BiomeRegistry::from_dictionary(data,error);
+    Dictionary result; result["valid"]=bool(registry); result["error"]=error; return result;
+}
+Dictionary VoxelAPI::sample_terrain_column(const Vector2i &position) const {
+    ERR_FAIL_COND_V_MSG(!_biome_registry, Dictionary(), "VoxelAPI must be ready before sampling terrain.");
+    const auto c=TerrainSampler::sample(_make_terrain_settings(),position.x,position.y);
+    Dictionary result;
+    result["height"]=c.surface_height; result["biome_id"]=c.biome_id;
+    result["biome_name"]=String(c.definition->name.c_str()); result["climate"]=c.climate_weight;
+    result["surface_block"]=voxel::type(c.surface_block); result["soil_block"]=voxel::type(c.subsurface_block);
+    result["rock_block"]=voxel::type(c.stone_block); result["deep_rock_block"]=voxel::type(c.deep_stone_block);
+    result["soil_depth"]=c.subsurface_depth; result["water_level"]=c.water_level;
+    result["trees_allowed"]=c.trees_allowed; result["surface_water"]=c.surface_water;
+    return result;
 }
 
 void VoxelAPI::_init_chunks() {
@@ -273,7 +264,7 @@ void VoxelAPI::break_block(const Vector3 &world_pos) {
 }
 
 void VoxelAPI::_flow_water_into(const Vector3i &p_target) const {
-	if (_chunk_repository.is_null() || p_target.y >= _terrain_base_height) {
+	if (_chunk_repository.is_null() || p_target.y >= _water_level) {
 		return;
 	}
 
@@ -294,7 +285,7 @@ void VoxelAPI::_flow_water_into(const Vector3i &p_target) const {
 	for (const Vector3i &direction : directions) {
 		const Vector3i source_pos = p_target + direction;
 		// Water spreads sideways and down, never uphill or above sea level.
-		if (source_pos.y < p_target.y || source_pos.y >= _terrain_base_height) {
+		if (source_pos.y < p_target.y || source_pos.y >= _water_level) {
 			continue;
 		}
 		const Vector3i source_chunk_pos = voxel::block_to_chunk_coords(source_pos);
@@ -403,10 +394,6 @@ void VoxelAPI::create_new_world(const int32_t p_seed, const String &p_name) {
 	_disk_repository->set_current_world(world_model.id);
 
 	_terrain_noise->set_seed(world_model.seed);
-	_cave_noise->set_seed(world_model.seed + 1);
-	_cave_tunnel_noise->set_seed(world_model.seed + 7);
-	_cave_cross_tunnel_noise->set_seed(world_model.seed + 8);
-	_ore_noise->set_seed(world_model.seed + 9);
 	_biome_noise->set_seed(world_model.seed + 2);
 	_dune_noise->set_seed(world_model.seed + 3);
 	_mountain_noise->set_seed(world_model.seed + 4);
@@ -428,6 +415,15 @@ void VoxelAPI::start_world(int64_t p_id) {
 	const WorldModel world_model = SaveService::get_singleton()->load_world_model(p_id);
 
 	_chunk_repository->set_world_model(world_model);
+	_terrain_noise->set_seed(world_model.seed);
+	_biome_noise->set_seed(world_model.seed + 2);
+	_dune_noise->set_seed(world_model.seed + 3);
+	_mountain_noise->set_seed(world_model.seed + 4);
+	_ocean_noise->set_seed(world_model.seed + 5);
+	_river_noise->set_seed(world_model.seed + 6);
+	_setup_generation_pipeline(world_model.seed);
+
+
 	if (_focus_node) {
 		const Dictionary player_data = SaveService::get_singleton()->load_world_section(p_id, "player");
 		const Array saved_position = player_data.get("position", Array());
@@ -437,10 +433,12 @@ void VoxelAPI::start_world(int64_t p_id) {
 					double(saved_position[1]),
 					double(saved_position[2])));
 		} else {
-			// New worlds start just above the expected terrain surface so the
-			// initial chunk window includes the ground that will catch the player.
+			// Use the same seeded surface calculation as generation, including
+			// custom biome relief and an independently configured sea level.
 			Vector3 spawn = _focus_node->get_global_position();
-			spawn.y = _terrain_base_height + _terrain_amplitude + 5.0;
+			const Vector3i block = voxel::world_to_block(spawn);
+			const auto column = TerrainSampler::sample(_make_terrain_settings(), block.x, block.z);
+			spawn.y = MAX(column.surface_height + 1, column.water_level) + 5.0;
 			_focus_node->set_global_position(spawn);
 		}
 		if (player_data.has("yaw") && player_data.has("pitch") && _focus_node->has_method("restore_rotation")) {
@@ -448,17 +446,6 @@ void VoxelAPI::start_world(int64_t p_id) {
 		}
 	}
 
-	_terrain_noise->set_seed(world_model.seed);
-	_cave_noise->set_seed(world_model.seed + 1);
-	_cave_tunnel_noise->set_seed(world_model.seed + 7);
-	_cave_cross_tunnel_noise->set_seed(world_model.seed + 8);
-	_ore_noise->set_seed(world_model.seed + 9);
-	_biome_noise->set_seed(world_model.seed + 2);
-	_dune_noise->set_seed(world_model.seed + 3);
-	_mountain_noise->set_seed(world_model.seed + 4);
-	_ocean_noise->set_seed(world_model.seed + 5);
-	_river_noise->set_seed(world_model.seed + 6);
-	_setup_generation_pipeline(world_model.seed);
 
 	_init_chunks();
 }
@@ -839,22 +826,16 @@ void VoxelAPI::_finalize_chunk(const MeshResult &res) {
 	chunk->stage = ChunkStage::RENDERED;
 }
 
+TerrainSettings VoxelAPI::_make_terrain_settings() const {
+    TerrainSettings settings;
+    settings.terrain_base_height=_terrain_base_height; settings.terrain_amplitude=_terrain_amplitude;
+    settings.water_level=_water_level; settings.world_seed=_world_seed; settings.biome_registry=_biome_registry;
+    settings.terrain_noise=_terrain_noise; settings.biome_noise=_biome_noise; settings.dune_noise=_dune_noise;
+    settings.mountain_noise=_mountain_noise; settings.ocean_noise=_ocean_noise; settings.river_noise=_river_noise;
+    return settings;
+}
 void VoxelAPI::_queue_async_generate_chunk(const Vector3i p_pos) const {
-	TerrainSettings settings;
-	settings.terrain_base_height	 = _terrain_base_height;
-	settings.terrain_amplitude		 = _terrain_amplitude;
-	settings.cave_threshold			 = 0.72f;
-	settings.world_seed = _world_seed;
-	settings.terrain_noise = _terrain_noise;
-	settings.cave_noise = _cave_noise;
-	settings.cave_tunnel_noise = _cave_tunnel_noise;
-	settings.cave_cross_tunnel_noise = _cave_cross_tunnel_noise;
-	settings.ore_noise = _ore_noise;
-	settings.biome_noise = _biome_noise;
-	settings.dune_noise = _dune_noise;
-	settings.mountain_noise = _mountain_noise;
-	settings.ocean_noise = _ocean_noise;
-	settings.river_noise = _river_noise;
+    const TerrainSettings settings=_make_terrain_settings();
 
 	constexpr bool dirty	 = false;
 	const bool high_priority = _is_high_priority(p_pos, dirty);
@@ -924,7 +905,10 @@ void VoxelAPI::_try_build_mesh_with_neighbors(const Vector3i p_pos) const {
 		return;
 	}
 
-	if (!neighbors.right || !neighbors.left || !neighbors.top || !neighbors.bottom || !neighbors.front || !neighbors.back) {
+	// Outside the finite vertical world there is air, not a pending neighbour.
+	const bool missing_top = !neighbors.top && p_pos.y < WORLD_MAX_CHUNK_Y;
+	const bool missing_bottom = !neighbors.bottom && p_pos.y > WORLD_MIN_CHUNK_Y;
+	if (!neighbors.right || !neighbors.left || missing_top || missing_bottom || !neighbors.front || !neighbors.back) {
 		chunk->stage = ChunkStage::WAITING_NEIGHBORS;
 		return;
 	}
@@ -938,6 +922,11 @@ void VoxelAPI::save_world() const {
 }
 
 void VoxelAPI::_bind_methods() {
+    ClassDB::bind_method(D_METHOD("set_biome_registry_path", "path"), &VoxelAPI::set_biome_registry_path);
+    ClassDB::bind_method(D_METHOD("get_biome_registry_path"), &VoxelAPI::get_biome_registry_path);
+    ADD_PROPERTY(PropertyInfo(Variant::STRING, "biome_registry_path", PROPERTY_HINT_FILE, "*.json"), "set_biome_registry_path", "get_biome_registry_path");
+    ClassDB::bind_method(D_METHOD("sample_terrain_column", "position"), &VoxelAPI::sample_terrain_column);
+    ClassDB::bind_static_method("VoxelAPI", D_METHOD("validate_biome_registry", "data"), &VoxelAPI::validate_biome_registry);
 	ClassDB::bind_method(D_METHOD("set_focus_node", "node"), &VoxelAPI::set_focus_node);
 	ClassDB::bind_method(D_METHOD("set_focus_position", "pos"), &VoxelAPI::set_focus_position);
 	ClassDB::bind_method(D_METHOD("break_block", "world_pos"), &VoxelAPI::break_block);

@@ -62,7 +62,12 @@ add_library(${LIBNAME} SHARED
         src/ChunkDiskRepository.cpp
         src/chunk_region_async_loader.cpp
         src/save_service.cpp
-        src/core/voxel_core.cpp
+        src/chunk_generation_pipeline.cpp
+        src/biome_registry.cpp
+        src/terrain_sampler.cpp
+        src/spawn_tree_service.cpp
+        src/grid_inventory.cpp
+        src/inventory_manager.cpp
 )
 
 target_sources(${LIBNAME}

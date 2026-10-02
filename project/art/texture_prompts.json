@@ -1,0 +1,62 @@
+{
+  "tool": "image_gen (built-in)",
+  "conversion": "Nearest-neighbor resampling to RGBA 32x32 using ImageMagick.",
+  "assets": [
+    {
+      "name": "iron_ore",
+      "path": "res://textures/blocks/iron_ore.png",
+      "source": "/home/jhonn/.codex/generated_images/01a0f9a5-1eaa-74a0-bdf9-01fbc5a0efd9/exec-1d7e9908-7955-4d0c-9546-cb473e526bb1.png",
+      "transparent_background": false,
+      "prompt": "Use case: stylized-concept. Asset type: production voxel game texture, ONE square 32 by 32 logical pixel tile enlarged with nearest-neighbor sharp square pixels to the output size. A single seamless iron ore stone tile. Charcoal medium gray stone matching a voxel game with scattered angular rusty tan and muted warm copper iron inclusions embedded in the rock, about 22 percent of tile, distinct small connected clusters, no huge gemstone. Flat diffuse color without baked directional lighting. Style: authentic low resolution pixel art, restrained palette, crisp 32x32 grid, NO smooth shading, NO antialiasing, NO outlines around the whole image, NO text, NO labels, NO checkerboard drawn into image, NO scene, NO cube mockup, NO multiple tiles, NO margins for stone/wood tiles. This will be downsampled with nearest-neighbor to exactly 32x32 pixels for a block texture array. Deliver only the single usable tile filling its square canvas."
+    },
+    {
+      "name": "diamond_ore",
+      "path": "res://textures/blocks/diamond_ore.png",
+      "source": "/home/jhonn/.codex/generated_images/01a0f9a5-1eaa-74a0-bdf9-01fbc5a0efd9/exec-20978879-ad58-4e53-bc93-7b5ac72eec2e.png",
+      "transparent_background": false,
+      "prompt": "Use case: stylized-concept. Asset type: production voxel game texture, ONE square 32 by 32 logical pixel tile enlarged with nearest-neighbor sharp square pixels to the output size. A single seamless diamond ore stone tile. Charcoal medium gray rock matching a voxel game with small scattered cyan turquoise diamond crystal inclusions embedded in the stone, about 18 percent of tile. Angular clusters of 2-4 logical pixels each with a few pale icy cyan accents, no large jewel, no glow. Flat diffuse color. Style: authentic low resolution pixel art, restrained palette, crisp 32x32 grid, NO smooth shading, NO antialiasing, NO outlines around the whole image, NO text, NO labels, NO checkerboard drawn into image, NO scene, NO cube mockup, NO multiple tiles, NO margins for stone/wood tiles. This will be downsampled with nearest-neighbor to exactly 32x32 pixels for a block texture array. Deliver only the single usable tile filling its square canvas."
+    },
+    {
+      "name": "oak_log_top",
+      "path": "res://textures/blocks/oak_log_top.png",
+      "source": "/home/jhonn/.codex/generated_images/01a0f9a5-1eaa-74a0-bdf9-01fbc5a0efd9/exec-53fbff91-3857-47a0-8539-0410121af27d.png",
+      "transparent_background": false,
+      "prompt": "Use case: stylized-concept. Asset type: production voxel game texture, ONE square 32 by 32 logical pixel tile enlarged with nearest-neighbor sharp square pixels to the output size. A single square oak log end grain texture tile viewed straight down. Natural warm honey tan oak heartwood and slightly darker irregular concentric squared circular annual growth rings around a small off-center core. Dark brown rough bark border 3 logical pixels wide around all four edges, matching brown oak bark. Rings look organic, not a spiral or target. Flat diffuse color no perspective. Style: authentic low resolution pixel art, restrained palette, crisp 32x32 grid, NO smooth shading, NO antialiasing, NO outlines around the whole image, NO text, NO labels, NO checkerboard drawn into image, NO scene, NO cube mockup, NO multiple tiles, NO margins for stone/wood tiles. This will be downsampled with nearest-neighbor to exactly 32x32 pixels for a block texture array. Deliver only the single usable tile filling its square canvas."
+    },
+    {
+      "name": "daisy",
+      "path": "res://textures/blocks/daisy_side.png",
+      "source": "/home/jhonn/.codex/generated_images/01a0f9a5-1eaa-74a0-bdf9-01fbc5a0efd9/exec-d87821f8-496f-4507-a672-b7f622732946.png",
+      "transparent_background": true,
+      "prompt": "Use case: stylized-concept. Asset type: production voxel game texture, ONE square 32 by 32 logical pixel tile enlarged with nearest-neighbor sharp square pixels to the output size. A single small white daisy plant sprite centered in frame with yellow center, white pixel petals, thin green stem and two small leaves. One bloom at upper third, leaves lower, stem touches bottom of canvas. Plant occupies roughly 65% width and 80% height. Truly transparent background, no ground or pot. Style: authentic low resolution pixel art, restrained palette, crisp 32x32 grid, NO smooth shading, NO antialiasing, NO outlines around the whole image, NO text, NO labels, NO checkerboard drawn into image, NO scene, NO cube mockup, NO multiple tiles, NO margins for stone/wood tiles. This will be downsampled with nearest-neighbor to exactly 32x32 pixels for a block texture array. Deliver only the single usable tile filling its square canvas."
+    },
+    {
+      "name": "cornflower",
+      "path": "res://textures/blocks/cornflower_side.png",
+      "source": "/home/jhonn/.codex/generated_images/01a0f9a5-1eaa-74a0-bdf9-01fbc5a0efd9/exec-fd8fdfd0-445e-4727-818b-f25c644657de.png",
+      "transparent_background": true,
+      "prompt": "Use case: stylized-concept. Asset type: production voxel game texture, ONE square 32 by 32 logical pixel tile enlarged with nearest-neighbor sharp square pixels to the output size. A single small cornflower plant sprite centered in frame with vivid muted blue star-shaped petals, dark blue center, thin green stem and two small leaves. One bloom at upper third, stem touches bottom of canvas. Plant occupies roughly 55% width and 85% height. Truly transparent background, no ground or pot. Style: authentic low resolution pixel art, restrained palette, crisp 32x32 grid, NO smooth shading, NO antialiasing, NO outlines around the whole image, NO text, NO labels, NO checkerboard drawn into image, NO scene, NO cube mockup, NO multiple tiles, NO margins for stone/wood tiles. This will be downsampled with nearest-neighbor to exactly 32x32 pixels for a block texture array. Deliver only the single usable tile filling its square canvas."
+    },
+    {
+      "name": "poppy",
+      "path": "res://textures/blocks/poppy_side.png",
+      "source": "/home/jhonn/.codex/generated_images/01a0f9a5-1eaa-74a0-bdf9-01fbc5a0efd9/exec-cfd5b824-d5fb-4416-a9ce-793d21094393.png",
+      "transparent_background": true,
+      "prompt": "Use case: stylized-concept. Asset type: production voxel game texture, ONE square 32 by 32 logical pixel tile enlarged with nearest-neighbor sharp square pixels to the output size. A single small red poppy plant sprite centered in frame, warm red petals and tiny dark center, slender curved green stem and two small leaves. One bloom at upper third, stem touches bottom of canvas. Plant occupies roughly 60% width and 85% height. Truly transparent background, no ground or pot. Style: authentic low resolution pixel art, restrained palette, crisp 32x32 grid, NO smooth shading, NO antialiasing, NO outlines around the whole image, NO text, NO labels, NO checkerboard drawn into image, NO scene, NO cube mockup, NO multiple tiles, NO margins for stone/wood tiles. This will be downsampled with nearest-neighbor to exactly 32x32 pixels for a block texture array. Deliver only the single usable tile filling its square canvas."
+    },
+    {
+      "name": "short_grass",
+      "path": "res://textures/blocks/short_grass_side.png",
+      "source": "/home/jhonn/.codex/generated_images/01a0f9a5-1eaa-74a0-bdf9-01fbc5a0efd9/exec-2af07d6f-e0ae-4d5c-b4ed-8b45d9ce1c3f.png",
+      "transparent_background": true,
+      "prompt": "Use case: stylized-concept. Asset type: production voxel game texture, ONE square 32 by 32 logical pixel tile enlarged with nearest-neighbor sharp square pixels to the output size. A single sparse low meadow grass tuft sprite, 6 gently bending blades of varying heights in natural olive and fresh green with darker base, suitable for quiet oak woodland and plains details. Occupy lower 55% of canvas height, about 70% of width, base touches bottom edge. Truly transparent background. No soil, flowers, pot, border or shadow. Style: authentic low resolution pixel art, restrained palette, crisp 32x32 grid, NO smooth shading, NO antialiasing, NO outlines around the whole image, NO text, NO labels, NO checkerboard drawn into image, NO scene, NO cube mockup, NO multiple tiles, NO margins for stone/wood tiles. This will be downsampled with nearest-neighbor to exactly 32x32 pixels for a block texture array. Deliver only the single usable tile filling its square canvas."
+    },
+    {
+      "name": "fern",
+      "path": "res://textures/blocks/fern_side.png",
+      "source": "/home/jhonn/.codex/generated_images/01a0f9a5-1eaa-74a0-bdf9-01fbc5a0efd9/exec-c0f8fa61-3e79-4d59-a57a-707622a0e607.png",
+      "transparent_background": true,
+      "prompt": "Use case: stylized-concept. Asset type: production voxel game texture, ONE square 32 by 32 logical pixel tile enlarged with nearest-neighbor sharp square pixels to the output size. A single small woodland fern plant sprite, four gently arching green fronds with tiny angular leaflets, moss olive greens and fresh green highlights, very restrained voxel game foliage. Occupy lower 65% canvas height, 80% width, thin central stem touches bottom edge. Truly transparent background. No soil, flowers, pot, border or shadow. Style: authentic low resolution pixel art, restrained palette, crisp 32x32 grid, NO smooth shading, NO antialiasing, NO outlines around the whole image, NO text, NO labels, NO checkerboard drawn into image, NO scene, NO cube mockup, NO multiple tiles, NO margins for stone/wood tiles. This will be downsampled with nearest-neighbor to exactly 32x32 pixels for a block texture array. Deliver only the single usable tile filling its square canvas."
+    }
+  ]
+}

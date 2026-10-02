@@ -35,6 +35,10 @@ public:
 	bool is_ocean_at(const Vector3 &p_world_pos) const;
 	int32_t get_block_type_at(const Vector3 &p_world_pos) const;
 	void set_focus_node(Node3D *p_node);
+	void set_biome_registry_path(const String &path);
+	String get_biome_registry_path() const { return _biome_registry_path; }
+	Dictionary sample_terrain_column(const Vector2i &position) const;
+	static Dictionary validate_biome_registry(const Dictionary &data);
 	void set_focus_position(Vector3 p_pos);
 	void create_new_world(int32_t p_seed, const String &p_name);
 	void start_world(int64_t p_id);
@@ -73,17 +77,15 @@ private:
 	int _prewarm_chunk_pool = (_diameter * _diameter) * _world_height;
 	int _current_chunks_finalize_in_frame = 100;
 
+	std::shared_ptr<const BiomeRegistry> _biome_registry;
+	String _biome_registry_path = "res://data/biome_registry.json";
+	int _water_level = 24;
+	TerrainSettings _make_terrain_settings() const;
 	// Terrain settings
 	int _terrain_base_height = 24;
 	float _terrain_amplitude = 9.0f;
-	int _dirt_layer_depth    = 20;
-	float _cave_threshold    = 0.2f;
 
 	Ref<FastNoiseLite> _terrain_noise;
-	Ref<FastNoiseLite> _cave_noise;
-	Ref<FastNoiseLite> _cave_tunnel_noise;
-	Ref<FastNoiseLite> _cave_cross_tunnel_noise;
-	Ref<FastNoiseLite> _ore_noise;
 	Ref<FastNoiseLite> _biome_noise;
 	Ref<FastNoiseLite> _dune_noise;
 	Ref<FastNoiseLite> _mountain_noise;

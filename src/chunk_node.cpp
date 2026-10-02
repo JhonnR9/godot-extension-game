@@ -28,6 +28,9 @@ void ChunkNode::_setup() {
     }
 
 
+    // Pool reuse and collision updates retain already configured materials.
+    if (_material.is_valid() && _water_material.is_valid()) return;
+
     Ref<Shader> shader = ResourceLoader::get_singleton()->load("res://shaders/chunk.gdshader");
 
     Ref<Material> override_material;
@@ -43,6 +46,9 @@ void ChunkNode::_setup() {
 
         if (tex_array.is_valid()) {
             mat->set_shader_parameter("albedo_array", tex_array);
+            // Generated lookup follows atlas reordering when textures are added.
+            mat->set_shader_parameter("iron_ore_layer", voxel::texture_layer_from_name("iron_ore"));
+            mat->set_shader_parameter("diamond_ore_layer", voxel::texture_layer_from_name("diamond_ore"));
             override_material = mat;
         } else {
             ERR_PRINT("Error: mismatched or invalid atlas array in res://textures/block_array.tres");

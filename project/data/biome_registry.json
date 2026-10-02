@@ -1,0 +1,228 @@
+{
+	"version": 1,
+	"world": {
+		"base_height": 24,
+		"sea_level": 24,
+		"amplitude": 9,
+		"climate_start": 0.05,
+		"climate_span": 0.3,
+		"coast_start": 0.25,
+		"coast_span": 0.8,
+		"dry_coast_start": 0.05,
+		"dry_coast_span": 0.65,
+		"coast_blend_start": 0.34,
+		"coast_blend_end": 0.68,
+		"wet_coast_offset": -8,
+		"dry_coast_offset": 1,
+		"dry_coast_clamp": 0.85,
+		"river_width": 0.07,
+		"river_bed_offset": -2,
+		"noises": {
+			"terrain": {
+				"frequency": 0.025,
+				"octaves": 4
+			},
+			"climate": {
+				"frequency": 0.001,
+				"octaves": 2
+			},
+			"dune": {
+				"frequency": 0.016,
+				"octaves": 3
+			},
+			"mountain": {
+				"frequency": 0.006,
+				"octaves": 3
+			},
+			"ocean": {
+				"frequency": 0.0015,
+				"octaves": 2
+			},
+			"river": {
+				"frequency": 0.008,
+				"octaves": 1
+			}
+		}
+	},
+	"biomes": [
+		{
+			"materials": {
+				"surface": "grass",
+				"soil": "dirt",
+				"rock": "stone",
+				"deep_rock": "deepslate"
+			},
+			"soil_depth": 15,
+			"deep_rock_below_y": -32,
+			"id": 0,
+			"name": "plains",
+			"selection": {
+				"kind": "land",
+				"climate_min": 0,
+				"climate_max": 0.68
+			},
+			"relief": {
+				"anchor": 0,
+				"noise": "mountain",
+				"scale": 2.4,
+				"ridge_amplitude": 19,
+				"ridge_power": 2,
+				"bias": -5
+			},
+			"surface_overrides": [
+				{
+					"climate_min": 0.34,
+					"climate_max": 1,
+					"surface": "dirt",
+					"soil_depth": 7
+				}
+			],
+			"trees": {
+				"max_per_chunk": 4,
+				"min_height": 5,
+				"max_height": 7,
+				"crown_radius": 2,
+				"trunk": "log",
+				"leaves": "leaves",
+				"climate_max": 0.45
+			},
+			"vegetation": {
+				"patch_size": 12,
+				"coverage_min": 85,
+				"coverage_max": 159,
+				"flowers_min": 12,
+				"flowers_max": 20,
+				"climate_max": 0.34,
+				"plants": [
+					{
+						"block": "short_grass",
+						"weight": 62
+					},
+					{
+						"block": "tall_grass",
+						"weight": 28
+					},
+					{
+						"block": "fern",
+						"weight": 10
+					}
+				],
+				"flowers": [
+					{
+						"block": "flower",
+						"weight": 1
+					},
+					{
+						"block": "daisy",
+						"weight": 1
+					},
+					{
+						"block": "cornflower",
+						"weight": 1
+					},
+					{
+						"block": "poppy",
+						"weight": 1
+					}
+				]
+			},
+			"rarity": 1
+		},
+		{
+			"materials": {
+				"surface": "sand",
+				"soil": "sand",
+				"rock": "sandstone",
+				"deep_rock": "deepslate"
+			},
+			"soil_depth": 4,
+			"deep_rock_below_y": -32,
+			"id": 1,
+			"name": "desert",
+			"selection": {
+				"kind": "land",
+				"climate_min": 0.68,
+				"climate_max": 1
+			},
+			"relief": {
+				"anchor": 1,
+				"noise": "dune",
+				"scale": 0.48,
+				"ridge_amplitude": 7,
+				"ridge_power": 1,
+				"bias": -2.5
+			},
+			"dry_coast": true,
+			"surface_water": false,
+			"vegetation": {
+				"patch_size": 12,
+				"coverage_min": 6,
+				"coverage_max": 6,
+				"climate_min": 0.97,
+				"plants": [
+					{
+						"block": "cactus",
+						"weight": 1,
+						"min_height": 1,
+						"max_height": 3
+					}
+				]
+			},
+			"rarity": 1
+		},
+		{
+			"materials": {
+				"surface": "sand",
+				"soil": "sand",
+				"rock": "stone",
+				"deep_rock": "deepslate"
+			},
+			"soil_depth": 5,
+			"deep_rock_below_y": -32,
+			"id": 2,
+			"name": "ocean",
+			"selection": {
+				"kind": "ocean",
+				"height_max_offset": -4,
+				"min_influence": 0
+			},
+			"rarity": 1
+		},
+		{
+			"materials": {
+				"surface": "sand",
+				"soil": "sand",
+				"rock": "stone",
+				"deep_rock": "deepslate"
+			},
+			"soil_depth": 2,
+			"deep_rock_below_y": -32,
+			"id": 3,
+			"name": "river",
+			"selection": {
+				"kind": "river",
+				"height_max_offset": 2,
+				"min_influence": 0.5
+			},
+			"rarity": 1
+		},
+		{
+			"materials": {
+				"surface": "sand",
+				"soil": "sand",
+				"rock": "stone",
+				"deep_rock": "deepslate"
+			},
+			"soil_depth": 3,
+			"deep_rock_below_y": -32,
+			"id": 4,
+			"name": "beach",
+			"selection": {
+				"kind": "beach",
+				"height_max_offset": 2,
+				"min_influence": 0.05
+			},
+			"rarity": 1
+		}
+	]
+}

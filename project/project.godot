@@ -14,13 +14,14 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
-config/name="godot cpp template"
+config/name="voxelgames"
 run/main_scene="uid://cvanbewcp0wwt"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
+BlockIconCache="*res://scripts/block_icon_cache.gd"
 GameSession="*uid://cdf5is5g74nyt"
 AudioSettings="*res://scripts/audio_settings.gd"
 DisplaySettings="*res://scripts/display_settings.gd"
@@ -93,12 +94,20 @@ save={
 
 [rendering]
 
+occlusion_culling/bvh_build_quality=0
+rendering_device/vsync/swapchain_image_count=2
 textures/canvas_textures/default_texture_filter=0
+renderer/rendering_method="mobile"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/ssao/quality=3
+occlusion_culling/use_occlusion_culling=true
 
 [shader_globals]
 
+world_daylight={
+"type": "float",
+"value": 1.0
+}
 specular_smoothness={
 "type": "float",
 "value": 1.0
