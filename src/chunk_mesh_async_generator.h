@@ -8,6 +8,7 @@ struct MeshResult {
 	ChunkMeshData geometry;
 	PackedVector3Array collision_faces;
 	PackedVector3Array torch_positions;
+	PackedVector3Array selection_positions;
 	Vector3i pos;
 	uint64_t version	= 0;
 	uint64_t request_id = 0;

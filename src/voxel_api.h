@@ -42,6 +42,7 @@ public:
 	void set_focus_position(Vector3 p_pos);
 	void create_new_world(int32_t p_seed, const String &p_name);
 	void start_world(int64_t p_id);
+	void start_preview(int32_t p_seed);
 	bool is_initial_loading() const { return _is_initializing; }
 	int get_initial_loading_total_chunks() const { return _initial_loading_chunks.size(); }
 	int get_initial_loading_ready_chunks() const;
@@ -131,6 +132,7 @@ private:
 	bool _use_manual_pos      = true;
 	Vector3 _get_current_focus_position() const;
 
+	bool _preview_mode = false;
 	// World state
 	HashMap<Vector3i, ChunkNode *> _rendered_chunks;
 	HashMap<Vector3i, voxel::Region> _region_cache;

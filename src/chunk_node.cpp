@@ -96,6 +96,31 @@ void ChunkNode::set_collision_faces( const PackedVector3Array &collision_faces) 
     }
 }
 
+// One selection body per chunk, with shared shapes and no per-object nodes.
+// Layer 2 is queried by interaction rays; movement uses terrain layer 1.
+void ChunkNode::set_selection_positions(const PackedVector3Array &positions) {
+    if (positions == _selection_positions) return;
+    _selection_positions = positions;
+    if (!_selection_body) {
+        _selection_body = memnew(StaticBody3D);
+        _selection_body->set_name("ObjectSelection");
+        _selection_body->set_collision_layer(2);
+        _selection_body->set_collision_mask(0);
+        add_child(_selection_body);
+        _selection_box.instantiate();
+        _selection_box->set_size(Vector3(1, 1, 1));
+    }
+    const PackedInt32Array owners = _selection_body->get_shape_owners();
+    for (int i = 0; i < owners.size(); ++i) _selection_body->remove_shape_owner(owners[i]);
+    for (int i = 0; i < positions.size(); ++i) {
+        const uint32_t owner = _selection_body->create_shape_owner(_selection_body);
+        _selection_body->shape_owner_set_transform(owner, Transform3D(Basis(), positions[i] + Vector3(0.5, 0.5, 0.5)));
+        _selection_body->shape_owner_add_shape(owner, _selection_box);
+    }
+    // Ray hit shape indices match this ordered list of local voxel origins.
+    _selection_body->set_meta("voxel_selection_positions", positions);
+}
+
 void ChunkNode::set_torch_positions(const PackedVector3Array &positions) {
     if (positions == _torch_positions) return;
     _torch_positions = positions;
@@ -109,26 +134,13 @@ void ChunkNode::set_torch_positions(const PackedVector3Array &positions) {
         light->set_name("TorchLight");
         light->set_position(positions[i]);
         light->set_color(Color(1.0f, 0.64f, 0.28f));
-        light->set_param(Light3D::PARAM_ENERGY, 2.0f);
+        light->set_param(Light3D::PARAM_ENERGY, 2.4f);
         light->set_param(Light3D::PARAM_RANGE, 8.0f);
         light->set_shadow(true);
         light->set_enable_distance_fade(true);
         light->set_distance_fade_begin(32.0f);
         light->set_distance_fade_length(8.0f);
         light->set_distance_fade_shadow(24.0f);
-        // Selection-only collider: raycasts can break/place against the torch,
-        // while the player's layer-1 movement collision passes through it.
-        StaticBody3D *selection = memnew(StaticBody3D);
-        selection->set_collision_layer(2);
-        selection->set_collision_mask(0);
-        selection->set_position(Vector3(0.0f, -0.3f, 0.0f));
-        CollisionShape3D *shape_node = memnew(CollisionShape3D);
-        Ref<BoxShape3D> box;
-        box.instantiate();
-        box->set_size(Vector3(1.0f, 1.0f, 1.0f));
-        shape_node->set_shape(box);
-        selection->add_child(shape_node);
-        light->add_child(selection);
         add_child(light);
         _torch_lights.push_back(light);
     }
@@ -136,6 +148,7 @@ void ChunkNode::set_torch_positions(const PackedVector3Array &positions) {
 
 void ChunkNode::disable() {
     set_torch_positions(PackedVector3Array());
+    set_selection_positions(PackedVector3Array());
     set_mesh(Ref<Mesh>());
 
     if (_shape.is_valid()) {

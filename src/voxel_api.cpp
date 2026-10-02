@@ -39,7 +39,7 @@ void VoxelAPI::_ready() {
 
 	_chunk_stream_manager->set_stream_settings(stream_settings);
 	_chunk_pool->set_owner(this);
-	_chunk_pool->set_prewarm(_prewarm_chunk_pool);
+	// Prewarm at world startup, after callers can choose preview settings.
 
 	set_process(true);
 	_biome_registry = BiomeRegistry::load(_biome_registry_path);
@@ -89,6 +89,7 @@ Dictionary VoxelAPI::sample_terrain_column(const Vector2i &position) const {
 void VoxelAPI::_init_chunks() {
 	ERR_FAIL_COND(_chunk_pool.is_null());
 
+	_chunk_pool->set_prewarm(_prewarm_chunk_pool);
 	_is_initializing = true;
 
 	_last_focos_position = voxel::block_to_chunk_coords(_get_current_focus_position());
@@ -388,7 +389,7 @@ void VoxelAPI::set_focus_position(Vector3 p_pos) {
 }
 
 void VoxelAPI::create_new_world(const int32_t p_seed, const String &p_name) {
-	if (_disk_repository.is_valid() && _disk_repository->get_current_world_id() != 0) {
+	if (!_preview_mode && _disk_repository.is_valid() && _disk_repository->get_current_world_id() != 0) {
 		save_world_final();
 	}
 	_clear_world();
@@ -412,8 +413,22 @@ void VoxelAPI::create_new_world(const int32_t p_seed, const String &p_name) {
 	_init_chunks();
 }
 
+void VoxelAPI::start_preview(int32_t p_seed) {
+    if (!_preview_mode) save_world_final();
+    _clear_world();
+    _preview_mode = true;
+    _terrain_noise->set_seed(p_seed);
+    _biome_noise->set_seed(p_seed + 2);
+    _dune_noise->set_seed(p_seed + 3);
+    _mountain_noise->set_seed(p_seed + 4);
+    _ocean_noise->set_seed(p_seed + 5);
+    _river_noise->set_seed(p_seed + 6);
+    _setup_generation_pipeline(p_seed);
+    _init_chunks();
+}
+
 void VoxelAPI::start_world(int64_t p_id) {
-	if (_disk_repository.is_valid() && _disk_repository->get_current_world_id() != 0) {
+	if (!_preview_mode && _disk_repository.is_valid() && _disk_repository->get_current_world_id() != 0) {
 		save_world_final();
 	}
 	_clear_world();
@@ -477,7 +492,7 @@ Dictionary VoxelAPI::_normalize_render_settings(const Dictionary &p_settings) {
 
 	Dictionary normalized;
 	normalized["render_distance"] = read_int("render_distance", 4, 4, 30);
-	normalized["vertical_render_distance"] = read_int("vertical_render_distance", 3, 2, 15);
+	normalized["vertical_render_distance"] = read_int("vertical_render_distance", 3, 2, 6);
 	normalized["distance_fog_enabled"] = bool(p_settings.get("distance_fog_enabled", true));
 	normalized["distance_fog_start_percent"] = read_int("distance_fog_start_percent", 65, 45, 75);
 	normalized["vsync"] = bool(p_settings.get("vsync", true));
@@ -539,7 +554,7 @@ void VoxelAPI::_apply_render_settings_fields(const Dictionary &p_settings, const
 	}
 	const int active_chunk_estimate = horizontal_chunk_count * (_world_height * 2 + 1);
 	_prewarm_chunk_pool = MIN(active_chunk_estimate, 15000);
-	if (_chunk_pool.is_valid()) {
+	if (_chunk_pool.is_valid() && _generation_pipeline) {
 		// The pool tracks total capacity (active and idle nodes) and grows when
 		// render settings increase; startup prewarm remains capped for load time.
 		_chunk_pool->set_prewarm(_prewarm_chunk_pool);
@@ -624,6 +639,7 @@ void VoxelAPI::_ensure_region_loaded_for_chunk(const Vector3i &chunk_pos) {
 }
 
 void VoxelAPI::_queue_region_load(const Vector3i &region_pos) {
+    if (_preview_mode) return;
 	if (_region_cache.has(region_pos) || _pending_region_loads.has(region_pos)) {
 		return;
 	}
@@ -652,6 +668,7 @@ void VoxelAPI::_process_loaded_regions() {
 }
 
 void VoxelAPI::_update_region_streaming(const Vector3i &current_chunk_pos, const Vector3i &previous_chunk_pos) {
+    if (_preview_mode) return;
 	Vector3i current_region	 = voxel::chunk_to_region_coords(current_chunk_pos);
 	Vector3i previous_region = voxel::chunk_to_region_coords(previous_chunk_pos);
 	Vector3i region_delta	 = current_region - previous_region;
@@ -821,6 +838,7 @@ void VoxelAPI::_clear_world() {
     _is_initializing = false;
     _cleanup_timer = 0.0;
     _last_finalize_ms = _max_finalize_ms = 0.0;
+    _preview_mode = false;
 }
 void VoxelAPI::_finalize_chunk(const MeshResult &res) {
 	std::shared_ptr<Chunk> chunk = _chunk_repository->get_chunk(res.pos);
@@ -884,6 +902,7 @@ void VoxelAPI::_finalize_chunk(const MeshResult &res) {
 	}
 	chunk_node->set_collision_faces(res.collision_faces);
 	chunk_node->set_torch_positions(res.torch_positions);
+	chunk_node->set_selection_positions(res.selection_positions);
 	chunk_node->set_global_position(voxel::chunk_coords_to_world(res.pos));
 
 	chunk->stage = ChunkStage::RENDERED;
@@ -925,6 +944,7 @@ double VoxelAPI::_get_day_hour() const {
 }
 
 void VoxelAPI::save_world_final() const {
+    if (_preview_mode) return;
 	if (_disk_repository.is_null() || _disk_repository->get_current_world_id() == 0)
 		return;
     // Older async region writes must not overwrite this final snapshot.
@@ -1058,6 +1078,7 @@ void VoxelAPI::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_block_type_at", "world_pos"), &VoxelAPI::get_block_type_at);
 	ClassDB::bind_method(D_METHOD("save_world"), &VoxelAPI::save_world);
 	ClassDB::bind_method(D_METHOD("start_world", "id"), &VoxelAPI::start_world);
+	ClassDB::bind_method(D_METHOD("start_preview", "seed"), &VoxelAPI::start_preview);
     ClassDB::bind_method(D_METHOD("get_pipeline_stats"), &VoxelAPI::get_pipeline_stats);
     ClassDB::bind_method(D_METHOD("set_pipeline_settings", "settings"), &VoxelAPI::set_pipeline_settings);
 	ClassDB::bind_method(D_METHOD("is_initial_loading"), &VoxelAPI::is_initial_loading);

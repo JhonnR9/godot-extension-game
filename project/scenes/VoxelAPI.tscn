@@ -8,7 +8,7 @@
 [ext_resource type="Script" uid="uid://c7ijudkbm4v3f" path="res://scripts/debug.gd" id="5_vqlwl"]
 [ext_resource type="Script" uid="uid://benu0o0kncwvk" path="res://scripts/pause.gd" id="6_0bkf4"]
 [ext_resource type="FontFile" uid="uid://dyj0fv3g4ev8t" path="res://fonts/rainyhearts.ttf" id="7_qmtj6"]
-[ext_resource type="Script" uid="uid://bujnam10c35qv" path="res://scenes/directional_light_3d.gd" id="9_715aw"]
+[ext_resource type="Script" uid="uid://bujnam10c35qv" path="res://scripts/directional_light_3d.gd" id="9_715aw"]
 [ext_resource type="PackedScene" uid="uid://b508fktn2kxq2" path="res://scenes/settings_panel.tscn" id="10_settings"]
 [ext_resource type="Script" uid="uid://dd3dsrhcdjb1l" path="res://scripts/loading_screen.gd" id="11_loading"]
 
@@ -29,16 +29,16 @@ sky_material = SubResource("ProceduralSkyMaterial_suxjr")
 [sub_resource type="Environment" id="Environment_a202f"]
 background_mode = 2
 sky = SubResource("Sky_suxjr")
-fog_enabled = true
-fog_mode = 1
-fog_light_color = Color(0.47, 0.54, 0.65, 1)
-fog_density = 1.0
-fog_depth_begin = 153.6
-fog_depth_end = 261.12
 glow_enabled = true
 glow_intensity = 0.18
 glow_strength = 0.5
 glow_hdr_threshold = 1.1
+fog_enabled = true
+fog_mode = 1
+fog_light_color = Color(0.47, 0.54, 0.65, 1)
+fog_density = 1.0
+fog_depth_begin = 83.2
+fog_depth_end = 130.56
 adjustment_brightness = 0.9
 adjustment_contrast = 1.065
 adjustment_saturation = 0.88
@@ -96,9 +96,13 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="DebugInfo" type="VBoxContainer" parent="CanvasLayer/GameplayUi" unique_id=2118040622]
-layout_mode = 0
-offset_right = 133.0
-offset_bottom = 50.0
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -133.0
+offset_bottom = 58.0
+grow_horizontal = 0
 
 [node name="FPS" type="Label" parent="CanvasLayer/GameplayUi/DebugInfo" unique_id=1151970196]
 layout_mode = 2

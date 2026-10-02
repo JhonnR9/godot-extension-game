@@ -5,19 +5,22 @@ const SLOT_GAP := 4
 const CREATIVE_COLUMNS := 8
 const BLOCK_REGISTRY_PATH := "res://data/block_registry.generated.json"
 var blocks: Array[Dictionary] = []
+var mouse_unlocked := false
+var layout_initialized := false
+@onready var inventory_panel: PanelContainer = $InventoryPanel
 
 @onready var creative_panel: PanelContainer = $CreativePanel
 @onready var creative_scroll: ScrollContainer = $CreativePanel/Margin/Content/CreativeScroll
 @onready var creative_grid = $CreativePanel/Margin/Content/CreativeScroll/Center/CreativeGrid
-@onready var inventory_scroll: ScrollContainer = $CreativePanel/Margin/Content/InventoryScroll
-@onready var inventory_grid = $CreativePanel/Margin/Content/InventoryScroll/Center/InventoryGrid
-@onready var creative_tab: Button = $CreativePanel/Margin/Content/Tabs/CreativeTab
-@onready var inventory_tab: Button = $CreativePanel/Margin/Content/Tabs/InventoryTab
-@onready var craft_tab: Button = $CreativePanel/Margin/Content/Tabs/CraftTab
-@onready var craft_scroll: ScrollContainer = $CreativePanel/Margin/Content/CraftScroll
-@onready var craft_grid = $CreativePanel/Margin/Content/CraftScroll/Center/Recipe/CraftGrid
-@onready var craft_result: Button = $CreativePanel/Margin/Content/CraftScroll/Center/Recipe/Result
-@onready var hint: Label = $CreativePanel/Margin/Content/Hint
+@onready var inventory_scroll: ScrollContainer = $InventoryPanel/Margin/Content/InventoryScroll
+@onready var inventory_grid = $InventoryPanel/Margin/Content/InventoryScroll/Center/InventoryGrid
+@onready var creative_tab: Button = $Launchers/Creative
+@onready var inventory_tab: Button = $InventoryPanel/Margin/Content/Tabs/InventoryTab
+@onready var craft_tab: Button = $InventoryPanel/Margin/Content/Tabs/CraftTab
+@onready var craft_scroll: ScrollContainer = $InventoryPanel/Margin/Content/CraftScroll
+@onready var craft_grid = $InventoryPanel/Margin/Content/CraftScroll/Center/Recipe/CraftGrid
+@onready var craft_result: Button = $InventoryPanel/Margin/Content/CraftScroll/Center/Recipe/Result
+@onready var hint: Label = $InventoryPanel/Margin/Content/Hint
 @onready var hotbar_panel: PanelContainer = $HotbarPanel
 @onready var hotbar_grid = $HotbarPanel/Margin/HotbarGrid
 
@@ -27,6 +30,8 @@ func _ready() -> void:
 	creative_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	hotbar_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	creative_panel.hide()
+	inventory_panel.hide()
+	inventory_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	_load_blocks()
 
 	var creative_rows := maxi(2, ceili(float(blocks.size()) / CREATIVE_COLUMNS))
@@ -48,20 +53,71 @@ func _ready() -> void:
 	craft_tab.pressed.connect(select_craft_tab)
 	craft_result.pressed.connect(_craft)
 	_update_craft_result()
-	creative_tab.pressed.connect(select_inventory_tab.bind(true))
+	creative_tab.pressed.connect(toggle_creative_window)
+	$Launchers/Inventory.pressed.connect(toggle_inventory_window)
+	creative_panel.layout_changed.connect(_save_window_layout)
+	inventory_panel.layout_changed.connect(_save_window_layout)
 	inventory_tab.pressed.connect(select_inventory_tab.bind(false))
-	select_inventory_tab(true)
+	select_inventory_tab(false)
 	resized.connect(_update_layout)
 	_update_layout()
+	_load_window_layout()
+	set_mouse_unlocked(false)
 
-func select_inventory_tab(creative: bool) -> void:
+func select_inventory_tab(_creative: bool = false) -> void:
 	craft_scroll.hide()
+	inventory_scroll.show()
 	craft_tab.add_theme_stylebox_override("normal", _make_slot_style(false))
+	inventory_tab.add_theme_stylebox_override("normal", _make_slot_style(true))
 	hint.text = "Drag items to your inventory or hotbar"
-	creative_scroll.visible = creative
-	inventory_scroll.visible = not creative
-	creative_tab.add_theme_stylebox_override("normal", _make_slot_style(creative))
-	inventory_tab.add_theme_stylebox_override("normal", _make_slot_style(not creative))
+
+func toggle_inventory_window() -> void:
+	if not mouse_unlocked: return
+	inventory_panel.visible = not inventory_panel.visible
+	if inventory_panel.visible: inventory_panel.move_to_front()
+
+func toggle_creative_window() -> void:
+	if not mouse_unlocked: return
+	creative_panel.visible = not creative_panel.visible
+	if creative_panel.visible: creative_panel.move_to_front()
+
+func set_mouse_unlocked(unlocked: bool) -> void:
+	mouse_unlocked = unlocked
+	if not unlocked:
+		get_viewport().gui_cancel_drag()
+		creative_panel.finish_gesture()
+		inventory_panel.finish_gesture()
+	for panel in [creative_panel, inventory_panel]: panel.interaction_enabled = unlocked
+	_set_mouse_filters(self, unlocked)
+	for grid in [creative_grid, inventory_grid, hotbar_grid, craft_grid]:
+		grid.set_interaction_enabled(unlocked)
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Launchers/MouseHint.text = "F1 · Control character" if unlocked else "F1 · Unlock mouse"
+	if not unlocked:
+		var focused := get_viewport().gui_get_focus_owner()
+		if focused: focused.release_focus()
+
+func _set_mouse_filters(node: Node, enabled: bool) -> void:
+	if node is Control:
+		if not node.has_meta("free_mouse_filter"):
+			node.set_meta("free_mouse_filter", node.mouse_filter)
+		node.mouse_filter = node.get_meta("free_mouse_filter") if enabled else Control.MOUSE_FILTER_IGNORE
+	for child in node.get_children(true): _set_mouse_filters(child, enabled)
+
+func _save_window_layout() -> void:
+	var data := {}
+	for panel in [creative_panel, inventory_panel]:
+		data[str(panel.name)] = [panel.position.x, panel.position.y, panel.size.x, panel.size.y]
+	SaveService.save_user_settings("inventory_windows", data)
+
+func _load_window_layout() -> void:
+	var data: Dictionary = SaveService.load_user_settings("inventory_windows")
+	for panel in [creative_panel, inventory_panel]:
+		var rect = data.get(str(panel.name), [])
+		if rect is Array and rect.size() == 4:
+			panel.size = Vector2(float(rect[2]), float(rect[3]))
+			panel.position = Vector2(float(rect[0]), float(rect[1]))
+		panel.clamp_to_screen()
 
 func select_craft_tab() -> void:
 	select_inventory_tab(false)
@@ -113,17 +169,18 @@ func _update_layout() -> void:
 	_resize_slots(inventory_grid, hotbar_side)
 	_resize_slots(craft_grid, hotbar_side)
 	var hotbar_size: Vector2 = hotbar_grid.get_combined_minimum_size() + Vector2(20, 18)
-	var panel_width := maxf(hotbar_size.x, creative_grid.get_combined_minimum_size().x + 48.0)
-	panel_width = maxf(panel_width, inventory_grid.get_combined_minimum_size().x + 28.0)
-	var panel_height := minf(260.0, maxf(140.0, size.y - hotbar_size.y * 2.0 - 64.0))
 	hotbar_panel.offset_left = -hotbar_size.x / 2.0
 	hotbar_panel.offset_right = hotbar_size.x / 2.0
 	hotbar_panel.offset_top = -hotbar_size.y - 16.0
 	hotbar_panel.offset_bottom = -16.0
-	creative_panel.offset_left = -panel_width / 2.0
-	creative_panel.offset_right = panel_width / 2.0
-	creative_panel.offset_top = -panel_height / 2.0
-	creative_panel.offset_bottom = panel_height / 2.0
+	if not layout_initialized:
+		creative_panel.size = Vector2(470, 320).min(size)
+		inventory_panel.size = Vector2(580, 320).min(size)
+		creative_panel.position = Vector2(16, 80)
+		inventory_panel.position = Vector2(maxf(16, size.x - 596), 80)
+		layout_initialized = true
+	for panel in [creative_panel, inventory_panel]: panel.clamp_to_screen()
+	set_mouse_unlocked(mouse_unlocked)
 
 func _load_blocks() -> void:
 	var file := FileAccess.open(BLOCK_REGISTRY_PATH, FileAccess.READ)
@@ -163,6 +220,14 @@ func _make_block_item(block: Dictionary):
 	item.set_item_amount(99)
 	item.set_icon(BlockIconCache.get_icon(int(block.id)))
 	return item
+
+func collect_block(block_id: int) -> bool:
+	var block := _block_by_id(block_id)
+	if block.is_empty():
+		return false
+	var item = _make_block_item(block)
+	item.set_item_amount(1)
+	return hotbar_grid.add_item(item) or inventory_grid.add_item(item)
 
 func _block_by_id(block_id: int) -> Dictionary:
 	for block in blocks:

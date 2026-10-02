@@ -181,8 +181,10 @@ layout_mode = 2
 size_flags_horizontal = 3
 min_value = 4.0
 max_value = 30.0
+step = 1.0
+rounded = true
 value = 4.0
-tick_count = 11
+tick_count = 27
 ticks_on_borders = true
 
 [node name="RenderDistanceValue" type="Label" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/RenderDistanceRow" unique_id=1559594884]
@@ -204,9 +206,11 @@ text = "Vertical render distance"
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 2.0
-max_value = 15.0
-value = 2.0
-tick_count = 6
+max_value = 6.0
+step = 1.0
+rounded = true
+value = 3.0
+tick_count = 5
 ticks_on_borders = true
 
 [node name="VerticalDistanceValue" type="Label" parent="Center/Panel/Margin/Content/Categories/Graphics/Options/VerticalDistanceRow" unique_id=427619393]

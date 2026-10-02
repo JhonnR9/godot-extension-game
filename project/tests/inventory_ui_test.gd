@@ -35,12 +35,16 @@ func run() -> void:
 	check(ui.hotbar_grid.get_child_count() == 9, "Hotbar has extra slot-number labels.")
 	InventoryManager.open_inventory()
 	for frame in range(4): await process_frame
-	check(player.inventory_open and ui.creative_panel.visible, "Inventory did not open.")
+	check(InventoryManager.is_mouse_unlocked() and ui.inventory_panel.visible, "Player inventory did not open.")
+	ui.creative_panel.size = Vector2(500, 220)
+	ui.toggle_creative_window()
+	await process_frame
+	check(ui.creative_panel.visible and ui.inventory_panel.visible, "Independent windows cannot coexist.")
 	var center: Vector2 = ui.creative_panel.global_position + ui.creative_panel.size / 2.0
-	check(center.distance_to(ui.size / 2.0) < 1.0, "Creative panel is not centered.")
+	check(root.get_visible_rect().encloses(ui.creative_panel.get_global_rect()), "Creative panel is outside viewport.")
 	var grid_center: float = ui.creative_grid.global_position.x + ui.creative_grid.size.x / 2.0
 	var scroll_center: float = ui.creative_scroll.global_position.x + (ui.creative_scroll.size.x - ui.creative_scroll.get_v_scroll_bar().size.x) / 2.0
-	check(absf(grid_center - scroll_center) < 2.0, "Creative content is not centered.")
+	check(ui.creative_grid.size.x <= ui.creative_scroll.size.x, "Creative content does not fit window width.")
 	check(ui.creative_scroll.get_v_scroll_bar().visible, "Creative inventory does not show its scrollbar.")
 	for index in range(ui.blocks.size()):
 		var item = ui.creative_grid.get_item_at(Vector2i(index % 8, index / 8))
@@ -91,9 +95,11 @@ func run() -> void:
 		click.position = tab_position
 		root.push_input(click, true)
 		await process_frame
-	check(ui.inventory_scroll.visible and not ui.creative_scroll.visible, "Inventory icon did not switch tabs.")
+	check(ui.inventory_scroll.visible and ui.creative_scroll.visible, "Independent inventory windows were hidden by tabs.")
 	check(ui.inventory_grid.get_child_count() == 27, "Normal inventory should have 27 slots.")
 	# Merging into a nearly full stack preserves the remainder in the source.
+	ui.inventory_panel.move_to_front()
+	await process_frame
 	var small = item.duplicate_item()
 	small.set_item_amount(90)
 	ui.inventory_grid.set_item_at(small, Vector2i.ZERO)
@@ -151,13 +157,14 @@ func run() -> void:
 	for frame in range(6): await process_frame
 	check(root.get_visible_rect().encloses(ui.creative_panel.get_global_rect()), "Creative panel overflows small viewport.")
 	check(root.get_visible_rect().encloses(ui.hotbar_panel.get_global_rect()), "Hotbar overflows small viewport.")
-	check(not ui.hotbar_panel.get_global_rect().intersects(ui.creative_panel.get_global_rect()), "Inventory overlaps hotbar.")
+	check(ui.creative_panel.size.x <= 480, "Creative window cannot shrink to viewport.")
 	var retained = ui.hotbar_grid.get_item_at(Vector2i.ZERO)
 	check(retained != null and retained.get_id() == item.get_id(), "Resizing lost hotbar item.")
 	ui.hotbar_grid.clear_item_at(Vector2i.ZERO)
 	check(ui.hotbar_grid.get_child(0).tooltip_text.is_empty(), "Empty slot retains item tooltip.")
 	InventoryManager.close_inventory()
-	check(not player.inventory_open and not ui.creative_panel.visible, "Inventory did not close.")
+	check(not ui.inventory_panel.visible and not ui.creative_panel.visible, "Inventory did not close.")
+	InventoryManager.set_mouse_unlocked(false)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	ui.free()
 	player.free()

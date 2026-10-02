@@ -58,8 +58,8 @@ func _input(event: InputEvent) -> void:
 		return
 	if not (event is InputEventKey) or not event.pressed or event.is_echo():
 		return
-	if event.keycode == KEY_I:
-		InventoryManager.toggle_inventory()
+	if event.is_action_pressed("unlock_mouse"):
+		InventoryManager.toggle_mouse()
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_ESCAPE and InventoryManager.is_inventory_open():
 		InventoryManager.close_inventory()
@@ -85,12 +85,12 @@ func _create_water_audio() -> void:
 	ocean_ambience = AudioStreamPlayer.new()
 	ocean_ambience.name = "OceanAmbience"
 	ocean_ambience.bus = "Music"
+	add_child(ocean_ambience)
 	var ambience := load("res://audio/ocean_ambience.mp3") as AudioStreamWAV
 	if ambience:
 		ambience.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		ocean_ambience.stream = ambience
 		ocean_ambience.volume_db = -60.0
-		add_child(ocean_ambience)
 		ocean_ambience.play()
 
 	water_splash = AudioStreamPlayer.new()
@@ -140,7 +140,7 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector3.ZERO
 		return
 
-	if InventoryManager.is_inventory_open():
+	if InventoryManager.is_mouse_unlocked():
 		velocity = Vector3.ZERO
 		return
 
@@ -243,7 +243,7 @@ func _update_footsteps(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if world and world.is_initial_loading():
 		return
-	if InventoryManager.is_inventory_open():
+	if InventoryManager.is_mouse_unlocked():
 		return
 
 	if event is InputEventMouseMotion:
@@ -270,8 +270,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			if not hit.is_empty():
 				var pos: Vector3 = hit["position"]
 				var normal: Vector3 = hit["normal"]
-				pos -= normal * 0.01
+				pos = hit.get("voxel_position", pos - normal * 0.01)
 				if world:
+					if hit.has("voxel_position"):
+						var block_id: int = world.get_block_type_at(pos)
+						if block_id == 0 or not $InventoryCanvas/InventoryUI.collect_block(block_id):
+							return
 					world.break_block(pos)
 
 		if event.button_index == MOUSE_BUTTON_RIGHT:
@@ -279,7 +283,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			if not hit.is_empty():
 				var pos: Vector3 = hit["position"]
 				var normal: Vector3 = hit["normal"]
-				pos += normal * 0.01
+				if hit.has("voxel_position"):
+					pos = hit["voxel_position"] + normal
+				else:
+					pos += normal * 0.01
 				if world:
 					world.set_block(pos, InventoryManager.get_selected_block_id())
 
@@ -288,8 +295,17 @@ func raycast_block(distance: float) -> Dictionary:
 	var to := from + (-camera.global_transform.basis.z) * distance
 	var query := PhysicsRayQueryParameters3D.create(from, to)
 	query.exclude = [get_rid()]
+	query.collision_mask = 3
 	var space_state := get_world_3d().direct_space_state
-	return space_state.intersect_ray(query)
+	var hit := space_state.intersect_ray(query)
+	if not hit.is_empty():
+		var collider: Object = hit["collider"]
+		if collider.has_meta("voxel_selection_positions"):
+			var positions: PackedVector3Array = collider.get_meta("voxel_selection_positions")
+			var index: int = hit["shape"]
+			if index >= 0 and index < positions.size():
+				hit["voxel_position"] = collider.to_global(positions[index])
+	return hit
 
 func serialize_inventory() -> Dictionary:
 	return $InventoryCanvas/InventoryUI.serialize_inventory()

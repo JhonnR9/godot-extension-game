@@ -22,7 +22,7 @@ class InventoryManager final : public Object {
 	GridInventory *_hotbar_grid = nullptr;
 	int _selected_slot = 0;
 	int _selected_block_id = 0;
-	bool _inventory_open = false;
+	bool _mouse_unlocked = false;
 
 	void _on_ui_tree_exiting();
 	void _on_hotbar_slot_clicked(const Vector2i &cell, int button_index);
@@ -42,7 +42,10 @@ public:
 	void toggle_inventory();
 	void open_inventory();
 	void close_inventory();
-	bool is_inventory_open() const { return _inventory_open; }
+	bool is_inventory_open() const;
+	bool is_mouse_unlocked() const { return _mouse_unlocked; }
+	void set_mouse_unlocked(bool unlocked);
+	void toggle_mouse();
 	void select_hotbar_slot(int slot);
 	int get_selected_hotbar_slot() const { return _selected_slot; }
 	int get_selected_block_id() const { return _selected_block_id; }

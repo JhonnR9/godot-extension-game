@@ -2,6 +2,7 @@
 #define CHUNK_H
 
 #include "chunk_mesh_builder.h"
+#include <godot_cpp/classes/box_shape3d.hpp>
 
 #include <godot_cpp/classes/collision_shape3d.hpp>
 #include <godot_cpp/classes/concave_polygon_shape3d.hpp>
@@ -27,6 +28,9 @@ protected:
 
 private:
 	Vector3i pos;
+	StaticBody3D *_selection_body = nullptr;
+	PackedVector3Array _selection_positions;
+	Ref<BoxShape3D> _selection_box;
 	StaticBody3D *_static_body = nullptr;
 	CollisionShape3D *_collision_shape = nullptr;
 
@@ -40,6 +44,7 @@ private:
 
 public:
 	void set_collision_faces(const PackedVector3Array&collision_faces);
+	void set_selection_positions(const PackedVector3Array &positions);
 	void set_torch_positions(const PackedVector3Array &positions);
 	Ref<Material> get_material() {
 		return _material;

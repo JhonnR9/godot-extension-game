@@ -50,6 +50,7 @@ class ChunkMeshBuilder {
     std::vector<std::array<float, 4>> ao;
 	VoxelMesher transparent_mesher;
 	PackedVector3Array torch_positions;
+	PackedVector3Array selection_positions;
 	VoxelMesher &_get_mesher(voxel::Block block);
 	void _add_faces(const ChunkNeighbors &neighbors, CubeFace face);
 	void _add_crossed_plant_faces(const ChunkNeighbors &neighbors);
@@ -66,6 +67,7 @@ public:
 	explicit ChunkMeshBuilder(std::shared_ptr<const ChunkMeshMetadata> p_metadata);
     static std::shared_ptr<const ChunkMeshMetadata> load_metadata();
 	ChunkMeshData build(const ChunkNeighbors &neighbors);
+	PackedVector3Array get_selection_positions() const { return selection_positions; }
 	PackedVector3Array get_torch_positions() const { return torch_positions; }
 
 	static bool _is_air(const ChunkNeighbors &n, int x, int y, int z);

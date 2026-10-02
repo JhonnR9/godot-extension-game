@@ -1,0 +1,50 @@
+extends "res://tests/biome_registry_test.gd"
+
+func run() -> void:
+	var before := SaveService.get_saved_worlds()
+	var menu = load("res://scenes/main_menu.tscn").instantiate()
+	root.add_child(menu)
+	var world = menu.get_node("Background/Viewport/Backdrop/VoxelAPI")
+	check(await wait_for_world(world), "Preview loads without a saved world or player")
+	check(world.get_pipeline_stats().rendered_nodes > 0, "Preview renders chunks")
+	check(world.get_render_settings().render_distance == 4, "Preview keeps low render distance")
+	check(world.get_render_settings().vertical_render_distance == 2, "Preview keeps low vertical distance")
+	var camera: Camera3D = menu.get_node("Background/Viewport/Backdrop/Camera3D")
+	var original := camera.transform
+	menu._process(1.0)
+	check(not camera.transform.is_equal_approx(original), "Camera rotates slowly")
+	check(camera.position.distance_to(menu.orbit_center) < 32, "Orbit stays within generated area")
+	check(menu.get_node("HUD/Buttons/SinglePlayer").pressed.is_connected(menu._on_singleplayer_pressed), "Existing menu works")
+	if DisplayServer.get_name() != "headless":
+		root.size = Vector2i(1280, 720)
+		for frame in range(30): await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("/tmp/main_menu_preview.png")
+	world.set_block(menu.orbit_center, block_id("torch"))
+	world.save_world()
+	world.start_preview(43)
+	check(await wait_for_world(world), "Preview can restart with another seed")
+	menu.free()
+	await process_frame
+	check(SaveService.get_saved_worlds() == before, "Preview creates no saved worlds")
+	check(not DirAccess.dir_exists_absolute("user://voxelcraft/worlds/0"), "Preview does not create world zero on disk")
+	# Switching between persistent and temporary worlds must isolate edits.
+	var saved_id: int = SaveService.create_world(42, "Preview transition fixture")
+	var api: VoxelAPI = ClassDB.instantiate("VoxelAPI")
+	root.add_child(api)
+	api.set_render_settings({"render_distance": 4, "vertical_render_distance": 2})
+	api.set_focus_position(Vector3(8, 48, 8))
+	api.start_world(saved_id)
+	check(await wait_for_world(api), "Persistent world starts")
+	var point := Vector3(8, 80, 8)
+	api.set_block(point, block_id("torch"))
+	api.start_preview(43)
+	check(await wait_for_world(api), "Saved world switches to preview")
+	api.set_block(point, block_id("fern"))
+	api.save_world()
+	api.start_world(saved_id)
+	check(await wait_for_world(api), "Preview switches back to saved world")
+	check(api.get_block_type_at(point) == block_id("torch"), "Preview edits never overwrite saved world")
+	api.free()
+	print("Main menu preview tests: ", failures, " failures.")
+	quit(1 if failures else 0)

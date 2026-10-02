@@ -230,6 +230,7 @@ void ChunkMeshBuilder::_add_crossed_plant_faces(const ChunkNeighbors &neighbors)
 			for (int x = 0; x < Chunk::SIZE_X; ++x) {
 				const voxel::Block block = center->get_block(x, y, z);
 				if (!_is_crossed_plant(block)) continue;
+				selection_positions.push_back(Vector3(x, y, z));
 				if (voxel::type(block) == voxel::block_ids::torch) {
 					torch_positions.push_back(Vector3(x + 0.5f, y + 0.8f, z + 0.5f));
 				}
@@ -260,6 +261,7 @@ ChunkMeshBuilder::ChunkMeshBuilder(std::shared_ptr<const ChunkMeshMetadata> p_me
 ChunkMeshData ChunkMeshBuilder::build(const ChunkNeighbors &neighbors) {
 	opaque_mesher.clear();
 	torch_positions.clear();
+	selection_positions.clear();
 	transparent_mesher.clear();
     if (neighbors.center->is_empty()) return {};
 
