@@ -16,19 +16,18 @@ script = ExtResource("1_inventory_ui")
 [node name="CreativePanel" type="PanelContainer" parent="." unique_id=924296323]
 layout_mode = 0
 anchor_left = 0.5
-anchor_top = 1.0
+anchor_top = 0.5
 anchor_right = 0.5
-anchor_bottom = 1.0
+anchor_bottom = 0.5
 offset_left = -250.0
-offset_top = -340.0
+offset_top = -130.0
 offset_right = 250.0
-offset_bottom = -94.0
+offset_bottom = 130.0
 grow_horizontal = 2
+grow_vertical = 2
 
 [node name="Margin" type="MarginContainer" parent="CreativePanel" unique_id=1956087292]
 layout_mode = 2
-size_flags_horizontal = 8
-size_flags_vertical = 8
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 12
@@ -40,16 +39,28 @@ theme_override_constants/separation = 8
 
 [node name="Title" type="Label" parent="CreativePanel/Margin/Content" unique_id=2134923103]
 layout_mode = 2
-text = "Creative Inventory"
+text = "Inventário criativo"
 horizontal_alignment = 1
 
 [node name="Hint" type="Label" parent="CreativePanel/Margin/Content" unique_id=1989051617]
 layout_mode = 2
-text = "Drag blocks to the hotbar"
+text = "Arraste os blocos para a hotbar"
 horizontal_alignment = 1
 
-[node name="CreativeGrid" type="GridInventory" parent="CreativePanel/Margin/Content" unique_id=2043662853]
+[node name="CreativeScroll" type="ScrollContainer" parent="CreativePanel/Margin/Content"]
 layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
+
+[node name="Center" type="CenterContainer" parent="CreativePanel/Margin/Content/CreativeScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+use_top_left = false
+
+[node name="CreativeGrid" type="GridInventory" parent="CreativePanel/Margin/Content/CreativeScroll/Center" unique_id=2043662853]
+layout_mode = 2
+size_flags_horizontal = 4
 
 [node name="HotbarPanel" type="PanelContainer" parent="." unique_id=1029529787]
 layout_mode = 0
@@ -73,3 +84,4 @@ theme_override_constants/margin_bottom = 7
 
 [node name="HotbarGrid" type="GridInventory" parent="HotbarPanel/Margin" unique_id=1413637113]
 layout_mode = 2
+size_flags_horizontal = 4

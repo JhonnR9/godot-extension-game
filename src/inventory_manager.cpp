@@ -55,7 +55,7 @@ void InventoryManager::setup(Node *player, Control *ui) {
 	}
 
 	_creative_panel = Object::cast_to<PanelContainer>(_ui->get_node_or_null("CreativePanel"));
-	_creative_grid = Object::cast_to<GridInventory>(_ui->get_node_or_null("CreativePanel/Margin/Content/CreativeGrid"));
+	_creative_grid = Object::cast_to<GridInventory>(_ui->get_node_or_null("CreativePanel/Margin/Content/CreativeScroll/Center/CreativeGrid"));
 	_hotbar_grid = Object::cast_to<GridInventory>(_ui->get_node_or_null("HotbarPanel/Margin/HotbarGrid"));
 	if (!_creative_panel || !_creative_grid || !_hotbar_grid) {
 		UtilityFunctions::push_error("InventoryManager could not find CreativePanel, CreativeGrid, and HotbarGrid in the inventory scene");

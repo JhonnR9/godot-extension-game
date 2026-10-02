@@ -37,13 +37,16 @@ Panel *GridInventory::_create_slot_panel(const Point2i &position) {
 	panel->set_position(position);
 	panel->set_size(_slot_size);
 	panel->set_mouse_filter(_interaction_enabled ? MOUSE_FILTER_STOP : MOUSE_FILTER_IGNORE);
-	panel->connect("mouse_entered", callable_mp(this, &GridInventory::_on_slot_mouse_entered));
-	panel->connect("mouse_exited", callable_mp(this, &GridInventory::_on_slot_mouse_exited));
-	panel->connect("gui_input", callable_mp(this, &GridInventory::_on_slot_gui_input));
+	panel->set_force_pass_scroll_events(true);
+	const Point2i cell((position.x - _grid_padding.x) / (_slot_size.x + _slot_margin.x),
+		(position.y - _grid_padding.y) / (_slot_size.y + _slot_margin.y));
+	panel->connect("mouse_entered", callable_mp(this, &GridInventory::_on_slot_mouse_entered).bind(cell));
+	panel->connect("mouse_exited", callable_mp(this, &GridInventory::_on_slot_mouse_exited).bind(cell));
+	panel->connect("gui_input", callable_mp(this, &GridInventory::_on_slot_gui_input).bind(cell));
 	panel->set_drag_forwarding(
-			callable_mp(this, &GridInventory::_make_drag_data),
-			callable_mp(this, &GridInventory::_accept_drop_data),
-			callable_mp(this, &GridInventory::_handle_drop_data));
+			callable_mp(this, &GridInventory::_make_drag_data).bind(cell),
+			callable_mp(this, &GridInventory::_accept_drop_data).bind(cell),
+			callable_mp(this, &GridInventory::_handle_drop_data).bind(cell));
 	return panel;
 }
 
@@ -98,8 +101,12 @@ void GridInventory::_sync_slot(Slot &slot) {
 		slot.count_label->set_text(_show_item_count && slot.item->get_item_amount() > 1
 				? String::num_int64(slot.item->get_item_amount()) : String());
 	}
-	if (slot.panel) slot.panel->set_tooltip_text(slot.item->get_hint_description().is_empty()
-				? slot.item->get_name() : slot.item->get_name() + "\n" + slot.item->get_hint_description());
+	if (slot.panel) {
+		String tooltip = slot.item->get_name() + "\nID: " + String::num_int64(slot.item->get_id()) +
+			"\nCategoria: " + (slot.item->get_category().is_empty() ? String("misc") : slot.item->get_category());
+		if (!slot.item->get_hint_description().is_empty()) tooltip += "\n" + slot.item->get_hint_description();
+		slot.panel->set_tooltip_text(tooltip);
+	}
 }
 
 void GridInventory::_apply_slot_style(Slot &slot) {
@@ -149,9 +156,10 @@ void GridInventory::_clear_grid() {
 	for (KeyValue<int64_t, Slot> &entry : _cells) {
 		Slot &slot = entry.value;
 		if (slot.panel) {
-			Callable entered = callable_mp(this, &GridInventory::_on_slot_mouse_entered);
-			Callable exited = callable_mp(this, &GridInventory::_on_slot_mouse_exited);
-			Callable gui_input = callable_mp(this, &GridInventory::_on_slot_gui_input);
+			const Point2i cell(slot.column, slot.row);
+			Callable entered = callable_mp(this, &GridInventory::_on_slot_mouse_entered).bind(cell);
+			Callable exited = callable_mp(this, &GridInventory::_on_slot_mouse_exited).bind(cell);
+			Callable gui_input = callable_mp(this, &GridInventory::_on_slot_gui_input).bind(cell);
 			if (slot.panel->is_connected("mouse_entered", entered)) slot.panel->disconnect("mouse_entered", entered);
 			if (slot.panel->is_connected("mouse_exited", exited)) slot.panel->disconnect("mouse_exited", exited);
 			if (slot.panel->is_connected("gui_input", gui_input)) slot.panel->disconnect("gui_input", gui_input);
@@ -171,9 +179,9 @@ void GridInventory::_disconnect_style_signal(const Ref<StyleBox> &style) {
 	if (style.is_valid() && style->is_connected("changed", changed)) style->disconnect("changed", changed);
 }
 
-Variant GridInventory::_make_drag_data(const Vector2 &) {
+Variant GridInventory::_make_drag_data(const Vector2 &, const Point2i &cell) {
 	if (!_interaction_enabled) return Variant();
-	const int64_t key = _key_at_position(Vector2i(get_local_mouse_position()));
+	const int64_t key = _make_key(cell.x, cell.y);
 	Slot *slot = _cells.getptr(key);
 	if (!slot || slot->item.is_null() || !slot->icon) return Variant();
 
@@ -200,19 +208,19 @@ Variant GridInventory::_make_drag_data(const Vector2 &) {
 	return payload;
 }
 
-bool GridInventory::_accept_drop_data(const Vector2 &, const Variant &data) const {
+bool GridInventory::_accept_drop_data(const Vector2 &, const Variant &data, const Point2i &cell) const {
 	if (!_interaction_enabled || _creative_source || data.get_type() != Variant::DICTIONARY) return false;
 	const Dictionary payload = data;
 	const Ref<ItemView> item = payload.get("item", Variant());
 	if (item.is_null()) return false;
-	return _cells.has(_key_at_position(Vector2i(get_local_mouse_position())));
+	return _cells.has(_make_key(cell.x, cell.y));
 }
 
-void GridInventory::_handle_drop_data(const Vector2 &, const Variant &data) {
+void GridInventory::_handle_drop_data(const Vector2 &, const Variant &data, const Point2i &cell) {
 	if (_creative_source || data.get_type() != Variant::DICTIONARY) return;
 	const Dictionary payload = data;
 	const Ref<ItemView> item = payload.get("item", Variant());
-	const int64_t target_key = _key_at_position(Vector2i(get_local_mouse_position()));
+	const int64_t target_key = _make_key(cell.x, cell.y);
 	Slot *target = _cells.getptr(target_key);
 	if (item.is_null() || !target) return;
 
@@ -240,11 +248,11 @@ void GridInventory::_handle_drop_data(const Vector2 &, const Variant &data) {
 	}
 }
 
-void GridInventory::_on_slot_gui_input(InputEvent *event) {
+void GridInventory::_on_slot_gui_input(InputEvent *event, const Point2i &cell) {
 	if (!_interaction_enabled) return;
 	auto *mouse_event = Object::cast_to<InputEventMouseButton>(event);
 	if (!mouse_event || !mouse_event->is_pressed()) return;
-	const int64_t key = _key_at_position(Vector2i(get_local_mouse_position()));
+	const int64_t key = _make_key(cell.x, cell.y);
 	if (const Slot *slot = _cells.getptr(key)) {
 		emit_signal("slot_clicked", Vector2i(slot->column, slot->row), mouse_event->get_button_index());
 	}
@@ -260,14 +268,18 @@ void GridInventory::_on_label_settings_changed() {
 	}
 }
 
-void GridInventory::_on_slot_mouse_entered() {
-	_hovered_key = _key_at_position(Vector2i(get_local_mouse_position()));
+void GridInventory::_on_slot_mouse_entered(const Point2i &cell) {
+	const int64_t previous = _hovered_key;
+	_hovered_key = _make_key(cell.x, cell.y);
+	if (Slot *slot = _cells.getptr(previous)) _apply_slot_style(*slot);
 	if (Slot *slot = _cells.getptr(_hovered_key)) _apply_slot_style(*slot);
 }
 
-void GridInventory::_on_slot_mouse_exited() {
-	if (Slot *slot = _cells.getptr(_hovered_key)) _apply_slot_style(*slot);
+void GridInventory::_on_slot_mouse_exited(const Point2i &cell) {
+	if (_hovered_key != _make_key(cell.x, cell.y)) return;
+	const int64_t previous = _hovered_key;
 	_hovered_key = INVALID_KEY;
+	if (Slot *slot = _cells.getptr(previous)) _apply_slot_style(*slot);
 }
 
 Size2 GridInventory::_get_minimum_size() const {

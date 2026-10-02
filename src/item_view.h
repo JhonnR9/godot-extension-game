@@ -13,6 +13,7 @@ class ItemView final : public RefCounted {
 	Ref<Texture2D> _icon;
 	int _item_amount = 1;
 	String _name;
+	String _category;
 	String _hint_description;
 
 protected:
@@ -27,6 +28,8 @@ public:
 	void set_item_amount(int value) { _item_amount = value; }
 	String get_name() const { return _name; }
 	void set_name(const String &value) { _name = value; }
+	String get_category() const { return _category; }
+	void set_category(const String &value) { _category = value; }
 	String get_hint_description() const { return _hint_description; }
 	void set_hint_description(const String &value) { _hint_description = value; }
 	Ref<ItemView> duplicate_item() const;

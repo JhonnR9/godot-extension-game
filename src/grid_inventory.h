@@ -59,14 +59,14 @@ class GridInventory final : public Control {
 	void _disconnect_style_signal(const Ref<StyleBox> &style);
 	int64_t _make_key(int column, int row) const;
 	int64_t _key_at_position(const Point2i &position) const;
-	Variant _make_drag_data(const Vector2 &position);
-	bool _accept_drop_data(const Vector2 &position, const Variant &data) const;
-	void _handle_drop_data(const Vector2 &position, const Variant &data);
-	void _on_slot_gui_input(InputEvent *event);
+	Variant _make_drag_data(const Vector2 &position, const Point2i &cell);
+	bool _accept_drop_data(const Vector2 &position, const Variant &data, const Point2i &cell) const;
+	void _handle_drop_data(const Vector2 &position, const Variant &data, const Point2i &cell);
+	void _on_slot_gui_input(InputEvent *event, const Point2i &cell);
 	void _on_style_changed();
 	void _on_label_settings_changed();
-	void _on_slot_mouse_entered();
-	void _on_slot_mouse_exited();
+	void _on_slot_mouse_entered(const Point2i &cell);
+	void _on_slot_mouse_exited(const Point2i &cell);
 
 protected:
 	static void _bind_methods();

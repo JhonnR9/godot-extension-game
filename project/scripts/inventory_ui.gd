@@ -7,7 +7,8 @@ const BLOCK_REGISTRY_PATH := "res://data/block_registry.generated.json"
 var blocks: Array[Dictionary] = []
 
 @onready var creative_panel: PanelContainer = $CreativePanel
-@onready var creative_grid = $CreativePanel/Margin/Content/CreativeGrid
+@onready var creative_scroll: ScrollContainer = $CreativePanel/Margin/Content/CreativeScroll
+@onready var creative_grid = $CreativePanel/Margin/Content/CreativeScroll/Center/CreativeGrid
 @onready var hotbar_panel: PanelContainer = $HotbarPanel
 @onready var hotbar_grid = $HotbarPanel/Margin/HotbarGrid
 
@@ -29,14 +30,38 @@ func _ready() -> void:
 	_configure_grid(hotbar_grid, 1, 9, Vector2i(SLOT_SIZE, SLOT_SIZE), false)
 	hotbar_grid.set_show_item_count(false)
 	hotbar_grid.set_interaction_enabled(false)
-	for index in range(mini(9, blocks.size())):
-		hotbar_grid.set_item_at(_make_block_item(blocks[index]), Vector2i(index, 0))
-	for index in range(9):
-		var number := Label.new()
-		number.text = str(index + 1)
-		number.position = Vector2(8 + index * (SLOT_SIZE + SLOT_GAP), 3)
-		number.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		hotbar_grid.add_child(number)
+	resized.connect(_update_layout)
+	_update_layout()
+
+func _resize_slots(grid: Control, side: int) -> void:
+	if grid.get_slot_size() == Vector2i(side, side):
+		return
+	var items: Array = []
+	for row in range(grid.get_rows()):
+		for column in range(grid.get_columns()):
+			items.append(grid.get_item_at(Vector2i(column, row)))
+	grid.set_slot_size(Vector2i(side, side))
+	for index in range(items.size()):
+		if items[index] != null:
+			grid.set_item_at(items[index], Vector2i(index % grid.get_columns(), index / grid.get_columns()))
+
+func _update_layout() -> void:
+	var available_width := maxf(240.0, size.x - 32.0)
+	var hotbar_side := clampi(floori((available_width - 28.0 - 8 * SLOT_GAP) / 9.0), 20, SLOT_SIZE)
+	var creative_side := clampi(floori((available_width - 48.0 - 7 * SLOT_GAP) / CREATIVE_COLUMNS), 20, 50)
+	_resize_slots(hotbar_grid, hotbar_side)
+	_resize_slots(creative_grid, creative_side)
+	var hotbar_size: Vector2 = hotbar_grid.get_combined_minimum_size() + Vector2(20, 18)
+	var panel_width := maxf(hotbar_size.x, creative_grid.get_combined_minimum_size().x + 48.0)
+	var panel_height := minf(260.0, maxf(140.0, size.y - hotbar_size.y * 2.0 - 64.0))
+	hotbar_panel.offset_left = -hotbar_size.x / 2.0
+	hotbar_panel.offset_right = hotbar_size.x / 2.0
+	hotbar_panel.offset_top = -hotbar_size.y - 16.0
+	hotbar_panel.offset_bottom = -16.0
+	creative_panel.offset_left = -panel_width / 2.0
+	creative_panel.offset_right = panel_width / 2.0
+	creative_panel.offset_top = -panel_height / 2.0
+	creative_panel.offset_bottom = panel_height / 2.0
 
 func _load_blocks() -> void:
 	var file := FileAccess.open(BLOCK_REGISTRY_PATH, FileAccess.READ)
@@ -72,7 +97,7 @@ func _make_block_item(block: Dictionary):
 	var item = ClassDB.instantiate("ItemView")
 	item.set_id(int(block.id))
 	item.set_name(str(block.name))
-	item.set_hint_description("%s | %s" % [block.category, ", ".join(PackedStringArray(block.flags))])
+	item.set_category(str(block.category))
 	item.set_item_amount(1)
 	item.set_icon(BlockIconCache.get_icon(int(block.id)))
 	return item
